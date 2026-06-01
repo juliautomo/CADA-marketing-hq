@@ -17,7 +17,7 @@ import {
 
 const nav = [
   { label: 'Dashboard',            href: '/',                    icon: LayoutDashboard },
-  { label: 'Full Campaign Agent',  href: '/agents/full-campaign',icon: Zap,      highlight: true },
+  { label: 'Full Campaign Agent',  href: '/agents/full-campaign',icon: Zap },
   { label: 'Content Creator',      href: '/agents/creator',      icon: Sparkles },
   { label: 'Trend Analyst',        href: '/agents/trend',        icon: TrendingUp },
   { label: 'Campaign Planner',     href: '/agents/campaign',     icon: CalendarDays },
