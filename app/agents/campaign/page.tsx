@@ -22,6 +22,8 @@ export default function CampaignPage() {
   const [channels, setChannels] = useState<string[]>(['Instagram', 'Email', 'TikTok'])
   const [loading, setLoading] = useState(false)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [briefText, setBriefText] = useState<string>('')
+  const [integrations, setIntegrations] = useState<{ todoist: boolean; calendar: boolean; drive: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   function toggleChannel(ch: string) {
@@ -44,6 +46,8 @@ export default function CampaignPage() {
       const data = await res.json()
       if (!data.success) throw new Error(data.error ?? 'Failed')
       setCampaign(data.campaign)
+      setBriefText(data.briefText ?? '')
+      setIntegrations({ todoist: data.todoistOk, calendar: data.calendarOk, drive: data.driveOk })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -182,29 +186,30 @@ export default function CampaignPage() {
 
               {/* Integrations */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {campaign.todoist_project_id && (
-                  <Card className="p-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center flex-shrink-0">
-                      <CheckCircle2 className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-zinc-700">Todoist</p>
-                      <p className="text-xs text-zinc-400">Tasks created</p>
-                    </div>
-                  </Card>
-                )}
-                {campaign.calendar_event_ids?.length > 0 && (
-                  <Card className="p-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <CalendarDays className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-zinc-700">Google Calendar</p>
-                      <p className="text-xs text-zinc-400">{campaign.calendar_event_ids.length} events added</p>
-                    </div>
-                  </Card>
-                )}
-                {campaign.google_drive_url && (
+                {/* Todoist */}
+                <Card className={`p-4 flex items-center gap-3 ${integrations?.todoist ? '' : 'opacity-50'}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${integrations?.todoist ? 'bg-red-500' : 'bg-zinc-300'}`}>
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-zinc-700">Todoist</p>
+                    <p className="text-xs text-zinc-400">{integrations?.todoist ? 'Tasks created ✓' : 'Not connected'}</p>
+                  </div>
+                </Card>
+
+                {/* Calendar */}
+                <Card className={`p-4 flex items-center gap-3 ${integrations?.calendar ? '' : 'opacity-50'}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${integrations?.calendar ? 'bg-blue-500' : 'bg-zinc-300'}`}>
+                    <CalendarDays className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-zinc-700">Google Calendar</p>
+                    <p className="text-xs text-zinc-400">{integrations?.calendar ? `${campaign.calendar_event_ids?.length ?? 4} events added ✓` : 'Not connected'}</p>
+                  </div>
+                </Card>
+
+                {/* Drive */}
+                {campaign.google_drive_url ? (
                   <a href={campaign.google_drive_url} target="_blank" rel="noopener noreferrer">
                     <Card className="p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer">
                       <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
@@ -216,6 +221,16 @@ export default function CampaignPage() {
                       </div>
                     </Card>
                   </a>
+                ) : (
+                  <Card className="p-4 flex items-center gap-3 opacity-50">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-300 flex items-center justify-center flex-shrink-0">
+                      <ExternalLink className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-zinc-700">Google Drive</p>
+                      <p className="text-xs text-zinc-400">Not connected</p>
+                    </div>
+                  </Card>
                 )}
               </div>
 
@@ -237,7 +252,7 @@ export default function CampaignPage() {
               )}
 
               {/* Week-by-week plan */}
-              {Array.isArray(brief?.weeks) && (
+              {Array.isArray(brief?.weeks) && brief.weeks.length > 0 && (
                 <Card>
                   <CardHeader><CardTitle className="text-sm">4-Week Plan</CardTitle></CardHeader>
                   <CardContent>
@@ -268,6 +283,17 @@ export default function CampaignPage() {
                   </CardContent>
                 </Card>
               )}
+              {/* Raw brief fallback — always shown if no structured weeks */}
+              {!Array.isArray(brief?.weeks) || (brief.weeks as unknown[]).length === 0 ? (
+                briefText ? (
+                  <Card>
+                    <CardHeader><CardTitle className="text-sm">Campaign Brief</CardTitle></CardHeader>
+                    <CardContent>
+                      <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">{briefText}</pre>
+                    </CardContent>
+                  </Card>
+                ) : null
+              ) : null}
             </motion.div>
           )}
 

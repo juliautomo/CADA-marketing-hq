@@ -138,7 +138,14 @@ Output a JSON object with this exact shape:
     await db.from('campaign_milestones').insert(milestoneRows)
 
     await db.from('agent_runs').update({ status: 'completed', output: { campaign }, duration_ms: Date.now() - start }).eq('id', run!.id)
-    return NextResponse.json({ success: true, campaign })
+    return NextResponse.json({
+      success: true,
+      campaign,
+      briefText,                          // raw text fallback for display
+      todoistOk: !!todoistProjectId,
+      calendarOk: calendarEventIds.length > 0,
+      driveOk: !!driveUrl,
+    })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
     await db.from('agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
