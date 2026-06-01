@@ -1,146 +1,113 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Type, FileText, Mail, Image, Video, Layout,
-  ChevronDown, ArrowRight,
+  ArrowRight, Copy, Check, ExternalLink, RotateCcw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ContentLibrary } from '@/components/agents/content-library'
 import { MediaReference } from '@/components/agents/media-reference'
+import { ContentLibrary } from '@/components/agents/content-library'
 import { cn } from '@/lib/utils'
 import type { ContentItem, ContentType, CreatorInput } from '@/types'
 import type { ImageAnalysis } from '@/lib/anthropic'
 
-const tasks: {
-  id: ContentType
-  label: string
-  icon: typeof Type
-  description: string
-  color: string
-  fields: string[]
-}[] = [
-  {
-    id: 'caption',
-    label: 'Caption',
-    icon: Type,
-    description: 'Write platform-optimised social captions',
-    color: 'bg-violet-500',
-    fields: ['product', 'platform', 'tone'],
-  },
-  {
-    id: 'description',
-    label: 'Product Description',
-    icon: FileText,
-    description: 'Craft compelling e-commerce product copy',
-    color: 'bg-blue-500',
-    fields: ['product', 'tone'],
-  },
-  {
-    id: 'email',
-    label: 'Promo Email',
-    icon: Mail,
-    description: 'Full email with subject line and body copy',
-    color: 'bg-amber-500',
-    fields: ['product', 'tone'],
-  },
-  {
-    id: 'image',
-    label: 'AI Image',
-    icon: Image,
-    description: 'Generate editorial fashion imagery via DALL-E 3',
-    color: 'bg-emerald-500',
-    fields: ['product', 'prompt'],
-  },
-  {
-    id: 'video',
-    label: 'Short Video',
-    icon: Video,
-    description: 'Generate short clips via Runway ML',
-    color: 'bg-red-500',
-    fields: ['product', 'prompt'],
-  },
-  {
-    id: 'canva',
-    label: 'Canva Template',
-    icon: Layout,
-    description: 'Auto-create a Canva design template',
-    color: 'bg-pink-500',
-    fields: ['product'],
-  },
+// ── Task definitions ───────────────────────────────────────────────────────────
+const TASKS = [
+  { id: 'caption'      as ContentType, label: 'Caption',      icon: Type,     color: 'bg-violet-500', description: 'Social media captions with hashtags' },
+  { id: 'description'  as ContentType, label: 'Description',  icon: FileText, color: 'bg-blue-500',   description: 'E-commerce product copy for Shopee' },
+  { id: 'email'        as ContentType, label: 'Promo Email',  icon: Mail,     color: 'bg-amber-500',  description: 'Full email with subject line & CTA' },
+  { id: 'image'        as ContentType, label: 'AI Image',     icon: Image,    color: 'bg-emerald-500',description: 'Generate fashion imagery via DALL-E 3' },
+  { id: 'video'        as ContentType, label: 'Short Video',  icon: Video,    color: 'bg-red-500',    description: 'Generate video clips via Runway ML' },
+  { id: 'canva'        as ContentType, label: 'Canva',        icon: Layout,   color: 'bg-pink-500',   description: 'Auto-create a Canva design template' },
 ]
 
-const platforms = ['Instagram', 'TikTok', 'Pinterest', 'Twitter/X', 'LinkedIn', 'Facebook']
-const tones = ['Aspirational', 'Playful', 'Luxury', 'Minimal', 'Bold', 'Romantic']
+const PLATFORMS  = ['Instagram', 'TikTok', 'Pinterest', 'Twitter/X', 'LinkedIn', 'Shopee']
+const TONES      = ['Aspirational', 'Playful', 'Luxury', 'Minimal', 'Bold', 'Romantic']
+const LANGUAGES  = [
+  { value: 'english',          label: '🇬🇧 English' },
+  { value: 'bahasa-indonesia', label: '🇮🇩 Bahasa Indonesia' },
+  { value: 'bahasa-melayu',    label: '🇲🇾 Bahasa Melayu' },
+]
+const CAP_LENGTHS = [
+  { value: 'short',    label: 'Short',    sub: '< 80 words' },
+  { value: 'standard', label: 'Standard', sub: '100–180 words' },
+  { value: 'long',     label: 'Long',     sub: '200–300 words' },
+]
+const VIDEO_LENGTHS = [
+  { value: 5,  label: '5 sec' },
+  { value: 10, label: '10 sec' },
+]
 
 export default function CreatorPage() {
-  const [selectedTask, setSelectedTask] = useState<ContentType>('caption')
-  const [product, setProduct] = useState('')
-  const [platform, setPlatform] = useState('Instagram')
-  const [tone, setTone] = useState('Aspirational')
-  const [prompt, setPrompt] = useState('')
-  const [additionalContext, setAdditionalContext] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<Record<string, unknown> | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [library, setLibrary] = useState<ContentItem[]>([])
-  const [libraryLoading, setLibraryLoading] = useState(true)
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [task, setTask]                 = useState<ContentType>('caption')
+  const [product, setProduct]           = useState('')
+  const [platform, setPlatform]         = useState('Instagram')
+  const [tone, setTone]                 = useState('Aspirational')
+  const [language, setLanguage]         = useState<CreatorInput['language']>('english')
+  const [captionLength, setCaptionLen]  = useState<CreatorInput['captionLength']>('standard')
+  const [videoLength, setVideoLength]   = useState<5 | 10>(5)
+  const [customPrompt, setCustomPrompt] = useState('')
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
 
-  const task = tasks.find((t) => t.id === selectedTask)!
+  const [loading, setLoading]   = useState(false)
+  const [result, setResult]     = useState<Record<string, unknown> | null>(null)
+  const [error, setError]       = useState<string | null>(null)
+  const [copied, setCopied]     = useState(false)
 
+  const [library, setLibrary]         = useState<ContentItem[]>([])
+  const [libraryLoading, setLibraryLoading] = useState(true)
+
+  const taskDef = TASKS.find(t => t.id === task)!
+
+  // ── Library ────────────────────────────────────────────────────────────────
   const fetchLibrary = useCallback(async () => {
     setLibraryLoading(true)
     try {
       const res = await fetch('/api/content-library')
       const data = await res.json()
       setLibrary(data.items ?? [])
-    } catch {
-      // silently fail — library is non-critical
-    } finally {
-      setLibraryLoading(false)
-    }
+    } catch { /* non-critical */ }
+    finally { setLibraryLoading(false) }
   }, [])
 
-  useEffect(() => {
-    fetchLibrary()
-  }, [fetchLibrary])
+  useEffect(() => { fetchLibrary() }, [fetchLibrary])
 
+  // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
-    if (!product && !prompt) return
+    if (!product && !customPrompt && !imageAnalysis) return
     setLoading(true)
     setResult(null)
     setError(null)
 
-    // Build image context string to inject into the request
     const imageContext = imageAnalysis
-      ? `\n\nIMAGE REFERENCE CONTEXT (from uploaded photo):\n- Product shown: ${imageAnalysis.product}\n- Colors: ${imageAnalysis.colors.join(', ')}\n- Silhouette: ${imageAnalysis.silhouette}\n- Mood: ${imageAnalysis.mood}\n- Styling: ${imageAnalysis.styling}\n- Caption angle: ${imageAnalysis.captionAngle}\nWrite content that directly references or is inspired by this specific image.`
+      ? `\n\nIMAGE REFERENCE:\n- Product: ${imageAnalysis.product}\n- Colors: ${imageAnalysis.colors.join(', ')}\n- Mood: ${imageAnalysis.mood}\n- Caption angle: ${imageAnalysis.captionAngle}\nWrite content inspired by this image.`
       : ''
 
     const body: CreatorInput = {
-      task: selectedTask,
-      product: product || imageAnalysis?.product || undefined,
+      task,
+      product:        product || imageAnalysis?.product || undefined,
       platform,
       tone,
-      prompt: prompt || undefined,
-      additionalContext: (additionalContext || '') + imageContext || undefined,
+      language,
+      captionLength:  task === 'caption' ? captionLength : undefined,
+      videoLength:    task === 'video'   ? videoLength   : undefined,
+      prompt:         customPrompt || undefined,
+      additionalContext: imageContext || undefined,
     }
 
     try {
-      const res = await fetch('/api/agents/creator', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      const res  = await fetch('/api/agents/creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json()
       if (!data.success) throw new Error(data.error ?? 'Generation failed')
       setResult(data)
-      await fetchLibrary()
+      fetchLibrary()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -148,10 +115,37 @@ export default function CreatorPage() {
     }
   }
 
+  function handleTaskChange(t: ContentType) {
+    setTask(t)
+    setResult(null)
+    setError(null)
+  }
+
+  function copyText() {
+    if (typeof result?.text === 'string') {
+      navigator.clipboard.writeText(result.text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  function reset() {
+    setResult(null)
+    setError(null)
+    setProduct('')
+    setCustomPrompt('')
+    setImageAnalysis(null)
+  }
+
+  const canGenerate = !!(product || customPrompt || imageAnalysis)
+  const needsProduct = ['caption', 'description', 'email'].includes(task)
+  const needsPrompt  = ['image', 'video'].includes(task)
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="max-w-2xl mx-auto space-y-6">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center">
@@ -159,189 +153,225 @@ export default function CreatorPage() {
             </div>
             <h1 className="text-2xl font-bold text-zinc-900">Content Creator</h1>
           </div>
-          <p className="text-sm text-zinc-500">Generate captions, images, videos, emails, and Canva templates</p>
+          <p className="text-sm text-zinc-500">Generate captions, images, videos, emails and more</p>
         </div>
-        <Badge variant="info">Claude + DALL-E 3 + Runway</Badge>
+        <Badge variant="info">Claude + DALL-E + Runway</Badge>
       </div>
 
-      {/* Unified image + video reference */}
-      <MediaReference
-        onImageAnalysis={(analysis) => setImageAnalysis(analysis)}
-        onClear={() => setImageAnalysis(null)}
-        platform={platform}
-        tone={tone}
-        showVideoCaptions={selectedTask === 'caption'}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT — controls */}
-        <div className="lg:col-span-1 space-y-5">
-
-          {/* Image analysis badge */}
-          {imageAnalysis && (
-            <div className="rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 flex items-center gap-2">
-              <span className="text-xs">🖼️</span>
-              <p className="text-xs text-violet-700 font-medium">
-                Image context active — content will reference your uploaded photo
-              </p>
-            </div>
-          )}
-
-          {/* Task selector */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">What do you want to create?</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2">
-              {tasks.map((t) => {
-                const Icon = t.icon
-                const active = selectedTask === t.id
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => { setSelectedTask(t.id); setResult(null); setError(null) }}
-                    className={cn(
-                      'flex flex-col items-start gap-1.5 rounded-xl p-3 border text-left transition-all',
-                      active
-                        ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                        : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50'
-                    )}
-                  >
-                    <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center', active ? 'bg-white/20' : t.color)}>
-                      <Icon className={cn('w-3.5 h-3.5', active ? 'text-white' : 'text-white')} />
-                    </div>
-                    <span className={cn('text-xs font-medium leading-tight', active ? 'text-white' : 'text-zinc-700')}>
-                      {String(t.label)}
-                    </span>
-                  </button>
-                )
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Fields */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{task.label} Settings</CardTitle>
-              <CardDescription>{task.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {task.fields.includes('product') && (
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Product / Subject</label>
-                  <Input
-                    value={product}
-                    onChange={(e) => setProduct(e.target.value)}
-                    placeholder="e.g. silk slip dress in champagne"
-                  />
+      {/* ── STEP 1: What do you want to create? ── */}
+      <div>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">1 — What do you want to create?</p>
+        <div className="grid grid-cols-3 gap-2">
+          {TASKS.map((t) => {
+            const Icon = t.icon
+            const active = task === t.id
+            return (
+              <button
+                key={t.id}
+                onClick={() => handleTaskChange(t.id)}
+                className={cn(
+                  'flex flex-col items-start gap-2 rounded-xl p-3.5 border text-left transition-all',
+                  active
+                    ? 'border-zinc-900 bg-zinc-900 text-white shadow-md'
+                    : 'border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm'
+                )}
+              >
+                <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center', active ? 'bg-white/20' : t.color)}>
+                  <Icon className="w-3.5 h-3.5 text-white" />
                 </div>
-              )}
-
-              {task.fields.includes('platform') && (
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Platform</label>
-                  <div className="relative">
-                    <select
-                      value={platform}
-                      onChange={(e) => setPlatform(e.target.value)}
-                      className="w-full appearance-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                    >
-                      {platforms.map((p) => <option key={p}>{p}</option>)}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-2.5 w-4 h-4 text-zinc-400" />
-                  </div>
+                  <p className={cn('text-xs font-semibold', active ? 'text-white' : 'text-zinc-800')}>{t.label}</p>
+                  <p className={cn('text-xs leading-tight mt-0.5', active ? 'text-white/60' : 'text-zinc-400')}>{t.description}</p>
                 </div>
-              )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
-              {task.fields.includes('tone') && (
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Tone</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {tones.map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setTone(t)}
-                        className={cn(
-                          'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
-                          tone === t
-                            ? 'bg-zinc-900 text-white border-zinc-900'
-                            : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
-                        )}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+      {/* ── STEP 2: Reference (optional) ── */}
+      <div>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">2 — Add a reference <span className="normal-case font-normal text-zinc-300">(optional)</span></p>
+        <MediaReference
+          onImageAnalysis={(analysis) => setImageAnalysis(analysis)}
+          onClear={() => setImageAnalysis(null)}
+          platform={platform}
+          tone={tone}
+          showVideoCaptions={task === 'caption'}
+        />
+        {imageAnalysis && (
+          <p className="text-xs text-violet-600 mt-2 flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> Image context active — content will reference this photo
+          </p>
+        )}
+      </div>
 
-              {task.fields.includes('prompt') && (
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                    Custom Prompt <span className="text-zinc-400">(optional)</span>
-                  </label>
-                  <Textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe exactly what you want..."
-                    rows={3}
-                  />
-                </div>
-              )}
+      {/* ── STEP 3: Settings ── */}
+      <div>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">3 — Settings</p>
+        <Card>
+          <CardContent className="pt-5 space-y-4">
 
+            {/* Product / subject */}
+            {(needsProduct || task === 'canva') && (
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                  Additional Context <span className="text-zinc-400">(optional)</span>
+                  {task === 'email' ? 'Product or campaign name' : 'Product / subject'}
+                </label>
+                <Input
+                  value={product}
+                  onChange={(e) => setProduct(e.target.value)}
+                  placeholder={
+                    task === 'email' ? 'e.g. Raya Eid Collection launch' :
+                    task === 'canva' ? 'e.g. Linen wide-leg pants' :
+                    'e.g. silk slip dress in champagne'
+                  }
+                />
+              </div>
+            )}
+
+            {/* Custom prompt */}
+            {needsPrompt && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+                  {task === 'video' ? 'Video description' : 'Image description'}
+                  <span className="text-zinc-400 font-normal ml-1">(or leave blank for auto)</span>
                 </label>
                 <Textarea
-                  value={additionalContext}
-                  onChange={(e) => setAdditionalContext(e.target.value)}
-                  placeholder="Brand guidelines, seasonal notes, campaign theme..."
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder={
+                    task === 'video'
+                      ? 'e.g. Model walking through a garden in a flowy abaya, golden hour lighting'
+                      : 'e.g. Editorial flat lay of the dress with fresh flowers, minimal aesthetic'
+                  }
                   rows={2}
                 />
               </div>
+            )}
 
-              <Button
-                onClick={handleGenerate}
-                loading={loading}
-                disabled={!product && !prompt}
-                className="w-full"
-                size="lg"
-              >
-                {loading ? 'Generating…' : (
-                  <>Generate <ArrowRight className="w-4 h-4" /></>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Platform — caption only */}
+            {task === 'caption' && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Platform</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PLATFORMS.map((p) => (
+                    <button key={p} onClick={() => setPlatform(p)}
+                      className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                        platform === p ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
+                      )}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* RIGHT — result */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Live result */}
-          {(result || error || loading) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <div className={cn('w-6 h-6 rounded-md flex items-center justify-center', task.color)}>
-                    <task.icon className="w-3.5 h-3.5 text-white" />
+            {/* Tone — text tasks */}
+            {['caption', 'description', 'email'].includes(task) && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Tone</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {TONES.map((t) => (
+                    <button key={t} onClick={() => setTone(t)}
+                      className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                        tone === t ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
+                      )}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Caption length */}
+            {task === 'caption' && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Caption length</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {CAP_LENGTHS.map((l) => (
+                    <button key={l.value} onClick={() => setCaptionLen(l.value as CreatorInput['captionLength'])}
+                      className={cn('rounded-lg border p-2.5 text-left transition-all',
+                        captionLength === l.value ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300'
+                      )}>
+                      <p className={cn('text-xs font-semibold', captionLength === l.value ? 'text-white' : 'text-zinc-800')}>{l.label}</p>
+                      <p className={cn('text-xs mt-0.5', captionLength === l.value ? 'text-white/60' : 'text-zinc-400')}>{l.sub}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Video length */}
+            {task === 'video' && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Video length</label>
+                <div className="flex gap-2">
+                  {VIDEO_LENGTHS.map((l) => (
+                    <button key={l.value} onClick={() => setVideoLength(l.value as 5 | 10)}
+                      className={cn('flex-1 rounded-lg border p-2.5 text-center text-sm font-semibold transition-all',
+                        videoLength === l.value ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-700'
+                      )}>
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Language — text tasks */}
+            {['caption', 'description', 'email'].includes(task) && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Language</label>
+                <div className="flex gap-2">
+                  {LANGUAGES.map((l) => (
+                    <button key={l.value} onClick={() => setLanguage(l.value as CreatorInput['language'])}
+                      className={cn('flex-1 rounded-lg border py-2 text-xs font-medium transition-all',
+                        language === l.value ? 'border-violet-600 bg-violet-50 text-violet-700' : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-600'
+                      )}>
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Generate button */}
+            <Button
+              onClick={handleGenerate}
+              loading={loading}
+              disabled={!canGenerate && (needsProduct || needsPrompt)}
+              className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white border-0"
+              size="lg"
+            >
+              {loading
+                ? (task === 'video' ? 'Generating video (~1 min)…' : 'Generating…')
+                : <><Sparkles className="w-4 h-4" /> Generate {taskDef.label} <ArrowRight className="w-4 h-4" /></>
+              }
+            </Button>
+
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Result ── */}
+      <AnimatePresence>
+        {(result || error) && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <Card className="border-violet-100">
+              <CardContent className="pt-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn('w-6 h-6 rounded-md flex items-center justify-center', taskDef.color)}>
+                      <taskDef.icon className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <p className="text-sm font-semibold text-zinc-800">Generated {taskDef.label}</p>
+                    <Badge variant="success">Done</Badge>
                   </div>
-                  Generated {task.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center py-16 gap-3"
-                  >
-                    <div className="w-8 h-8 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm text-zinc-500">
-                      {selectedTask === 'video' ? 'Generating video (this takes ~1 min)…' : 'Generating with AI…'}
-                    </p>
-                  </motion.div>
-                )}
+                  <button onClick={reset} className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-600">
+                    <RotateCcw className="w-3 h-3" /> New
+                  </button>
+                </div>
 
                 {error && (
                   <div className="rounded-xl bg-red-50 border border-red-100 p-4">
@@ -349,75 +379,69 @@ export default function CreatorPage() {
                   </div>
                 )}
 
-                {result && !loading && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                    {/* Text output */}
-                    {typeof result.text === 'string' && (
-                      <div className="rounded-xl bg-zinc-50 border border-zinc-100 p-4">
-                        <pre className="text-sm text-zinc-800 whitespace-pre-wrap font-sans leading-relaxed">
-                          {result.text}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* Image output */}
-                    {typeof result.imageUrl === 'string' ? (
-                      <div className="rounded-xl overflow-hidden border border-zinc-200">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={result.imageUrl} alt="Generated" className="w-full" />
-                      </div>
-                    ) : null}
-
-                    {/* Video output */}
-                    {typeof result.videoUrl === 'string' ? (
-                      <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900">
-                        <video src={result.videoUrl} controls className="w-full" />
-                      </div>
-                    ) : null}
-
-                    {/* Canva link */}
-                    {result.design && typeof (result.design as Record<string, unknown>).editUrl === 'string' ? (
-                      <div className="rounded-xl bg-pink-50 border border-pink-100 p-4 flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-pink-900">Canva design created!</p>
-                          <p className="text-xs text-pink-600 mt-0.5">Your template is ready to customise</p>
-                        </div>
-                        <a
-                          href={(result.design as Record<string, unknown>).editUrl as string}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-pink-700 underline"
-                        >
-                          Open in Canva →
-                        </a>
-                      </div>
-                    ) : null}
-
-                    <p className="text-xs text-zinc-400">Saved to Content Library ✓</p>
-                  </motion.div>
+                {/* Text output */}
+                {typeof result?.text === 'string' && (
+                  <div className="relative">
+                    <pre className="text-sm text-zinc-800 whitespace-pre-wrap font-sans leading-relaxed bg-zinc-50 rounded-xl border border-zinc-100 p-4 pr-12">
+                      {result.text}
+                    </pre>
+                    <button onClick={copyText}
+                      className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-colors">
+                      {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
                 )}
+
+                {/* Image output */}
+                {typeof result?.imageUrl === 'string' && (
+                  <div className="rounded-xl overflow-hidden border border-zinc-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={result.imageUrl} alt="Generated" className="w-full" />
+                  </div>
+                )}
+
+                {/* Video output */}
+                {typeof result?.videoUrl === 'string' && (
+                  <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video src={result.videoUrl} controls className="w-full" />
+                  </div>
+                )}
+
+                {/* Canva link */}
+                {result?.design && typeof (result.design as Record<string, unknown>).editUrl === 'string' && (
+                  <div className="rounded-xl bg-pink-50 border border-pink-100 p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-pink-900">Canva design created!</p>
+                      <p className="text-xs text-pink-600 mt-0.5">Your template is ready to customise</p>
+                    </div>
+                    <a href={(result.design as Record<string, unknown>).editUrl as string}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-sm font-medium text-pink-700 hover:underline">
+                      Open in Canva <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
+
+                <p className="text-xs text-zinc-400">✓ Saved to Content Library</p>
               </CardContent>
             </Card>
-          )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          {/* Content library */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-zinc-700">Content Library</h2>
-              {library.length > 0 && (
-                <Badge variant="default">{library.length} items</Badge>
-              )}
-            </div>
-            {libraryLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
-              </div>
-            ) : (
-              <ContentLibrary items={library} />
-            )}
-          </div>
+      {/* ── Content Library ── */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-zinc-700">Content Library</h2>
+          {library.length > 0 && <Badge variant="default">{library.length} items</Badge>}
         </div>
+        {libraryLoading
+          ? <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" /></div>
+          : <ContentLibrary items={library} />
+        }
       </div>
+
     </div>
   )
 }

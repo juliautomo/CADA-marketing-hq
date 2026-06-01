@@ -124,6 +124,9 @@ export interface CreatorInput {
   platform?: string
   prompt?: string
   additionalContext?: string
+  language?: 'english' | 'bahasa-indonesia' | 'bahasa-melayu'
+  captionLength?: 'short' | 'standard' | 'long'
+  videoLength?: 5 | 10
 }
 
 // Trend analyst inputs
