@@ -3,7 +3,7 @@
 
 const RUNWAY_BASE = 'https://api.runwayml.com/v1'
 
-export async function generateVideo(prompt: string, imageUrl?: string): Promise<string> {
+export async function generateVideo(prompt: string, duration: 5 | 10 = 5, imageUrl?: string): Promise<string> {
   const headers = {
     Authorization: `Bearer ${process.env.RUNWAYML_API_KEY}`,
     'Content-Type': 'application/json',
@@ -12,8 +12,8 @@ export async function generateVideo(prompt: string, imageUrl?: string): Promise<
 
   // Create a generation task
   const body = imageUrl
-    ? { promptImage: imageUrl, promptText: prompt, model: 'gen3a_turbo', duration: 5 }
-    : { promptText: prompt, model: 'gen3a_turbo', duration: 5 }
+    ? { promptImage: imageUrl, promptText: prompt, model: 'gen3a_turbo', duration }
+    : { promptText: prompt, model: 'gen3a_turbo', duration }
 
   const createRes = await fetch(`${RUNWAY_BASE}/image_to_video`, {
     method: 'POST',
