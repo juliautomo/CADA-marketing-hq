@@ -99,7 +99,7 @@ Include:
       case 'image': {
         const dallePrompt = body.prompt ??
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
-        const imageUrl = await generateImage(dallePrompt, body.referenceImageUrl)
+        const imageUrl = await generateImage(dallePrompt)
         const { data } = await db.from('content_items')
           .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
           .select().single()
