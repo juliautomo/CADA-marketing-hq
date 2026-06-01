@@ -10,12 +10,12 @@ export async function generateVideo(prompt: string, duration: 5 | 10 = 5, imageU
     'X-Runway-Version': '2024-11-06',
   }
 
-  // Create a generation task
-  const body = imageUrl
-    ? { promptImage: imageUrl, promptText: prompt, model: 'gen3a_turbo', duration }
-    : { promptText: prompt, model: 'gen3a_turbo', duration }
+  // Use image_to_video if a starting frame is provided, otherwise text_to_video
+  const [endpoint, body] = imageUrl
+    ? [`${RUNWAY_BASE}/image_to_video`, { promptImage: imageUrl, promptText: prompt, model: 'gen3a_turbo', duration }]
+    : [`${RUNWAY_BASE}/text_to_video`,  { promptText: prompt, model: 'gen4_turbo', duration, ratio: '768:1280' }]
 
-  const createRes = await fetch(`${RUNWAY_BASE}/image_to_video`, {
+  const createRes = await fetch(endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
