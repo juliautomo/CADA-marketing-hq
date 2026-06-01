@@ -8,6 +8,18 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+
+// Convert Google Drive share links to direct image URLs
+function toDirectImageUrl(url: string): string {
+  if (!url) return url
+  // https://drive.google.com/file/d/FILE_ID/view → direct
+  const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+  if (fileMatch) return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`
+  // https://drive.google.com/open?id=FILE_ID
+  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+  if (openMatch) return `https://drive.google.com/uc?export=view&id=${openMatch[1]}`
+  return url
+}
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -183,7 +195,7 @@ export default function ProductsPage() {
               <Card className={cn('h-full hover:shadow-sm transition-shadow', !p.active && 'opacity-50')}>
                 {p.image_url && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover rounded-t-2xl" />
+                  <img src={toDirectImageUrl(p.image_url)} alt={p.name} className="w-full aspect-square object-cover rounded-t-2xl" />
                 )}
                 <CardContent className="pt-4 pb-4 space-y-3">
                   {/* Name + category */}
