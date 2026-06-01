@@ -16,6 +16,7 @@ import { ContentLibrary } from '@/components/agents/content-library'
 import { cn } from '@/lib/utils'
 import type { ContentItem, ContentType, CreatorInput } from '@/types'
 import type { ImageAnalysis } from '@/lib/anthropic'
+import type { VideoAnalysis } from '@/app/api/analyze-video/route'
 
 // ── Task definitions ───────────────────────────────────────────────────────────
 const TASKS = [
@@ -55,6 +56,7 @@ export default function CreatorPage() {
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
   const [customPrompt, setCustomPrompt] = useState('')
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
+  const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null)
 
   const [loading, setLoading]   = useState(false)
   const [result, setResult]     = useState<Record<string, unknown> | null>(null)
@@ -88,11 +90,13 @@ export default function CreatorPage() {
 
     const imageContext = imageAnalysis
       ? `\n\nIMAGE REFERENCE:\n- Product: ${imageAnalysis.product}\n- Colors: ${imageAnalysis.colors.join(', ')}\n- Mood: ${imageAnalysis.mood}\n- Caption angle: ${imageAnalysis.captionAngle}\nWrite content inspired by this image.`
+      : videoAnalysis
+      ? `\n\nVIDEO REFERENCE:\n- Product: ${videoAnalysis.product}\n- Colors: ${videoAnalysis.colors.join(', ')}\n- Mood: ${videoAnalysis.mood}\n- Setting: ${videoAnalysis.setting}\n- Caption angle: ${videoAnalysis.captionAngle}\nWrite content inspired by this video.`
       : ''
 
     const body: CreatorInput = {
       task,
-      product:        product || imageAnalysis?.product || undefined,
+      product:        product || imageAnalysis?.product || videoAnalysis?.product || undefined,
       platform,
       tone,
       language,
@@ -135,9 +139,10 @@ export default function CreatorPage() {
     setProduct('')
     setCustomPrompt('')
     setImageAnalysis(null)
+    setVideoAnalysis(null)
   }
 
-  const canGenerate = !!(product || customPrompt || imageAnalysis)
+  const canGenerate = !!(product || customPrompt || imageAnalysis || videoAnalysis)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
   const needsPrompt  = ['image', 'video'].includes(task)
 
@@ -194,14 +199,14 @@ export default function CreatorPage() {
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">2 — Add a reference <span className="normal-case font-normal text-zinc-300">(optional)</span></p>
         <MediaReference
           onImageAnalysis={(analysis) => setImageAnalysis(analysis)}
-          onClear={() => setImageAnalysis(null)}
+          onVideoAnalysis={(analysis) => setVideoAnalysis(analysis)}
+          onClear={() => { setImageAnalysis(null); setVideoAnalysis(null) }}
           platform={platform}
           tone={tone}
-          showVideoCaptions={task === 'caption'}
         />
-        {imageAnalysis && (
+        {(imageAnalysis || videoAnalysis) && (
           <p className="text-xs text-violet-600 mt-2 flex items-center gap-1">
-            <Sparkles className="w-3 h-3" /> Image context active — content will reference this photo
+            <Sparkles className="w-3 h-3" /> {videoAnalysis ? 'Video' : 'Image'} context active — click Generate below to create content
           </p>
         )}
       </div>
