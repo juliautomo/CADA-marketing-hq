@@ -2,22 +2,47 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, CalendarDays, BarChart3, FileText, Image, Palette, Layers, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  TrendingUp, CalendarDays, BarChart3, FileText,
+  Image, Palette, Layers, ExternalLink, ChevronDown,
+  ChevronUp, Type, Mail, Video, Layout, LayoutGrid,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import type { TrendReport, Campaign, PerformanceReport, ContentItem } from '@/types'
 
-type Tab = 'content' | 'trends' | 'campaigns' | 'reports'
+type Tab = 'all' | 'content' | 'trends' | 'campaigns' | 'reports'
+
+// Map content type → icon + colour
+const CONTENT_TYPE_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  caption:      { label: 'Caption',      color: 'bg-violet-500', icon: Type },
+  description:  { label: 'Description',  color: 'bg-blue-500',   icon: FileText },
+  email:        { label: 'Email',        color: 'bg-amber-500',  icon: Mail },
+  image:        { label: 'AI Image',     color: 'bg-emerald-500',icon: Image },
+  video:        { label: 'Video',        color: 'bg-red-500',    icon: Video },
+  canva:        { label: 'Canva',        color: 'bg-pink-500',   icon: Layout },
+  canva_template:{ label: 'Canva',       color: 'bg-pink-500',   icon: Layout },
+}
+
+function ContentTypeBadge({ type }: { type: string }) {
+  const meta = CONTENT_TYPE_META[type] ?? { label: type, color: 'bg-zinc-500', icon: FileText }
+  const Icon = meta.icon
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-medium text-white px-2 py-0.5 rounded-full ${meta.color}`}>
+      <Icon className="w-2.5 h-2.5" /> {meta.label}
+    </span>
+  )
+}
 
 export default function HistoryPage() {
-  const [tab, setTab] = useState<Tab>('trends')
-  const [trends, setTrends] = useState<TrendReport[]>([])
-  const [content, setContent] = useState<ContentItem[]>([])
+  const [tab, setTab]             = useState<Tab>('all')
+  const [trends, setTrends]       = useState<TrendReport[]>([])
+  const [content, setContent]     = useState<ContentItem[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [reports, setReports] = useState<PerformanceReport[]>([])
-  const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState<string | null>(null)
+  const [reports, setReports]     = useState<PerformanceReport[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [expanded, setExpanded]   = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -37,28 +62,45 @@ export default function HistoryPage() {
     load()
   }, [])
 
-  const tabs: { id: Tab; label: string; icon: typeof TrendingUp; count: number }[] = [
-    { id: 'trends',    label: 'Trend Reports',    icon: TrendingUp,  count: trends.length },
-    { id: 'content',   label: 'Content Library',  icon: Image,       count: content.length },
-    { id: 'campaigns', label: 'Campaigns',         icon: CalendarDays, count: campaigns.length },
-    { id: 'reports',   label: 'Perf. Reports',    icon: BarChart3,   count: reports.length },
+  const totalAll = trends.length + content.length + campaigns.length + reports.length
+
+  const tabs: { id: Tab; label: string; icon: React.ElementType; count: number }[] = [
+    { id: 'all',       label: 'All',            icon: LayoutGrid,  count: totalAll },
+    { id: 'content',   label: 'Content',        icon: Image,       count: content.length },
+    { id: 'trends',    label: 'Trend Reports',  icon: TrendingUp,  count: trends.length },
+    { id: 'campaigns', label: 'Campaigns',      icon: CalendarDays,count: campaigns.length },
+    { id: 'reports',   label: 'Perf. Reports',  icon: BarChart3,   count: reports.length },
   ]
+
+  // Merge all items for the "All" tab, sorted by date
+  type AllItem =
+    | { kind: 'content';  data: ContentItem;       date: string }
+    | { kind: 'trend';    data: TrendReport;        date: string }
+    | { kind: 'campaign'; data: Campaign;           date: string }
+    | { kind: 'report';   data: PerformanceReport;  date: string }
+
+  const allItems: AllItem[] = [
+    ...content.map(d   => ({ kind: 'content'  as const, data: d, date: d.created_at })),
+    ...trends.map(d    => ({ kind: 'trend'    as const, data: d, date: d.created_at })),
+    ...campaigns.map(d => ({ kind: 'campaign' as const, data: d, date: d.created_at })),
+    ...reports.map(d   => ({ kind: 'report'   as const, data: d, date: d.created_at })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-zinc-900">History</h1>
-        <p className="text-sm text-zinc-500 mt-1">All outputs saved by your AI agents</p>
+        <p className="text-sm text-zinc-500 mt-1">Everything your AI agents have created</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-zinc-200 pb-0">
+      <div className="flex gap-1 border-b border-zinc-200 overflow-x-auto pb-0">
         {tabs.map(({ id, label, icon: Icon, count }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ${
               tab === id
                 ? 'border-zinc-900 text-zinc-900'
                 : 'border-transparent text-zinc-500 hover:text-zinc-700'
@@ -80,165 +122,57 @@ export default function HistoryPage() {
       ) : (
         <div className="space-y-4">
 
-          {/* TREND REPORTS */}
-          {tab === 'trends' && (
-            trends.length === 0 ? <Empty label="No trend reports yet" /> :
-            trends.map((r, i) => (
-              <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base">{r.title}</CardTitle>
-                        <p className="text-xs text-zinc-400 mt-1">{formatRelativeTime(r.created_at)}</p>
-                      </div>
-                      <button onClick={() => setExpanded(expanded === r.id ? null : r.id)} className="text-zinc-400 hover:text-zinc-600">
-                        {expanded === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    {/* Color pills */}
-                    {r.colors.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        <span className="text-xs text-zinc-400 flex items-center gap-1"><Palette className="w-3 h-3" /> Colors:</span>
-                        {r.colors.map(c => <Badge key={c} variant="default">{c}</Badge>)}
-                      </div>
-                    )}
-                    {r.styles.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        <span className="text-xs text-zinc-400 flex items-center gap-1"><Layers className="w-3 h-3" /> Styles:</span>
-                        {r.styles.map(s => <Badge key={s} variant="info">{s}</Badge>)}
-                      </div>
-                    )}
-                    {r.silhouettes.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        <span className="text-xs text-zinc-400">Silhouettes:</span>
-                        {r.silhouettes.map(s => <Badge key={s} variant="default">{s}</Badge>)}
-                      </div>
-                    )}
-                  </CardHeader>
-                  {expanded === r.id && r.summary && (
-                    <CardContent>
-                      <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{r.summary}</p>
-                    </CardContent>
-                  )}
-                </Card>
+          {/* ── ALL ── */}
+          {tab === 'all' && (
+            allItems.length === 0 ? <Empty label="Nothing yet — run an agent to get started" /> :
+            allItems.map((item, i) => (
+              <motion.div key={`${item.kind}-${item.data.id}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                {item.kind === 'content'  && <ContentCard  item={item.data} />}
+                {item.kind === 'trend'    && <TrendCard    item={item.data} expanded={expanded} setExpanded={setExpanded} />}
+                {item.kind === 'campaign' && <CampaignCard item={item.data} expanded={expanded} setExpanded={setExpanded} />}
+                {item.kind === 'report'   && <ReportCard   item={item.data} expanded={expanded} setExpanded={setExpanded} />}
               </motion.div>
             ))
           )}
 
-          {/* CONTENT LIBRARY */}
+          {/* ── CONTENT ── */}
           {tab === 'content' && (
-            content.length === 0 ? <Empty label="No content items yet" /> :
+            content.length === 0 ? <Empty label="No content yet — try the Content Creator" /> :
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {content.map((item, i) => (
                 <motion.div key={item.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}>
-                  <Card className="h-full">
-                    {item.image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.image_url} alt={item.title} className="w-full aspect-square object-cover rounded-t-2xl" />
-                    )}
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant="default">{item.type}</Badge>
-                        <span className="text-xs text-zinc-400">{formatRelativeTime(item.created_at)}</span>
-                      </div>
-                      <p className="text-sm font-medium text-zinc-800 mb-1">{item.title}</p>
-                      {item.body && <p className="text-xs text-zinc-500 line-clamp-3">{item.body}</p>}
-                      {item.canva_url && (
-                        <a href={item.canva_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                          Open in Canva <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <ContentCard item={item} />
                 </motion.div>
               ))}
             </div>
           )}
 
-          {/* CAMPAIGNS */}
-          {tab === 'campaigns' && (
-            campaigns.length === 0 ? <Empty label="No campaigns yet" /> :
-            campaigns.map((c, i) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base">{c.name}</CardTitle>
-                        <p className="text-xs text-zinc-400 mt-1">{formatDate(c.start_date)} → {formatDate(c.end_date)}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={c.status === 'active' ? 'success' : c.status === 'completed' ? 'default' : 'info'}>
-                          {c.status}
-                        </Badge>
-                        <button onClick={() => setExpanded(expanded === c.id ? null : c.id)} className="text-zinc-400 hover:text-zinc-600">
-                          {expanded === c.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    {c.description && <p className="text-sm text-zinc-600 mt-2">{c.description}</p>}
-                    <div className="flex gap-2 mt-3">
-                      {c.google_drive_url && (
-                        <a href={c.google_drive_url} target="_blank" rel="noopener noreferrer">
-                          <Badge variant="success" className="cursor-pointer hover:opacity-80">
-                            <ExternalLink className="w-3 h-3" /> Drive Brief
-                          </Badge>
-                        </a>
-                      )}
-                      {c.todoist_project_id && <Badge variant="warning">Todoist ✓</Badge>}
-                      {c.calendar_event_ids?.length > 0 && <Badge variant="info">Calendar ✓</Badge>}
-                    </div>
-                  </CardHeader>
-                  {expanded === c.id && c.milestones && c.milestones.length > 0 && (
-                    <CardContent>
-                      <p className="text-xs font-medium text-zinc-500 mb-2">MILESTONES</p>
-                      <div className="space-y-2">
-                        {c.milestones.map((m) => (
-                          <div key={m.id} className="flex items-center gap-3 text-sm">
-                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${m.completed ? 'bg-emerald-500' : 'bg-zinc-300'}`} />
-                            <span className="text-zinc-700">{m.title}</span>
-                            {m.due_date && <span className="text-xs text-zinc-400 ml-auto">{formatDate(m.due_date)}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
+          {/* ── TRENDS ── */}
+          {tab === 'trends' && (
+            trends.length === 0 ? <Empty label="No trend reports yet" /> :
+            trends.map((r, i) => (
+              <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                <TrendCard item={r} expanded={expanded} setExpanded={setExpanded} />
               </motion.div>
             ))
           )}
 
-          {/* PERFORMANCE REPORTS */}
+          {/* ── CAMPAIGNS ── */}
+          {tab === 'campaigns' && (
+            campaigns.length === 0 ? <Empty label="No campaigns yet" /> :
+            campaigns.map((c, i) => (
+              <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                <CampaignCard item={c} expanded={expanded} setExpanded={setExpanded} />
+              </motion.div>
+            ))
+          )}
+
+          {/* ── REPORTS ── */}
           {tab === 'reports' && (
             reports.length === 0 ? <Empty label="No performance reports yet" /> :
             reports.map((r, i) => (
               <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base">{r.title}</CardTitle>
-                        <p className="text-xs text-zinc-400 mt-1">{formatRelativeTime(r.created_at)}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {r.google_drive_url && (
-                          <a href={r.google_drive_url} target="_blank" rel="noopener noreferrer">
-                            <Badge variant="success" className="cursor-pointer"><ExternalLink className="w-3 h-3" /> Drive</Badge>
-                          </a>
-                        )}
-                        <button onClick={() => setExpanded(expanded === r.id ? null : r.id)} className="text-zinc-400 hover:text-zinc-600">
-                          {expanded === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  {expanded === r.id && r.insights && (
-                    <CardContent>
-                      <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">{r.insights}</pre>
-                    </CardContent>
-                  )}
-                </Card>
+                <ReportCard item={r} expanded={expanded} setExpanded={setExpanded} />
               </motion.div>
             ))
           )}
@@ -246,6 +180,155 @@ export default function HistoryPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+function ContentCard({ item }: { item: ContentItem }) {
+  return (
+    <Card className="h-full hover:shadow-sm transition-shadow">
+      {item.image_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.image_url} alt={item.title} className="w-full aspect-square object-cover rounded-t-2xl" />
+      )}
+      {item.video_url && (
+        // eslint-disable-next-line jsx-a11y/media-has-caption
+        <video src={item.video_url} className="w-full aspect-video object-cover rounded-t-2xl bg-zinc-900" muted />
+      )}
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-center justify-between mb-2">
+          <ContentTypeBadge type={item.type} />
+          <span className="text-xs text-zinc-400">{formatRelativeTime(item.created_at)}</span>
+        </div>
+        <p className="text-sm font-medium text-zinc-800 mb-1 line-clamp-1">{item.title}</p>
+        {item.body && <p className="text-xs text-zinc-500 line-clamp-3 leading-relaxed">{item.body}</p>}
+        {item.canva_url && (
+          <a href={item.canva_url} target="_blank" rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-xs text-pink-600 hover:underline">
+            Open in Canva <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function TrendCard({ item: r, expanded, setExpanded }: { item: TrendReport; expanded: string | null; setExpanded: (id: string | null) => void }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="info">Trend Report</Badge>
+              <span className="text-xs text-zinc-400">{formatRelativeTime(r.created_at)}</span>
+            </div>
+            <CardTitle className="text-base">{r.title}</CardTitle>
+          </div>
+          <button onClick={() => setExpanded(expanded === r.id ? null : r.id)} className="text-zinc-400 hover:text-zinc-600 ml-2">
+            {expanded === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+        {r.colors.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            <span className="text-xs text-zinc-400 flex items-center gap-1"><Palette className="w-3 h-3" /> Colors:</span>
+            {r.colors.map(c => <Badge key={c} variant="default">{c}</Badge>)}
+          </div>
+        )}
+        {r.styles.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            <span className="text-xs text-zinc-400 flex items-center gap-1"><Layers className="w-3 h-3" /> Styles:</span>
+            {r.styles.map(s => <Badge key={s} variant="info">{s}</Badge>)}
+          </div>
+        )}
+      </CardHeader>
+      {expanded === r.id && r.summary && (
+        <CardContent>
+          <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{r.summary}</p>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
+function CampaignCard({ item: c, expanded, setExpanded }: { item: Campaign; expanded: string | null; setExpanded: (id: string | null) => void }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant={c.status === 'active' ? 'success' : c.status === 'completed' ? 'default' : 'info'}>
+                {c.status}
+              </Badge>
+              <span className="text-xs text-zinc-400">{formatDate(c.start_date)} → {formatDate(c.end_date)}</span>
+            </div>
+            <CardTitle className="text-base">{c.name}</CardTitle>
+          </div>
+          <button onClick={() => setExpanded(expanded === c.id ? null : c.id)} className="text-zinc-400 hover:text-zinc-600 ml-2">
+            {expanded === c.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+        {c.description && <p className="text-sm text-zinc-600 mt-1">{c.description}</p>}
+        <div className="flex gap-2 mt-2 flex-wrap">
+          {c.google_drive_url && (
+            <a href={c.google_drive_url} target="_blank" rel="noopener noreferrer">
+              <Badge variant="success" className="cursor-pointer hover:opacity-80"><ExternalLink className="w-3 h-3" /> Drive Brief</Badge>
+            </a>
+          )}
+          {c.todoist_project_id && <Badge variant="warning">Todoist ✓</Badge>}
+          {c.calendar_event_ids?.length > 0 && <Badge variant="info">Calendar ✓</Badge>}
+        </div>
+      </CardHeader>
+      {expanded === c.id && c.milestones && c.milestones.length > 0 && (
+        <CardContent>
+          <p className="text-xs font-medium text-zinc-500 mb-2 uppercase tracking-wide">Milestones</p>
+          <div className="space-y-2">
+            {c.milestones.map((m) => (
+              <div key={m.id} className="flex items-center gap-3 text-sm">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${m.completed ? 'bg-emerald-500' : 'bg-zinc-300'}`} />
+                <span className="text-zinc-700">{m.title}</span>
+                {m.due_date && <span className="text-xs text-zinc-400 ml-auto">{formatDate(m.due_date)}</span>}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
+function ReportCard({ item: r, expanded, setExpanded }: { item: PerformanceReport; expanded: string | null; setExpanded: (id: string | null) => void }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="warning">Performance Report</Badge>
+              <span className="text-xs text-zinc-400">{formatRelativeTime(r.created_at)}</span>
+            </div>
+            <CardTitle className="text-base">{r.title}</CardTitle>
+          </div>
+          <div className="flex items-center gap-2 ml-2">
+            {r.google_drive_url && (
+              <a href={r.google_drive_url} target="_blank" rel="noopener noreferrer">
+                <Badge variant="success" className="cursor-pointer"><ExternalLink className="w-3 h-3" /> Drive</Badge>
+              </a>
+            )}
+            <button onClick={() => setExpanded(expanded === r.id ? null : r.id)} className="text-zinc-400 hover:text-zinc-600">
+              {expanded === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+      {expanded === r.id && r.insights && (
+        <CardContent>
+          <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">{r.insights}</pre>
+        </CardContent>
+      )}
+    </Card>
   )
 }
 
