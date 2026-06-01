@@ -68,7 +68,8 @@ export default function CreatorPage() {
   const [products, setProducts]       = useState<import('@/types').Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<import('@/types').Product | null>(null)
 
-  const taskDef = TASKS.find(t => t.id === task)!
+  const taskDef    = TASKS.find(t => t.id === task)!
+  const needsPrompt = ['image', 'video'].includes(task)
 
   // ── Library ────────────────────────────────────────────────────────────────
   const fetchLibrary = useCallback(async () => {
@@ -86,6 +87,18 @@ export default function CreatorPage() {
   useEffect(() => {
     fetch('/api/products').then(r => r.json()).then(d => setProducts(d.products ?? []))
   }, [])
+
+  // Auto-fill product details field when catalog item selected for image/video
+  useEffect(() => {
+    if (needsPrompt && selectedProduct) {
+      const parts = [
+        selectedProduct.name,
+        selectedProduct.colors.length > 0 ? selectedProduct.colors.join(', ') : null,
+        selectedProduct.fabric ?? null,
+      ].filter(Boolean)
+      setProduct(parts.join(' · '))
+    }
+  }, [selectedProduct, needsPrompt])
 
   // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
@@ -154,9 +167,8 @@ export default function CreatorPage() {
     setVideoAnalysis(null)
   }
 
-  const canGenerate = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct)
+  const canGenerate  = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
-  const needsPrompt  = ['image', 'video'].includes(task)
   const showCatalog  = products.length > 0
 
   return (
