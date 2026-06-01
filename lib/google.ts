@@ -26,14 +26,13 @@ export async function uploadTextToDrive(params: {
   mimeType?: string
 }): Promise<string> {
   const token    = await getAccessToken()
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
   const mime     = params.mimeType ?? 'text/plain'
   const boundary = 'cada_boundary_xyz123'
 
+  // Upload to root Drive — no folder restriction to avoid 404 permission errors
   const metadata = JSON.stringify({
     name: params.fileName,
     mimeType: mime,
-    ...(folderId ? { parents: [folderId] } : {}),
   })
 
   // Build multipart body manually — more reliable than FormData on Vercel Node

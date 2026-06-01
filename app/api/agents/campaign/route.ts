@@ -40,7 +40,8 @@ Channels: ${(body.channels ?? ['TikTok', 'Instagram', 'Shopee']).join(', ')}
 Start date: ${format(startDate, 'MMMM d, yyyy')}
 Markets: Indonesia & Singapore
 
-Output a JSON object with this exact shape:
+IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Start your response with { and end with }.
+
 {
   "summary": "2-3 sentence campaign overview tailored to CADA and modest fashion",
   "objective": "primary campaign objective",
