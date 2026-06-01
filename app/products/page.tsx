@@ -1,23 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, Plus, Pencil, Trash2, X, Check,
-  ExternalLink, Tag, Layers,
+  ExternalLink, Tag, Layers, Upload,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-// Convert Google Drive share links to embeddable thumbnail URLs
-function toDirectImageUrl(url: string): string {
-  if (!url) return url
-  const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-  if (fileMatch) return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`
-  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
-  if (openMatch) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`
-  return url
-}
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +36,8 @@ export default function ProductsPage() {
   const [deleting, setDeleting]     = useState<string | null>(null)
   const [colorInput, setColorInput] = useState('')
   const [filter, setFilter]         = useState<string>('All')
+  const [uploading, setUploading]   = useState(false)
+  const fileInputRef                = useRef<HTMLInputElement>(null)
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -78,6 +72,22 @@ export default function ProductsPage() {
   }
 
   function closeForm() { setShowForm(false); setEditing(null) }
+
+  async function handleImageUpload(file: File) {
+    setUploading(true)
+    try {
+      const ext  = file.name.split('.').pop()
+      const path = `${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+      setForm(f => ({ ...f, image_url: data.publicUrl }))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   function addColor(c: string) {
     const trimmed = c.trim()
@@ -193,7 +203,7 @@ export default function ProductsPage() {
               <Card className={cn('h-full hover:shadow-sm transition-shadow', !p.active && 'opacity-50')}>
                 {p.image_url && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={toDirectImageUrl(p.image_url)} alt={p.name} className="w-full aspect-square object-cover rounded-t-2xl" />
+                  <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover rounded-t-2xl" />
                 )}
                 <CardContent className="pt-4 pb-4 space-y-3">
                   {/* Name + category */}
@@ -386,13 +396,28 @@ export default function ProductsPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                      Product Image URL <span className="text-zinc-400 font-normal">(optional)</span>
+                      Product Image <span className="text-zinc-400 font-normal">(optional)</span>
                     </label>
-                    <Input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
-                      placeholder="https://… or Google Drive share link" />
-                    <p className="text-xs text-zinc-400 mt-1">
-                      💡 For Google Drive: right-click image → Share → Copy link, paste here
-                    </p>
+                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f) }} />
+                    {form.image_url ? (
+                      <div className="relative rounded-xl overflow-hidden border border-zinc-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={form.image_url} alt="Product" className="w-full h-40 object-cover" />
+                        <button onClick={() => setForm(f => ({ ...f, image_url: '' }))}
+                          className="absolute top-2 right-2 bg-white rounded-full p-1 shadow hover:bg-red-50">
+                          <X className="w-3.5 h-3.5 text-zinc-500" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                        className="w-full rounded-xl border-2 border-dashed border-zinc-200 hover:border-violet-300 py-8 flex flex-col items-center gap-2 transition-colors">
+                        {uploading
+                          ? <><div className="w-5 h-5 border-2 border-zinc-300 border-t-violet-500 rounded-full animate-spin" /><p className="text-xs text-zinc-400">Uploading…</p></>
+                          : <><Upload className="w-5 h-5 text-zinc-300" /><p className="text-xs text-zinc-400">Click to upload JPG or PNG</p></>
+                        }
+                      </button>
+                    )}
                   </div>
                 </div>
 
