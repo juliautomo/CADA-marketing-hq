@@ -388,15 +388,22 @@ export default function ProductsPage() {
 
                 {/* Active toggle */}
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setForm(f => ({ ...f, active: !f.active }))}
-                    className={cn('w-10 h-6 rounded-full transition-colors relative',
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, active: !f.active }))}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200',
                       form.active ? 'bg-emerald-500' : 'bg-zinc-300'
-                    )}>
-                    <span className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform',
-                      form.active ? 'translate-x-5' : 'translate-x-1'
+                    )}
+                  >
+                    <span className={cn(
+                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200',
+                      form.active ? 'translate-x-5' : 'translate-x-0'
                     )} />
                   </button>
-                  <label className="text-sm text-zinc-700">{form.active ? 'Active — shown to agents' : 'Inactive — hidden from agents'}</label>
+                  <span className="text-sm text-zinc-700">
+                    {form.active ? 'Active — shown to agents' : 'Inactive — hidden from agents'}
+                  </span>
                 </div>
               </div>
 

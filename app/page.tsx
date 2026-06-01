@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { AgentCard } from '@/components/dashboard/agent-card'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { RecentRuns } from '@/components/dashboard/recent-runs'
@@ -79,24 +78,6 @@ export default async function DashboardPage() {
         <StatsCard label="Trend Reports" value={trendCount}   sub="generated"     iconName="TrendingUp" color="bg-emerald-500" index={2} />
         <StatsCard label="Agent Runs"    value={completedRuns} sub="completed"    iconName="FileText"  color="bg-amber-500"  index={3} />
       </div>
-
-      {/* Full Campaign Agent Hero */}
-      <Link href="/agents/full-campaign">
-        <div className="rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 p-6 text-white cursor-pointer hover:opacity-95 transition-opacity">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">⚡</span>
-                <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">Level 3 · Multi-Step Agent</span>
-              </div>
-              <h2 className="text-xl font-bold mb-1">Full Campaign Agent</h2>
-              <p className="text-white/80 text-sm">One sentence → trends + brief + 7-day content + Todoist + Calendar + Drive</p>
-              <p className="text-white/60 text-xs mt-2">Try: &quot;Launch our Eid collection on June 1st&quot;</p>
-            </div>
-            <div className="text-4xl opacity-60">🚀</div>
-          </div>
-        </div>
-      </Link>
 
       {/* Agents grid */}
       <div>
