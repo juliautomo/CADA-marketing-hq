@@ -12,11 +12,10 @@ import { Input } from '@/components/ui/input'
 // Convert Google Drive share links to embeddable thumbnail URLs
 function toDirectImageUrl(url: string): string {
   if (!url) return url
-  // Extract file ID from any Drive URL format
   const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-  if (fileMatch) return `https://drive.google.com/thumbnail?id=${fileMatch[1]}&sz=w600`
+  if (fileMatch) return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`
   const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
-  if (openMatch) return `https://drive.google.com/thumbnail?id=${openMatch[1]}&sz=w600`
+  if (openMatch) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`
   return url
 }
 import { Textarea } from '@/components/ui/textarea'

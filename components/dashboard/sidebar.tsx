@@ -47,7 +47,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {nav.map(({ label, href, icon: Icon, highlight }) => {
+        {nav.map(({ label, href, icon: Icon, highlight = false }) => {
           const active = pathname === href
           return (
             <Link
