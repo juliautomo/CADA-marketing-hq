@@ -94,6 +94,28 @@ create table if not exists agent_runs (
 );
 
 -- ─────────────────────────────────────────
+-- Product Catalog
+-- ─────────────────────────────────────────
+create table if not exists products (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  category text not null,
+  price text,
+  colors text[] default '{}',
+  fabric text,
+  season text default 'Evergreen',
+  description text,
+  shopee_url text,
+  image_url text,
+  active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create trigger products_updated_at before update on products
+  for each row execute procedure update_updated_at();
+
+-- ─────────────────────────────────────────
 -- Storage buckets (run via Supabase dashboard or CLI)
 -- ─────────────────────────────────────────
 -- insert into storage.buckets (id, name, public) values ('content-media', 'content-media', true);

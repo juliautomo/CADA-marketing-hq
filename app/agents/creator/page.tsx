@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Type, FileText, Mail, Image, Video, Layout,
-  ArrowRight, Copy, Check, ExternalLink, RotateCcw,
+  ArrowRight, Copy, Check, ExternalLink, RotateCcw, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,6 +65,8 @@ export default function CreatorPage() {
 
   const [library, setLibrary]         = useState<ContentItem[]>([])
   const [libraryLoading, setLibraryLoading] = useState(true)
+  const [products, setProducts]       = useState<import('@/types').Product[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<import('@/types').Product | null>(null)
 
   const taskDef = TASKS.find(t => t.id === task)!
 
@@ -81,12 +83,21 @@ export default function CreatorPage() {
 
   useEffect(() => { fetchLibrary() }, [fetchLibrary])
 
+  useEffect(() => {
+    fetch('/api/products').then(r => r.json()).then(d => setProducts(d.products ?? []))
+  }, [])
+
   // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
     if (!product && !customPrompt && !imageAnalysis) return
     setLoading(true)
     setResult(null)
     setError(null)
+
+    // Build product context from catalog selection
+    const productContext = selectedProduct
+      ? `\n\nPRODUCT FROM CATALOG:\n- Name: ${selectedProduct.name}\n- Category: ${selectedProduct.category}\n- Price: ${selectedProduct.price ?? 'not specified'}\n- Colours: ${selectedProduct.colors.join(', ')}\n- Fabric: ${selectedProduct.fabric ?? 'not specified'}\n- Season: ${selectedProduct.season}\n- Description: ${selectedProduct.description ?? ''}\nUse these exact product details in the content.`
+      : ''
 
     const imageContext = imageAnalysis
       ? `\n\nIMAGE REFERENCE:\n- Product: ${imageAnalysis.product}\n- Colors: ${imageAnalysis.colors.join(', ')}\n- Mood: ${imageAnalysis.mood}\n- Caption angle: ${imageAnalysis.captionAngle}\nWrite content inspired by this image.`
@@ -96,14 +107,14 @@ export default function CreatorPage() {
 
     const body: CreatorInput = {
       task,
-      product:        product || imageAnalysis?.product || videoAnalysis?.product || undefined,
+      product:        product || selectedProduct?.name || imageAnalysis?.product || videoAnalysis?.product || undefined,
       platform,
       tone,
       language,
       captionLength:  task === 'caption' ? captionLength : undefined,
       videoLength:    task === 'video'   ? videoLength   : undefined,
       prompt:         customPrompt || undefined,
-      additionalContext: imageContext || undefined,
+      additionalContext: (productContext + imageContext) || undefined,
     }
 
     try {
@@ -123,6 +134,7 @@ export default function CreatorPage() {
     setTask(t)
     setResult(null)
     setError(null)
+    setSelectedProduct(null)
   }
 
   function copyText() {
@@ -217,16 +229,52 @@ export default function CreatorPage() {
         <Card>
           <CardContent className="pt-5 space-y-4">
 
+            {/* Product picker from catalog */}
+            {products.length > 0 && (needsProduct || task === 'canva') && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+                  Pick from catalog <span className="text-zinc-400 font-normal">(optional)</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {products.filter(p => p.active).map(p => (
+                    <button key={p.id} onClick={() => {
+                      setSelectedProduct(selectedProduct?.id === p.id ? null : p)
+                      if (selectedProduct?.id !== p.id) setProduct('')
+                    }}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                        selectedProduct?.id === p.id
+                          ? 'bg-violet-600 text-white border-violet-600'
+                          : 'bg-white text-zinc-600 border-zinc-200 hover:border-violet-300 hover:text-violet-700'
+                      )}>
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+                {selectedProduct && (
+                  <div className="mt-2 rounded-lg bg-violet-50 border border-violet-100 px-3 py-2 flex items-center justify-between">
+                    <p className="text-xs text-violet-700">
+                      ✓ <strong>{selectedProduct.name}</strong> — {selectedProduct.colors.join(', ')} · {selectedProduct.fabric}
+                    </p>
+                    <button onClick={() => setSelectedProduct(null)} className="text-violet-400 hover:text-violet-600 ml-2">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Product / subject */}
             {(needsProduct || task === 'canva') && (
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                  {task === 'email' ? 'Product or campaign name' : 'Product / subject'}
+                  {selectedProduct ? 'Additional context' : task === 'email' ? 'Product or campaign name' : 'Product / subject'}
                 </label>
                 <Input
                   value={product}
                   onChange={(e) => setProduct(e.target.value)}
                   placeholder={
+                    selectedProduct ? 'Any extra notes (optional)…' :
                     task === 'email' ? 'e.g. Raya Eid Collection launch' :
                     task === 'canva' ? 'e.g. Linen wide-leg pants' :
                     'e.g. silk slip dress in champagne'

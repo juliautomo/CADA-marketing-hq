@@ -116,6 +116,23 @@ export interface PerformanceReport {
   created_at: string
 }
 
+// Product Catalog
+export interface Product {
+  id: string
+  name: string
+  category: string
+  price?: string
+  colors: string[]
+  fabric?: string
+  season: string
+  description?: string
+  shopee_url?: string
+  image_url?: string
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
 // Creator agent inputs
 export interface CreatorInput {
   task: ContentType

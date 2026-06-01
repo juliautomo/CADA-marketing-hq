@@ -12,17 +12,19 @@ import {
   Layers,
   History,
   Zap,
+  Package,
 } from 'lucide-react'
 
 const nav = [
-  { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { label: 'Full Campaign Agent', href: '/agents/full-campaign', icon: Zap, highlight: true },
-  { label: 'Content Creator', href: '/agents/creator', icon: Sparkles },
-  { label: 'Trend Analyst', href: '/agents/trend', icon: TrendingUp },
-  { label: 'Campaign Planner', href: '/agents/campaign', icon: CalendarDays },
-  { label: 'Performance Reviewer', href: '/agents/performance', icon: BarChart3 },
-  { label: 'Automations', href: '/automations', icon: Zap },
-  { label: 'History', href: '/history', icon: History },
+  { label: 'Dashboard',            href: '/',                    icon: LayoutDashboard },
+  { label: 'Full Campaign Agent',  href: '/agents/full-campaign',icon: Zap,      highlight: true },
+  { label: 'Content Creator',      href: '/agents/creator',      icon: Sparkles },
+  { label: 'Trend Analyst',        href: '/agents/trend',        icon: TrendingUp },
+  { label: 'Campaign Planner',     href: '/agents/campaign',     icon: CalendarDays },
+  { label: 'Performance Reviewer', href: '/agents/performance',  icon: BarChart3 },
+  { label: 'Product Catalog',      href: '/products',            icon: Package },
+  { label: 'Automations',          href: '/automations',         icon: Zap },
+  { label: 'History',              href: '/history',             icon: History },
 ]
 
 export function Sidebar() {
