@@ -113,7 +113,6 @@ export function MediaReference({
     setError(null)
     setImageAnalysis(null)
     setVideoAnalysis(null)
-    setSimilarImageUrl(null)
     setAnalysing(true)
 
     if (file.type.startsWith('image/')) {
@@ -203,6 +202,7 @@ export function MediaReference({
     setImageAnalysis(null)
     setVideoAnalysis(null)
     setError(null)
+    setExpanded(true)
     setDriveUrl('')
     if (fileInputRef.current) fileInputRef.current.value = ''
     onClear()
