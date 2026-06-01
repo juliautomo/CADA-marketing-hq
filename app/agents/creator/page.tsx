@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Type, FileText, Mail, Image, Video, Layout,
@@ -393,35 +393,47 @@ export default function CreatorPage() {
                 )}
 
                 {/* Image output */}
-                {typeof result?.imageUrl === 'string' && (
-                  <div className="rounded-xl overflow-hidden border border-zinc-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={result.imageUrl as string} alt="Generated" className="w-full" />
-                  </div>
-                )}
+                {((): React.ReactNode => {
+                  if (typeof result?.imageUrl !== 'string') return null
+                  const url = result.imageUrl
+                  return (
+                    <div className="rounded-xl overflow-hidden border border-zinc-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="Generated" className="w-full" />
+                    </div>
+                  )
+                })()}
 
                 {/* Video output */}
-                {typeof result?.videoUrl === 'string' && (
-                  <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900">
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <video src={result.videoUrl as string} controls className="w-full" />
-                  </div>
-                )}
+                {((): React.ReactNode => {
+                  if (typeof result?.videoUrl !== 'string') return null
+                  const url = result.videoUrl
+                  return (
+                    <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900">
+                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                      <video src={url} controls className="w-full" />
+                    </div>
+                  )
+                })()}
 
                 {/* Canva link */}
-                {result?.design && typeof (result.design as Record<string, unknown>).editUrl === 'string' && (
-                  <div className="rounded-xl bg-pink-50 border border-pink-100 p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-pink-900">Canva design created!</p>
-                      <p className="text-xs text-pink-600 mt-0.5">Your template is ready to customise</p>
+                {((): React.ReactNode => {
+                  const design = result?.design as Record<string, unknown> | undefined
+                  if (!design || typeof design.editUrl !== 'string') return null
+                  const editUrl = design.editUrl
+                  return (
+                    <div className="rounded-xl bg-pink-50 border border-pink-100 p-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-pink-900">Canva design created!</p>
+                        <p className="text-xs text-pink-600 mt-0.5">Your template is ready to customise</p>
+                      </div>
+                      <a href={editUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-sm font-medium text-pink-700 hover:underline">
+                        Open in Canva <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     </div>
-                    <a href={(result.design as Record<string, unknown>).editUrl as string}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-sm font-medium text-pink-700 hover:underline">
-                      Open in Canva <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-                )}
+                  )
+                })()}
 
                 <p className="text-xs text-zinc-400">✓ Saved to Content Library</p>
               </CardContent>
