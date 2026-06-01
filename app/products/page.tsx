@@ -9,15 +9,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-// Convert Google Drive share links to thumbnail URLs (works without CORS issues)
+// Convert Google Drive share links to embeddable thumbnail URLs
 function toDirectImageUrl(url: string): string {
   if (!url) return url
-  // https://drive.google.com/file/d/FILE_ID/view
+  // Extract file ID from any Drive URL format
   const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-  if (fileMatch) return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`
-  // https://drive.google.com/open?id=FILE_ID or uc?id=FILE_ID
+  if (fileMatch) return `https://drive.google.com/thumbnail?id=${fileMatch[1]}&sz=w600`
   const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
-  if (openMatch) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`
+  if (openMatch) return `https://drive.google.com/thumbnail?id=${openMatch[1]}&sz=w600`
   return url
 }
 import { Textarea } from '@/components/ui/textarea'
