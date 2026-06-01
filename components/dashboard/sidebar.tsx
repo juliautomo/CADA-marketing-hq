@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ import {
   Package,
 } from 'lucide-react'
 
-const nav = [
+const nav: { label: string; href: string; icon: React.ElementType; highlight?: boolean }[] = [
   { label: 'Dashboard',            href: '/',                    icon: LayoutDashboard },
   { label: 'Full Campaign Agent',  href: '/agents/full-campaign',icon: Zap },
   { label: 'Content Creator',      href: '/agents/creator',      icon: Sparkles },
@@ -47,7 +48,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {nav.map(({ label, href, icon: Icon, highlight = false }) => {
+        {nav.map(({ label, href, icon: Icon, highlight }) => {
           const active = pathname === href
           return (
             <Link
