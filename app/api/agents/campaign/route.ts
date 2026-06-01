@@ -125,13 +125,53 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       }
     } catch { /* Google key not set */ }
 
-    // Google Drive
+    // Google Drive — build a nicely formatted document
+    const weeks = (brief.weeks as Array<{
+      week: number; theme: string
+      milestones: Array<{ title: string; day_offset: number; description?: string }>
+    }>) ?? []
+
+    const driveContent = [
+      `CADA CAMPAIGN BRIEF`,
+      `${'='.repeat(50)}`,
+      `Campaign: ${body.name}`,
+      `Period:   ${format(startDate, 'MMMM d, yyyy')} → ${format(endDate, 'MMMM d, yyyy')}`,
+      `Channels: ${(body.channels ?? []).join(', ')}`,
+      `Generated: ${format(new Date(), 'MMMM d, yyyy')}`,
+      ``,
+      `SUMMARY`,
+      `${'─'.repeat(50)}`,
+      typeof brief.summary === 'string' ? brief.summary : '',
+      ``,
+      `OBJECTIVE`,
+      `${'─'.repeat(50)}`,
+      typeof brief.objective === 'string' ? brief.objective : '',
+      ``,
+      `KEY PERFORMANCE INDICATORS`,
+      `${'─'.repeat(50)}`,
+      ...((brief.kpis as string[] ?? []).map((kpi, i) => `  ${i + 1}. ${kpi}`)),
+      ``,
+      `4-WEEK CAMPAIGN PLAN`,
+      `${'─'.repeat(50)}`,
+      ...weeks.flatMap(w => [
+        ``,
+        `WEEK ${w.week} — ${w.theme.toUpperCase()}`,
+        ...(w.milestones ?? []).flatMap(m => [
+          `  • ${m.title} (Day ${m.day_offset + 1})`,
+          m.description ? `    ${m.description}` : '',
+        ]).filter(Boolean),
+      ]),
+      ``,
+      `${'='.repeat(50)}`,
+      `Created by CADA Marketing HQ · Powered by Claude AI`,
+    ].join('\n')
+
     let driveUrl = ''
     let driveError = ''
     try {
       driveUrl = await uploadTextToDrive({
         fileName: `CADA Campaign Brief — ${body.name}.txt`,
-        content: `CADA CAMPAIGN BRIEF\n===================\n${body.name}\n\n${briefText}`,
+        content: driveContent,
       })
     } catch (e) { driveError = e instanceof Error ? e.message : 'Unknown Drive error' }
 
