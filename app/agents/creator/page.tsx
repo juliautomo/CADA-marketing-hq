@@ -266,43 +266,55 @@ export default function CreatorPage() {
             )}
 
             {/* Product / subject */}
-            {(needsProduct || task === 'canva' || needsPrompt) && (
+            {(needsProduct || task === 'canva') && (
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                  {selectedProduct ? 'Additional context' : task === 'email' ? 'Product or campaign name' : 'Product / subject'}
+                  {selectedProduct ? 'Extra product notes' : task === 'email' ? 'Product or campaign name' : 'Product / subject'}
                 </label>
                 <Input
                   value={product}
                   onChange={(e) => setProduct(e.target.value)}
                   placeholder={
-                    selectedProduct ? 'Any extra notes (optional)…' :
+                    selectedProduct ? 'e.g. focus on the relaxed fit, style it with sandals…' :
                     task === 'email' ? 'e.g. Raya Eid Collection launch' :
                     task === 'canva' ? 'e.g. Linen wide-leg pants' :
-                    task === 'image' ? 'e.g. silk slip dress in champagne (or pick from catalog above)' :
-                    task === 'video' ? 'e.g. linen wide-leg pants (or pick from catalog above)' :
                     'e.g. silk slip dress in champagne'
                   }
                 />
               </div>
             )}
 
-            {/* Custom prompt */}
+            {/* Visual scene — image / video */}
             {needsPrompt && (
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                  {task === 'video' ? 'Video description' : 'Image description'}
-                  <span className="text-zinc-400 font-normal ml-1">(or leave blank for auto)</span>
-                </label>
-                <Textarea
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder={
-                    task === 'video'
-                      ? 'e.g. Model walking through a garden in a flowy abaya, golden hour lighting'
-                      : 'e.g. Editorial flat lay of the dress with fresh flowers, minimal aesthetic'
-                  }
-                  rows={2}
-                />
+              <div className="space-y-3">
+                {/* Product details */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">
+                    Product details <span className="text-zinc-400 font-normal">(colour, fabric, tone — auto-filled if catalog selected)</span>
+                  </label>
+                  <Input
+                    value={product}
+                    onChange={(e) => setProduct(e.target.value)}
+                    placeholder={selectedProduct ? 'e.g. focus on the wide leg silhouette, earthy tone…' : 'e.g. Navy linen wide-leg pants, relaxed fit, minimal style'}
+                  />
+                </div>
+                {/* Scene / visual prompt */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">
+                    {task === 'video' ? 'Scene description' : 'Visual / scene description'}
+                    <span className="text-zinc-400 font-normal ml-1">(what should happen in the {task === 'video' ? 'video' : 'image'})</span>
+                  </label>
+                  <Textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder={
+                      task === 'video'
+                        ? 'e.g. Lady walking in a park with a dog, golden hour lighting, slow motion'
+                        : 'e.g. Editorial flat lay on marble surface with fresh flowers, top-down angle'
+                    }
+                    rows={2}
+                  />
+                </div>
               </div>
             )}
 
