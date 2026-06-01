@@ -37,7 +37,7 @@ export function Sidebar() {
             <Layers className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-sm font-bold text-zinc-900 leading-none">Fashion</p>
+            <p className="text-sm font-bold text-zinc-900 leading-none">CADA</p>
             <p className="text-xs text-zinc-400 leading-none mt-0.5">Marketing HQ</p>
           </div>
         </div>
