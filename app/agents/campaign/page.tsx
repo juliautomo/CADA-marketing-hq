@@ -55,7 +55,17 @@ export default function CampaignPage() {
     }
   }
 
-  const brief = campaign?.brief as Record<string, unknown> | undefined
+  // Parse brief — try DB brief first, fall back to parsing briefText
+  const brief = ((): Record<string, unknown> => {
+    const dbBrief = campaign?.brief as Record<string, unknown> | undefined
+    if (dbBrief && Object.keys(dbBrief).length > 0) return dbBrief
+    if (!briefText) return {}
+    try {
+      const clean = briefText.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim()
+      const match = clean.match(/\{[\s\S]*\}/)
+      return match ? JSON.parse(match[0]) : {}
+    } catch { return {} }
+  })()
 
   return (
     <div className="space-y-8">
@@ -167,11 +177,11 @@ export default function CampaignPage() {
               className="space-y-4"
             >
               {/* Overview */}
-              <Card className="border-blue-100 bg-blue-50">
-                <CardContent className="pt-5">
-                  <div className="flex items-start justify-between mb-3">
+              <Card className="border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <CardContent className="pt-5 space-y-3">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="font-semibold text-zinc-900">{campaign.name}</h2>
+                      <h2 className="font-bold text-zinc-900 text-lg">{campaign.name}</h2>
                       <p className="text-xs text-zinc-500 mt-0.5">
                         {formatDate(campaign.start_date)} → {formatDate(campaign.end_date)}
                       </p>
@@ -180,6 +190,12 @@ export default function CampaignPage() {
                   </div>
                   {typeof brief?.summary === 'string' && (
                     <p className="text-sm text-zinc-700 leading-relaxed">{brief.summary}</p>
+                  )}
+                  {typeof brief?.objective === 'string' && (
+                    <div className="rounded-lg bg-white/70 border border-blue-100 px-3 py-2">
+                      <p className="text-xs font-semibold text-blue-700 mb-0.5">🎯 Objective</p>
+                      <p className="text-sm text-zinc-700">{brief.objective}</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -283,19 +299,42 @@ export default function CampaignPage() {
                   </CardContent>
                 </Card>
               )}
-              {/* Raw brief fallback — always shown if no structured weeks */}
-              {!Array.isArray(brief?.weeks) || (brief.weeks as unknown[]).length === 0 ? (
-                briefText ? (
-                  <Card>
-                    <CardHeader><CardTitle className="text-sm">Campaign Brief</CardTitle></CardHeader>
-                    <CardContent>
-                      <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">
-                    {briefText.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim()}
-                  </pre>
-                    </CardContent>
-                  </Card>
-                ) : null
-              ) : null}
+              {/* Week plan */}
+              {Array.isArray(brief?.weeks) && (brief.weeks as unknown[]).length > 0 && (
+                <Card>
+                  <CardHeader><CardTitle className="text-sm">📅 4-Week Plan</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {(brief.weeks as Array<{
+                        week: number; theme: string
+                        milestones: Array<{ title: string; day_offset: number; description?: string }>
+                      }>).map((week) => (
+                        <div key={week.week} className="rounded-xl border border-zinc-100 overflow-hidden">
+                          <div className="flex items-center gap-3 px-4 py-2.5 bg-zinc-50 border-b border-zinc-100">
+                            <span className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                              {week.week}
+                            </span>
+                            <span className="text-sm font-semibold text-zinc-800">{week.theme}</span>
+                          </div>
+                          <div className="px-4 py-3 space-y-2">
+                            {week.milestones.map((m, mi) => (
+                              <div key={mi} className="space-y-0.5">
+                                <div className="flex items-start gap-2">
+                                  <Circle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-blue-300" />
+                                  <span className="text-sm font-medium text-zinc-700">{m.title}</span>
+                                </div>
+                                {m.description && (
+                                  <p className="text-xs text-zinc-400 ml-5 leading-relaxed">{m.description}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </motion.div>
           )}
 
