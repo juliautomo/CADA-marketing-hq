@@ -61,7 +61,9 @@ Output a JSON object with this exact shape:
     let milestones: Array<{ title: string; day_offset: number; week: number }> = []
 
     try {
-      const jsonMatch = briefText.match(/\{[\s\S]*\}/)
+      // Strip markdown code fences before parsing
+      const cleanText = briefText.replace(/```json\n?/gi, '').replace(/```\n?/g, '')
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         brief = JSON.parse(jsonMatch[0])
         const weeks = (brief.weeks as Array<{ week: number; milestones: Array<{ title: string; day_offset: number }> }>) ?? []
@@ -80,6 +82,7 @@ Output a JSON object with this exact shape:
 
     // Todoist
     let todoistProjectId = ''
+    let todoistError = ''
     const todoistTaskIds: string[] = []
     try {
       todoistProjectId = await createProject(`CADA — ${body.name}`)
@@ -88,7 +91,7 @@ Output a JSON object with this exact shape:
         const taskId = await createTask({ content: m.title, projectId: todoistProjectId, dueDate, description: `Week ${m.week} | CADA — ${body.name}`, priority: m.week === 3 ? 4 : 3 })
         todoistTaskIds.push(taskId)
       }
-    } catch { /* Todoist key not set */ }
+    } catch (e) { todoistError = e instanceof Error ? e.message : 'Unknown Todoist error' }
 
     // Google Calendar
     const calendarEventIds: string[] = []
@@ -141,8 +144,9 @@ Output a JSON object with this exact shape:
     return NextResponse.json({
       success: true,
       campaign,
-      briefText,                          // raw text fallback for display
+      briefText,
       todoistOk: !!todoistProjectId,
+      todoistError,
       calendarOk: calendarEventIds.length > 0,
       driveOk: !!driveUrl,
     })

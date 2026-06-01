@@ -13,7 +13,12 @@ export async function createProject(name: string): Promise<string> {
     headers: todoistHeaders(),
     body: JSON.stringify({ name }),
   })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Todoist createProject failed (${res.status}): ${err}`)
+  }
   const data = await res.json()
+  if (!data.id) throw new Error(`Todoist createProject: no id in response: ${JSON.stringify(data)}`)
   return data.id as string
 }
 

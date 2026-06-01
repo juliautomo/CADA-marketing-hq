@@ -23,7 +23,7 @@ export default function CampaignPage() {
   const [loading, setLoading] = useState(false)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [briefText, setBriefText] = useState<string>('')
-  const [integrations, setIntegrations] = useState<{ todoist: boolean; calendar: boolean; drive: boolean } | null>(null)
+  const [integrations, setIntegrations] = useState<{ todoist: boolean; calendar: boolean; drive: boolean; todoistError?: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   function toggleChannel(ch: string) {
@@ -47,7 +47,7 @@ export default function CampaignPage() {
       if (!data.success) throw new Error(data.error ?? 'Failed')
       setCampaign(data.campaign)
       setBriefText(data.briefText ?? '')
-      setIntegrations({ todoist: data.todoistOk, calendar: data.calendarOk, drive: data.driveOk })
+      setIntegrations({ todoist: data.todoistOk, calendar: data.calendarOk, drive: data.driveOk, todoistError: data.todoistError })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -191,9 +191,9 @@ export default function CampaignPage() {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${integrations?.todoist ? 'bg-red-500' : 'bg-zinc-300'}`}>
                     <CheckCircle2 className="w-4 h-4 text-white" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-medium text-zinc-700">Todoist</p>
-                    <p className="text-xs text-zinc-400">{integrations?.todoist ? 'Tasks created ✓' : 'Not connected'}</p>
+                    <p className="text-xs text-zinc-400 truncate">{integrations?.todoist ? 'Tasks created ✓' : integrations?.todoistError ? integrations.todoistError.slice(0, 40) : 'Not connected'}</p>
                   </div>
                 </Card>
 
