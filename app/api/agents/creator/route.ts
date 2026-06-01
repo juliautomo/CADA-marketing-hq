@@ -113,8 +113,21 @@ Include:
           `Cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, modest fashion aesthetic.`
         const duration   = body.videoLength ?? 5
         const provider   = body.videoProvider ?? 'kling'
-        const refImage = body.referenceImageUrl
-        const videoUrl = await generateVideo(videoPrompt, duration, refImage, provider)
+
+        // Kling requires a starting image — use provided ref or auto-generate with DALL-E
+        let refImage = body.referenceImageUrl
+        if (provider === 'kling' && !refImage) {
+          const framePrompt = `High-fashion editorial photo of a Muslim woman in hijab wearing ${productDesc} by CADA. Clean background, soft natural lighting, elegant modest fashion aesthetic.`
+          refImage = await generateImage(framePrompt)
+        }
+
+        let videoUrl: string
+        try {
+          videoUrl = await generateVideo(videoPrompt, duration, refImage, provider)
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          throw new Error(msg)
+        }
         const { data } = await db.from('content_items')
           .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()

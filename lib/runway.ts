@@ -17,11 +17,19 @@ export async function generateVideo(
     'X-Runway-Version': '2024-11-06',
   }
 
-  const model    = imageUrl ? MODEL_MAP[provider].image : MODEL_MAP[provider].text
-  const endpoint = imageUrl ? `${RUNWAY_BASE}/image_to_video` : `${RUNWAY_BASE}/text_to_video`
-  const body     = imageUrl
+  // Kling models require a starting image — always use image_to_video
+  // Runway gen4.5 supports pure text_to_video
+  const needsImage = provider === 'kling' || !!imageUrl
+  const model      = needsImage ? MODEL_MAP[provider].image : MODEL_MAP[provider].text
+  const endpoint   = needsImage ? `${RUNWAY_BASE}/image_to_video` : `${RUNWAY_BASE}/text_to_video`
+
+  if (needsImage && !imageUrl) {
+    throw new Error('NEEDS_FRAME')  // caller must supply a starting image for Kling
+  }
+
+  const body = needsImage
     ? { promptImage: imageUrl, promptText: prompt, model, duration }
-    : { promptText: prompt, model, duration, ratio: '768:1280' }
+    : { promptText: prompt, model, duration, ratio: '9:16' }
 
   const createRes = await fetch(endpoint, {
     method: 'POST',
