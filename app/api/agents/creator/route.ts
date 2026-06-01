@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage } from '@/lib/openai'
-import { generateVideo } from '@/lib/runway'
+import { generateVideoRunway } from '@/lib/runway'
+import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
 import { createServiceClient } from '@/lib/supabase'
 import { getBrandSystemPrompt } from '@/lib/brand'
@@ -111,23 +112,14 @@ Include:
         const productDesc = body.product ?? 'modest fashion outfit'
         const videoPrompt = body.prompt ??
           `Cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, modest fashion aesthetic.`
-        const duration   = body.videoLength ?? 5
-        const provider   = body.videoProvider ?? 'kling'
+        const duration  = body.videoLength ?? 5
+        const provider  = body.videoProvider ?? 'kling'
+        const refImage  = body.referenceImageUrl
 
-        // Kling requires a starting image — use provided ref or auto-generate with DALL-E
-        let refImage = body.referenceImageUrl
-        if (provider === 'kling' && !refImage) {
-          const framePrompt = `High-fashion editorial photo of a Muslim woman in hijab wearing ${productDesc} by CADA. Clean background, soft natural lighting, elegant modest fashion aesthetic.`
-          refImage = await generateImage(framePrompt)
-        }
-
-        let videoUrl: string
-        try {
-          videoUrl = await generateVideo(videoPrompt, duration, refImage, provider)
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e)
-          throw new Error(msg)
-        }
+        // Kling and Runway are fully independent — both support text-to-video natively
+        const videoUrl = provider === 'kling'
+          ? await generateVideoKling(videoPrompt, duration, refImage)
+          : await generateVideoRunway(videoPrompt, duration, refImage)
         const { data } = await db.from('content_items')
           .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()
