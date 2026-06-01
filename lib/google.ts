@@ -70,6 +70,45 @@ export async function uploadTextToDrive(params: {
   return data.webViewLink as string
 }
 
+// ─── Drive (binary / PDF) ────────────────
+
+export async function uploadFileToDrive(params: {
+  fileName: string
+  buffer: Buffer
+  mimeType: string
+}): Promise<string> {
+  const token    = await getAccessToken()
+  const boundary = 'cada_file_boundary_abc'
+  const metadata = JSON.stringify({ name: params.fileName, mimeType: params.mimeType })
+
+  const header = Buffer.from(
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: ${params.mimeType}\r\n\r\n`,
+    'utf-8'
+  )
+  const footer = Buffer.from(`\r\n--${boundary}--`, 'utf-8')
+  const body   = Buffer.concat([header, params.buffer, footer])
+
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+        'Content-Length': String(body.length),
+      },
+      body,
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Drive upload failed (${res.status}): ${err}`)
+  }
+  const data = await res.json()
+  if (!data.webViewLink) throw new Error(`Drive: no webViewLink in response`)
+  return data.webViewLink as string
+}
+
 // ─── Calendar ────────────────────────────
 
 export async function createCalendarEvent(params: {

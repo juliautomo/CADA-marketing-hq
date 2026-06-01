@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { createProject, createTask } from '@/lib/todoist'
-import { createCalendarEvent, uploadTextToDrive } from '@/lib/google'
+import { createCalendarEvent, uploadFileToDrive } from '@/lib/google'
 import { createServiceClient } from '@/lib/supabase'
 import { getBrandSystemPrompt } from '@/lib/brand'
+import { generateCampaignBriefPDF } from '@/lib/pdf'
 import type { CampaignInput } from '@/types'
 import { addDays, format } from 'date-fns'
 
@@ -125,53 +126,24 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       }
     } catch { /* Google key not set */ }
 
-    // Google Drive — build a nicely formatted document
-    const weeks = (brief.weeks as Array<{
-      week: number; theme: string
-      milestones: Array<{ title: string; day_offset: number; description?: string }>
-    }>) ?? []
-
-    const driveContent = [
-      `CADA CAMPAIGN BRIEF`,
-      `${'='.repeat(50)}`,
-      `Campaign: ${body.name}`,
-      `Period:   ${format(startDate, 'MMMM d, yyyy')} → ${format(endDate, 'MMMM d, yyyy')}`,
-      `Channels: ${(body.channels ?? []).join(', ')}`,
-      `Generated: ${format(new Date(), 'MMMM d, yyyy')}`,
-      ``,
-      `SUMMARY`,
-      `${'─'.repeat(50)}`,
-      typeof brief.summary === 'string' ? brief.summary : '',
-      ``,
-      `OBJECTIVE`,
-      `${'─'.repeat(50)}`,
-      typeof brief.objective === 'string' ? brief.objective : '',
-      ``,
-      `KEY PERFORMANCE INDICATORS`,
-      `${'─'.repeat(50)}`,
-      ...((brief.kpis as string[] ?? []).map((kpi, i) => `  ${i + 1}. ${kpi}`)),
-      ``,
-      `4-WEEK CAMPAIGN PLAN`,
-      `${'─'.repeat(50)}`,
-      ...weeks.flatMap(w => [
-        ``,
-        `WEEK ${w.week} — ${w.theme.toUpperCase()}`,
-        ...(w.milestones ?? []).flatMap(m => [
-          `  • ${m.title} (Day ${m.day_offset + 1})`,
-          m.description ? `    ${m.description}` : '',
-        ]).filter(Boolean),
-      ]),
-      ``,
-      `${'='.repeat(50)}`,
-      `Created by CADA Marketing HQ · Powered by Claude AI`,
-    ].join('\n')
-
+    // Google Drive — generate PDF brief
     let driveUrl = ''
     let driveError = ''
     try {
-      driveUrl = await uploadTextToDrive({
-        fileName: `CADA Campaign Brief — ${body.name}.txt`,
-        content: driveContent,
+      const pdfBuffer = await generateCampaignBriefPDF({
+        name: body.name,
+        startDate: format(startDate, 'MMMM d, yyyy'),
+        endDate: format(endDate, 'MMMM d, yyyy'),
+        channels: body.channels ?? ['Instagram', 'TikTok'],
+        summary: typeof brief.summary === 'string' ? brief.summary : undefined,
+        objective: typeof brief.objective === 'string' ? brief.objective : undefined,
+        kpis: Array.isArray(brief.kpis) ? brief.kpis as string[] : undefined,
+        weeks: Array.isArray(brief.weeks) ? brief.weeks as never : undefined,
+      })
+      driveUrl = await uploadFileToDrive({
+        fileName: `CADA Campaign Brief — ${body.name}.pdf`,
+        buffer: pdfBuffer,
+        mimeType: 'application/pdf',
       })
     } catch (e) { driveError = e instanceof Error ? e.message : 'Unknown Drive error' }
 
