@@ -396,7 +396,7 @@ export default function CreatorPage() {
                 {typeof result?.imageUrl === 'string' && (
                   <div className="rounded-xl overflow-hidden border border-zinc-200">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={result.imageUrl} alt="Generated" className="w-full" />
+                    <img src={result.imageUrl as string} alt="Generated" className="w-full" />
                   </div>
                 )}
 
@@ -404,7 +404,7 @@ export default function CreatorPage() {
                 {typeof result?.videoUrl === 'string' && (
                   <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900">
                     {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <video src={result.videoUrl} controls className="w-full" />
+                    <video src={result.videoUrl as string} controls className="w-full" />
                   </div>
                 )}
 
