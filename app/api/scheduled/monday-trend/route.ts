@@ -104,7 +104,7 @@ Include 5 specific content ideas CADA can execute this week.`
 
     // Save to DB
     const { data: report } = await db
-      .from('trend_reports')
+      .from('cada_trend_reports')
       .insert({
         title,
         summary,

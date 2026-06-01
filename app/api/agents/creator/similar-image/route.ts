@@ -40,7 +40,7 @@ Write ONLY the enhanced DALL-E prompt, nothing else. Be very specific and detail
     const imageUrl = await generateImage(enhancedPrompt)
 
     // Save to content library
-    const { data: item } = await db.from('content_items').insert({
+    const { data: item } = await db.from('cada_content_items').insert({
       type: 'image',
       title: `Similar Image: ${analysis.product}`,
       image_url: imageUrl,

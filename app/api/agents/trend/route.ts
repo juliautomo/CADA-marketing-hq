@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const db = createServiceClient()
 
   const { data: run } = await db
-    .from('agent_runs')
+    .from('cada_agent_runs')
     .insert({ agent: 'trend_analyst', status: 'running', input: body })
     .select()
     .single()
@@ -160,7 +160,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
     const title = `Trend Report — ${body.season ?? 'Current Season'} ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}${body.focus ? ` · ${body.focus}` : ' · Modest Fashion'}`
 
     const { data: report } = await db
-      .from('trend_reports')
+      .from('cada_trend_reports')
       .insert({
         title,
         summary,
@@ -176,14 +176,14 @@ Be specific — real creator handles, real hashtags, real content formats that p
       .select()
       .single()
 
-    await db.from('agent_runs')
+    await db.from('cada_agent_runs')
       .update({ status: 'completed', output: { report }, duration_ms: Date.now() - start })
       .eq('id', run!.id)
 
     return NextResponse.json({ success: true, report })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('agent_runs')
+    await db.from('cada_agent_runs')
       .update({ status: 'failed', error: msg, duration_ms: Date.now() - start })
       .eq('id', run!.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })

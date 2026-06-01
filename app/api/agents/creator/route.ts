@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const lenNote  = LENGTH_INSTRUCTION[body.captionLength ?? 'standard']
 
   const { data: run } = await db
-    .from('agent_runs')
+    .from('cada_agent_runs')
     .insert({ agent: 'creator', status: 'running', input: body })
     .select()
     .single()
@@ -53,7 +53,7 @@ ${lenNote}
 Include relevant hashtags at the end (#CADA #wearcada #modestfashion etc).
 The caption should appeal to Muslim women in Indonesia/Singapore aged 20–35.`
         )
-        const { data } = await db.from('content_items')
+        const { data } = await db.from('cada_content_items')
           .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, tags: [body.platform ?? 'instagram', 'cada'] })
           .select().single()
         result = { text, item: data }
@@ -71,7 +71,7 @@ ${lenNote}
 Include: key features, fabric/material benefits, who it's for, how to style it.
 End with sizing/care notes placeholder.`
         )
-        const { data } = await db.from('content_items')
+        const { data } = await db.from('cada_content_items')
           .insert({ type: 'description', title: `Description: ${body.product}`, body: text, tags: ['shopee', 'cada'] })
           .select().single()
         result = { text, item: data }
@@ -90,7 +90,7 @@ Include:
 - Preview text (under 90 chars)
 - Full email body with greeting, product highlight, styling tips, and CTA to Shopee/TikTok shop`
         )
-        const { data } = await db.from('content_items')
+        const { data } = await db.from('cada_content_items')
           .insert({ type: 'email', title: `Email: ${body.product ?? body.prompt}`, body: text, tags: ['email', 'cada'] })
           .select().single()
         result = { text, item: data }
@@ -101,7 +101,7 @@ Include:
         const dallePrompt = body.prompt ??
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
         const imageUrl = await generateImage(dallePrompt)
-        const { data } = await db.from('content_items')
+        const { data } = await db.from('cada_content_items')
           .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
           .select().single()
         result = { imageUrl, item: data }
@@ -120,7 +120,7 @@ Include:
         const videoUrl = provider === 'kling'
           ? await generateVideoKling(videoPrompt, duration, refImage)
           : await generateVideoRunway(videoPrompt, duration, refImage)
-        const { data } = await db.from('content_items')
+        const { data } = await db.from('cada_content_items')
           .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()
         result = { videoUrl, item: data }
@@ -133,7 +133,7 @@ Include:
           title: `CADA — ${body.product ?? body.prompt ?? 'Template'}`,
           designType: 'INSTAGRAM_POST',
         })
-        const { data } = await db.from('content_items')
+        const { data } = await db.from('cada_content_items')
           .insert({ type: 'canva_template', title: `Canva: ${body.product ?? 'CADA Template'}`, canva_url: design.editUrl, metadata: design, tags: ['canva', 'cada'] })
           .select().single()
         result = { design, item: data }
@@ -141,11 +141,11 @@ Include:
       }
     }
 
-    await db.from('agent_runs').update({ status: 'completed', output: result, duration_ms: Date.now() - start }).eq('id', run!.id)
+    await db.from('cada_agent_runs').update({ status: 'completed', output: result, duration_ms: Date.now() - start }).eq('id', run!.id)
     return NextResponse.json({ success: true, ...result })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
+    await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

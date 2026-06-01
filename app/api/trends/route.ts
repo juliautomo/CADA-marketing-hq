@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const db = createServiceClient()
     const { data, error } = await db
-      .from('trend_reports')
+      .from('cada_trend_reports')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(20)

@@ -184,7 +184,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
       send({ step: 5, status: 'running', label: 'Saving campaign & content to database…' })
 
       // Save campaign
-      const { data: campaign } = await db.from('campaigns').insert({
+      const { data: campaign } = await db.from('cada_campaigns').insert({
         name: parsed.name,
         description: parsed.theme,
         start_date: parsed.startDate,
@@ -216,7 +216,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         tags: ['campaign', parsed.name.toLowerCase().replace(/\s+/g, '-'), day.platform.toLowerCase(), 'cada'],
       }))
 
-      await db.from('content_items').insert(contentInserts)
+      await db.from('cada_content_items').insert(contentInserts)
 
       send({ step: 5, status: 'done', label: 'Saved to database' })
 
@@ -339,14 +339,14 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
 
       // ── STEP 9: Finalise DB ───────────────────────────────────────────────────
       if (campaign) {
-        await db.from('campaigns').update({
+        await db.from('cada_campaigns').update({
           todoist_project_id: todoistProjectId || null,
           calendar_event_ids: calendarEventIds,
           google_drive_url: driveUrl || null,
         }).eq('id', campaign.id)
 
         if (milestoneRows.length > 0) {
-          await db.from('campaign_milestones').insert(milestoneRows)
+          await db.from('cada_campaign_milestones').insert(milestoneRows)
         }
       }
 

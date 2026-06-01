@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const db = createServiceClient()
 
   const { data: run } = await db
-    .from('agent_runs')
+    .from('cada_agent_runs')
     .insert({ agent: 'performance_reviewer', status: 'running', input: body })
     .select()
     .single()
@@ -59,15 +59,15 @@ Keep recommendations practical for a small-mid Indonesian fashion brand.`
       driveUrl = await uploadTextToDrive({ fileName: `CADA Performance — ${body.title}.txt`, content: reportContent })
     } catch { /* Google key not set */ }
 
-    const { data: report } = await db.from('performance_reports')
+    const { data: report } = await db.from('cada_performance_reports')
       .insert({ title: body.title, metrics, insights, google_drive_url: driveUrl || null })
       .select().single()
 
-    await db.from('agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run!.id)
+    await db.from('cada_agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run!.id)
     return NextResponse.json({ success: true, report })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
+    await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

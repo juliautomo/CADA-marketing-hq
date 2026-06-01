@@ -43,10 +43,10 @@ async function getDashboardData() {
   try {
     const db = createServiceClient()
     const [runsRes, contentRes, campaignsRes, trendsRes] = await Promise.all([
-      db.from('agent_runs').select('*').order('created_at', { ascending: false }).limit(8),
-      db.from('content_items').select('id', { count: 'exact', head: true }),
-      db.from('campaigns').select('id', { count: 'exact', head: true }),
-      db.from('trend_reports').select('id', { count: 'exact', head: true }),
+      db.from('cada_agent_runs').select('*').order('created_at', { ascending: false }).limit(8),
+      db.from('cada_content_items').select('id', { count: 'exact', head: true }),
+      db.from('cada_campaigns').select('id', { count: 'exact', head: true }),
+      db.from('cada_trend_reports').select('id', { count: 'exact', head: true }),
     ])
     return {
       runs: (runsRes.data ?? []) as AgentRun[],

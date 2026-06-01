@@ -99,7 +99,7 @@ Think about what Indonesian Muslim women engage with most on TikTok and Instagra
     // Save each idea as a content_item
     const savedItems = []
     for (const idea of ideas) {
-      const { data } = await db.from('content_items').insert({
+      const { data } = await db.from('cada_content_items').insert({
         type: 'caption',
         title: `Daily Queue: Day ${idea.number} — ${idea.platform} ${idea.format} (${today})`,
         body: idea.caption,

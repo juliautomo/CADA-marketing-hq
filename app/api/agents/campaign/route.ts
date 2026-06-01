@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   const db = createServiceClient()
 
   const { data: run } = await db
-    .from('agent_runs')
+    .from('cada_agent_runs')
     .insert({ agent: 'campaign_planner', status: 'running', input: body })
     .select()
     .single()
@@ -147,7 +147,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       })
     } catch (e) { driveError = e instanceof Error ? e.message : 'Unknown Drive error' }
 
-    const { data: campaign } = await db.from('campaigns')
+    const { data: campaign } = await db.from('cada_campaigns')
       .insert({
         name: body.name,
         description: body.description,
@@ -169,9 +169,9 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       todoist_task_id: todoistTaskIds[i] ?? null,
       calendar_event_id: calendarEventIds[m.week - 1] ?? null,
     }))
-    await db.from('campaign_milestones').insert(milestoneRows)
+    await db.from('cada_campaign_milestones').insert(milestoneRows)
 
-    await db.from('agent_runs').update({ status: 'completed', output: { campaign }, duration_ms: Date.now() - start }).eq('id', run!.id)
+    await db.from('cada_agent_runs').update({ status: 'completed', output: { campaign }, duration_ms: Date.now() - start }).eq('id', run!.id)
     return NextResponse.json({
       success: true,
       campaign,
@@ -184,7 +184,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
+    await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

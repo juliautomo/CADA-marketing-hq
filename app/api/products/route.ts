@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase'
 export async function GET() {
   const db = createServiceClient()
   const { data, error } = await db
-    .from('products')
+    .from('cada_products')
     .select('*')
     .order('created_at', { ascending: false })
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const db = createServiceClient()
   const body = await req.json()
   const { data, error } = await db
-    .from('products')
+    .from('cada_products')
     .insert(body)
     .select()
     .single()
@@ -30,7 +30,7 @@ export async function PUT(req: NextRequest) {
   const body = await req.json()
   const { id, ...fields } = body
   const { data, error } = await db
-    .from('products')
+    .from('cada_products')
     .update(fields)
     .eq('id', id)
     .select()
@@ -43,7 +43,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const db = createServiceClient()
   const { id } = await req.json()
-  const { error } = await db.from('products').delete().eq('id', id)
+  const { error } = await db.from('cada_products').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
