@@ -108,12 +108,17 @@ Include:
       }
 
       case 'video': {
-        const videoPrompt = body.prompt ??
-          `Cinematic fashion video of a Muslim woman in hijab wearing ${body.product} by CADA. Elegant slow motion, soft lighting, modest fashion aesthetic, clean background.`
-        const duration = body.videoLength ?? 5
-        const videoUrl = await generateVideo(videoPrompt, duration)
+        const productDesc = body.product ?? 'modest fashion outfit'
+        const sceneDesc   = body.prompt ?? `Muslim woman in hijab wearing ${productDesc} by CADA, elegant slow motion, soft lighting, clean background`
+        const duration    = body.videoLength ?? 5
+
+        // Runway image_to_video requires a starting frame — generate one with DALL-E first
+        const framePrompt = `High-fashion editorial photo of a Muslim woman wearing hijab and ${productDesc} by CADA modest fashion brand. ${body.additionalContext ?? ''} Clean studio or outdoor background, soft natural lighting, elegant and minimalist aesthetic.`
+        const frameImageUrl = await generateImage(framePrompt)
+
+        const videoUrl = await generateVideo(sceneDesc, duration, frameImageUrl)
         const { data } = await db.from('content_items')
-          .insert({ type: 'video', title: `Video: ${body.product ?? 'CADA'}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration }, tags: ['video', 'cada'] })
+          .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: sceneDesc, duration, frameImageUrl }, tags: ['video', 'cada'] })
           .select().single()
         result = { videoUrl, item: data }
         break
