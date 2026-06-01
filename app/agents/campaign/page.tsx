@@ -209,7 +209,7 @@ export default function CampaignPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-zinc-700">Todoist</p>
-                    <p className="text-xs text-zinc-400 truncate">{integrations?.todoist ? 'Tasks created ✓' : integrations?.todoistError ? integrations.todoistError.slice(0, 60) : 'Not connected'}</p>
+                    <p className="text-xs text-zinc-400 truncate">{integrations?.todoist ? (campaign.todoist_project_id === 'inbox' ? 'Tasks added to Inbox ✓' : 'Tasks created ✓') : integrations?.todoistError ? integrations.todoistError.slice(0, 60) : 'Not connected'}</p>
                   </div>
                 </Card>
 

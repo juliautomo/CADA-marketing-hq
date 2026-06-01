@@ -81,17 +81,34 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       ]
     }
 
-    // Todoist
+    // Todoist — try to create a project, fall back to Inbox if limit reached
     let todoistProjectId = ''
     let todoistError = ''
     const todoistTaskIds: string[] = []
     try {
-      todoistProjectId = await createProject(`CADA — ${body.name}`)
+      try {
+        todoistProjectId = await createProject(`CADA — ${body.name}`)
+      } catch (e) {
+        // If project limit reached (403), use Inbox (no project_id needed)
+        const msg = e instanceof Error ? e.message : ''
+        if (msg.includes('403') || msg.includes('Maximum')) {
+          todoistProjectId = 'inbox'  // sentinel — tasks go to Inbox
+        } else {
+          throw e
+        }
+      }
       for (const m of milestones) {
         const dueDate = format(addDays(startDate, m.day_offset), 'yyyy-MM-dd')
-        const taskId = await createTask({ content: m.title, projectId: todoistProjectId, dueDate, description: `Week ${m.week} | CADA — ${body.name}`, priority: m.week === 3 ? 4 : 3 })
+        const taskId = await createTask({
+          content: `[${body.name}] ${m.title}`,
+          projectId: todoistProjectId === 'inbox' ? '' : todoistProjectId,
+          dueDate,
+          description: `Week ${m.week} | CADA — ${body.name}`,
+          priority: m.week === 3 ? 4 : 3,
+        })
         todoistTaskIds.push(taskId)
       }
+      if (!todoistProjectId) todoistProjectId = 'inbox'
     } catch (e) { todoistError = e instanceof Error ? e.message : 'Unknown Todoist error' }
 
     // Google Calendar

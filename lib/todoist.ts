@@ -24,22 +24,28 @@ export async function createProject(name: string): Promise<string> {
 
 export async function createTask(params: {
   content: string
-  projectId: string
+  projectId?: string
   dueDate?: string
   description?: string
   priority?: 1 | 2 | 3 | 4
 }): Promise<string> {
+  const body: Record<string, unknown> = {
+    content: params.content,
+    due_date: params.dueDate,
+    description: params.description,
+    priority: params.priority ?? 2,
+  }
+  if (params.projectId) body.project_id = params.projectId
+
   const res = await fetch(`${TODOIST_BASE}/tasks`, {
     method: 'POST',
     headers: todoistHeaders(),
-    body: JSON.stringify({
-      content: params.content,
-      project_id: params.projectId,
-      due_date: params.dueDate,
-      description: params.description,
-      priority: params.priority ?? 2,
-    }),
+    body: JSON.stringify(body),
   })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Todoist createTask failed (${res.status}): ${err}`)
+  }
   const data = await res.json()
   return data.id as string
 }
