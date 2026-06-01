@@ -127,6 +127,7 @@ export interface Product {
   season: string
   description?: string
   shopee_url?: string
+  tiktok_url?: string
   image_url?: string
   active: boolean
   created_at: string

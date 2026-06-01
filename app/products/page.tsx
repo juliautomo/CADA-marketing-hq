@@ -15,13 +15,13 @@ import { cn } from '@/lib/utils'
 import type { Product } from '@/types'
 
 const CATEGORIES = ['Tops', 'Bottoms', 'Dresses', 'Abayas', 'Sets', 'Outerwear', 'Accessories']
-const SEASONS    = ['Evergreen', 'Raya / Eid', 'Year-End', 'Back-to-School', 'Summer', 'Limited Edition']
+const SEASONS    = ['Regular', 'Limited Edition']
 const COLOR_PRESETS = ['Black', 'White', 'Cream', 'Beige', 'Sage', 'Dusty Rose', 'Navy', 'Brown', 'Grey', 'Olive', 'Maroon', 'Lilac']
 
 const EMPTY: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
   name: '', category: 'Tops', price: '', colors: [],
-  fabric: '', season: 'Evergreen', description: '',
-  shopee_url: '', image_url: '', active: true,
+  fabric: '', season: 'Regular', description: '',
+  shopee_url: '', tiktok_url: '', image_url: '', active: true,
 }
 
 export default function ProductsPage() {
@@ -60,8 +60,8 @@ export default function ProductsPage() {
       name: p.name, category: p.category, price: p.price ?? '',
       colors: p.colors ?? [], fabric: p.fabric ?? '',
       season: p.season, description: p.description ?? '',
-      shopee_url: p.shopee_url ?? '', image_url: p.image_url ?? '',
-      active: p.active,
+      shopee_url: p.shopee_url ?? '', tiktok_url: p.tiktok_url ?? '',
+      image_url: p.image_url ?? '', active: p.active,
     })
     setColorInput('')
     setShowForm(true)
@@ -232,12 +232,20 @@ export default function ProductsPage() {
                       className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-900 transition-colors">
                       <Tag className="w-3 h-3" /> {p.active ? 'Deactivate' : 'Activate'}
                     </button>
-                    {p.shopee_url && (
-                      <a href={p.shopee_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-orange-500 hover:underline ml-auto">
-                        Shopee <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-2 ml-auto">
+                      {p.shopee_url && (
+                        <a href={p.shopee_url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-orange-500 hover:underline">
+                          Shopee <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                      {p.tiktok_url && (
+                        <a href={p.tiktok_url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-zinc-900 hover:underline">
+                          TikTok <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
                     <button onClick={() => handleDelete(p.id)} disabled={deleting === p.id}
                       className="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-600 transition-colors">
                       <Trash2 className="w-3 h-3" />
@@ -355,15 +363,27 @@ export default function ProductsPage() {
                 </div>
 
                 {/* URLs */}
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Shopee URL <span className="text-zinc-400 font-normal">(optional)</span></label>
-                  <Input value={form.shopee_url} onChange={e => setForm(f => ({ ...f, shopee_url: e.target.value }))}
-                    placeholder="https://shopee.com.my/…" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Product Image URL <span className="text-zinc-400 font-normal">(optional)</span></label>
-                  <Input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
-                    placeholder="https://…" />
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">Shopee URL <span className="text-zinc-400 font-normal">(optional)</span></label>
+                    <Input value={form.shopee_url} onChange={e => setForm(f => ({ ...f, shopee_url: e.target.value }))}
+                      placeholder="https://shopee.com.my/…" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">TikTok Shop URL <span className="text-zinc-400 font-normal">(optional)</span></label>
+                    <Input value={form.tiktok_url} onChange={e => setForm(f => ({ ...f, tiktok_url: e.target.value }))}
+                      placeholder="https://www.tiktok.com/…" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+                      Product Image URL <span className="text-zinc-400 font-normal">(optional)</span>
+                    </label>
+                    <Input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+                      placeholder="https://… or Google Drive share link" />
+                    <p className="text-xs text-zinc-400 mt-1">
+                      💡 For Google Drive: right-click image → Share → Copy link, paste here
+                    </p>
+                  </div>
                 </div>
 
                 {/* Active toggle */}

@@ -289,7 +289,9 @@ export default function CampaignPage() {
                   <Card>
                     <CardHeader><CardTitle className="text-sm">Campaign Brief</CardTitle></CardHeader>
                     <CardContent>
-                      <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">{briefText}</pre>
+                      <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">
+                    {briefText.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim()}
+                  </pre>
                     </CardContent>
                   </Card>
                 ) : null
