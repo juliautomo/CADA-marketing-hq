@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage } from '@/lib/openai'
 import { generateVideo } from '@/lib/runway'
-import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
 import { createServiceClient } from '@/lib/supabase'
 import { getBrandSystemPrompt } from '@/lib/brand'
@@ -114,10 +113,8 @@ Include:
           `Cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, modest fashion aesthetic.`
         const duration   = body.videoLength ?? 5
         const provider   = body.videoProvider ?? 'kling'
-        const refImage   = body.referenceImageUrl
-        const videoUrl   = provider === 'kling'
-          ? await generateVideoKling(videoPrompt, duration, refImage)
-          : await generateVideo(videoPrompt, duration, refImage)
+        const refImage = body.referenceImageUrl
+        const videoUrl = await generateVideo(videoPrompt, duration, refImage, provider)
         const { data } = await db.from('content_items')
           .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()

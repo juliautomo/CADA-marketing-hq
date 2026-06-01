@@ -1,19 +1,27 @@
-// Runway ML API client
-// Docs: https://docs.runwayml.com/
-
 const RUNWAY_BASE = 'https://api.dev.runwayml.com/v1'
 
-export async function generateVideo(prompt: string, duration: 5 | 10 = 5, imageUrl?: string): Promise<string> {
+const MODEL_MAP = {
+  kling:  { text: 'kling3.0_pro',  image: 'kling3.0_pro'  },
+  runway: { text: 'gen4.5',        image: 'gen3a_turbo'    },
+}
+
+export async function generateVideo(
+  prompt: string,
+  duration: 5 | 10 = 5,
+  imageUrl?: string,
+  provider: 'runway' | 'kling' = 'kling',
+): Promise<string> {
   const headers = {
     Authorization: `Bearer ${process.env.RUNWAYML_API_KEY}`,
     'Content-Type': 'application/json',
     'X-Runway-Version': '2024-11-06',
   }
 
-  // Use image_to_video if a starting frame is provided, otherwise text_to_video
-  const [endpoint, body] = imageUrl
-    ? [`${RUNWAY_BASE}/image_to_video`, { promptImage: imageUrl, promptText: prompt, model: 'gen3a_turbo', duration }]
-    : [`${RUNWAY_BASE}/text_to_video`,  { promptText: prompt, model: 'gen4_turbo', duration, ratio: '768:1280' }]
+  const model    = imageUrl ? MODEL_MAP[provider].image : MODEL_MAP[provider].text
+  const endpoint = imageUrl ? `${RUNWAY_BASE}/image_to_video` : `${RUNWAY_BASE}/text_to_video`
+  const body     = imageUrl
+    ? { promptImage: imageUrl, promptText: prompt, model, duration }
+    : { promptText: prompt, model, duration, ratio: '768:1280' }
 
   const createRes = await fetch(endpoint, {
     method: 'POST',
@@ -23,7 +31,7 @@ export async function generateVideo(prompt: string, duration: 5 | 10 = 5, imageU
 
   if (!createRes.ok) {
     const err = await createRes.text()
-    throw new Error(`Runway create failed: ${err}`)
+    throw new Error(`Video create failed: ${err}`)
   }
 
   const { id } = await createRes.json()
@@ -32,10 +40,10 @@ export async function generateVideo(prompt: string, duration: 5 | 10 = 5, imageU
   for (let i = 0; i < 36; i++) {
     await new Promise((r) => setTimeout(r, 5000))
     const pollRes = await fetch(`${RUNWAY_BASE}/tasks/${id}`, { headers })
-    const task = await pollRes.json()
+    const task    = await pollRes.json()
     if (task.status === 'SUCCEEDED') return task.output[0] as string
-    if (task.status === 'FAILED') throw new Error(`Runway task failed: ${task.failure}`)
+    if (task.status === 'FAILED')    throw new Error(`Video generation failed: ${task.failure}`)
   }
 
-  throw new Error('Runway generation timed out')
+  throw new Error('Video generation timed out')
 }
