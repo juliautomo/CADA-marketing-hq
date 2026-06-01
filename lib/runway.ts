@@ -1,7 +1,7 @@
 // Runway ML API client
 // Docs: https://docs.runwayml.com/
 
-const RUNWAY_BASE = 'https://api.runwayml.com/v1'
+const RUNWAY_BASE = 'https://api.dev.runwayml.com/v1'
 
 export async function generateVideo(prompt: string, duration: 5 | 10 = 5, imageUrl?: string): Promise<string> {
   const headers = {
