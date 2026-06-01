@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['pdfkit', 'fontkit', 'linebreak', 'png-js'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'oaidalleapiprodscus.blob.core.windows.net' },
