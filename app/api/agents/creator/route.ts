@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage } from '@/lib/openai'
 import { generateVideo } from '@/lib/runway'
+import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
 import { createServiceClient } from '@/lib/supabase'
 import { getBrandSystemPrompt } from '@/lib/brand'
@@ -110,11 +111,14 @@ Include:
       case 'video': {
         const productDesc = body.product ?? 'modest fashion outfit'
         const videoPrompt = body.prompt ??
-          `Cinematic fashion video of a Muslim woman in hijab wearing ${productDesc} by CADA. ${body.additionalContext ?? ''} Elegant slow motion, soft lighting, modest fashion aesthetic.`
-        const duration = body.videoLength ?? 5
-        const videoUrl = await generateVideo(videoPrompt, duration)
+          `Cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, modest fashion aesthetic.`
+        const duration   = body.videoLength ?? 5
+        const provider   = body.videoProvider ?? 'kling'
+        const videoUrl   = provider === 'kling'
+          ? await generateVideoKling(videoPrompt, duration)
+          : await generateVideo(videoPrompt, duration)
         const { data } = await db.from('content_items')
-          .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration }, tags: ['video', 'cada'] })
+          .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()
         result = { videoUrl, item: data }
         break

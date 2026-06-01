@@ -54,6 +54,7 @@ export default function CreatorPage() {
   const [language, setLanguage]         = useState<CreatorInput['language']>('english')
   const [captionLength, setCaptionLen]  = useState<CreatorInput['captionLength']>('standard')
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
+  const [videoProvider, setVideoProvider] = useState<'runway' | 'kling'>('kling')
   const [customPrompt, setCustomPrompt] = useState('')
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
   const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null)
@@ -126,6 +127,7 @@ export default function CreatorPage() {
       language,
       captionLength:  task === 'caption' ? captionLength : undefined,
       videoLength:    task === 'video'   ? videoLength   : undefined,
+      videoProvider:  task === 'video'   ? videoProvider : undefined,
       prompt:         customPrompt || undefined,
       additionalContext: (productContext + imageContext) || undefined,
     }
@@ -382,19 +384,38 @@ export default function CreatorPage() {
               </div>
             )}
 
-            {/* Video length */}
+            {/* Video provider + length */}
             {task === 'video' && (
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Video length</label>
-                <div className="flex gap-2">
-                  {VIDEO_LENGTHS.map((l) => (
-                    <button key={l.value} onClick={() => setVideoLength(l.value as 5 | 10)}
-                      className={cn('flex-1 rounded-lg border p-2.5 text-center text-sm font-semibold transition-all',
-                        videoLength === l.value ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-700'
-                      )}>
-                      {l.label}
-                    </button>
-                  ))}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Video provider</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { id: 'kling',  label: 'Kling AI',    sub: 'More realistic motion' },
+                      { id: 'runway', label: 'Runway ML',   sub: 'Fast generation' },
+                    ] as const).map((p) => (
+                      <button key={p.id} onClick={() => setVideoProvider(p.id)}
+                        className={cn('rounded-xl border p-3 text-left transition-all',
+                          videoProvider === p.id ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300'
+                        )}>
+                        <p className={cn('text-xs font-semibold', videoProvider === p.id ? 'text-white' : 'text-zinc-800')}>{p.label}</p>
+                        <p className={cn('text-xs mt-0.5', videoProvider === p.id ? 'text-white/60' : 'text-zinc-400')}>{p.sub}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Video length</label>
+                  <div className="flex gap-2">
+                    {VIDEO_LENGTHS.map((l) => (
+                      <button key={l.value} onClick={() => setVideoLength(l.value as 5 | 10)}
+                        className={cn('flex-1 rounded-lg border p-2.5 text-center text-sm font-semibold transition-all',
+                          videoLength === l.value ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-700'
+                        )}>
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
