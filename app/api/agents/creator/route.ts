@@ -100,7 +100,7 @@ Include:
       case 'image': {
         const dallePrompt = body.prompt ??
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
-        const imageUrl = await generateImage(dallePrompt)
+        const imageUrl = await generateImage(dallePrompt, body.referenceImageUrl)
         const { data } = await db.from('content_items')
           .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
           .select().single()
@@ -114,9 +114,10 @@ Include:
           `Cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, modest fashion aesthetic.`
         const duration   = body.videoLength ?? 5
         const provider   = body.videoProvider ?? 'kling'
+        const refImage   = body.referenceImageUrl
         const videoUrl   = provider === 'kling'
-          ? await generateVideoKling(videoPrompt, duration)
-          : await generateVideo(videoPrompt, duration)
+          ? await generateVideoKling(videoPrompt, duration, refImage)
+          : await generateVideo(videoPrompt, duration, refImage)
         const { data } = await db.from('content_items')
           .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()

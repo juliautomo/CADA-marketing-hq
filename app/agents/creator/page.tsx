@@ -58,6 +58,7 @@ export default function CreatorPage() {
   const [customPrompt, setCustomPrompt] = useState('')
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
   const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null)
+  const [rawMediaUrl, setRawMediaUrl]     = useState<string | null>(null)
 
   const [loading, setLoading]   = useState(false)
   const [result, setResult]     = useState<Record<string, unknown> | null>(null)
@@ -128,6 +129,7 @@ export default function CreatorPage() {
       captionLength:  task === 'caption' ? captionLength : undefined,
       videoLength:    task === 'video'   ? videoLength   : undefined,
       videoProvider:  task === 'video'   ? videoProvider : undefined,
+      referenceImageUrl: rawMediaUrl ?? undefined,
       prompt:         customPrompt || undefined,
       additionalContext: (productContext + imageContext) || undefined,
     }
@@ -167,9 +169,10 @@ export default function CreatorPage() {
     setCustomPrompt('')
     setImageAnalysis(null)
     setVideoAnalysis(null)
+    setRawMediaUrl(null)
   }
 
-  const canGenerate  = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct)
+  const canGenerate  = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct || rawMediaUrl)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
   const showCatalog  = products.length > 0
 
@@ -227,9 +230,11 @@ export default function CreatorPage() {
         <MediaReference
           onImageAnalysis={(analysis) => setImageAnalysis(analysis)}
           onVideoAnalysis={(analysis) => setVideoAnalysis(analysis)}
-          onClear={() => { setImageAnalysis(null); setVideoAnalysis(null) }}
+          onRawMedia={(url) => setRawMediaUrl(url)}
+          onClear={() => { setImageAnalysis(null); setVideoAnalysis(null); setRawMediaUrl(null) }}
           platform={platform}
           tone={tone}
+          skipAnalysis={needsPrompt}
         />
         {(imageAnalysis || videoAnalysis) && (
           <p className="text-xs text-violet-600 mt-2 flex items-center gap-1">

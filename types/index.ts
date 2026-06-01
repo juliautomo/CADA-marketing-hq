@@ -146,6 +146,7 @@ export interface CreatorInput {
   captionLength?: 'short' | 'standard' | 'long'
   videoLength?: 5 | 10
   videoProvider?: 'runway' | 'kling'
+  referenceImageUrl?: string
 }
 
 // Trend analyst inputs

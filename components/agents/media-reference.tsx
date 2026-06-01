@@ -17,9 +17,11 @@ import type { VideoAnalysis } from '@/app/api/analyze-video/route'
 interface MediaReferenceProps {
   onImageAnalysis: (analysis: ImageAnalysis, preview: string) => void
   onVideoAnalysis: (analysis: VideoAnalysis, preview: string) => void
+  onRawMedia?: (url: string, preview: string) => void
   onClear: () => void
   platform?: string
   tone?: string
+  skipAnalysis?: boolean  // true for image/video generation tasks
 }
 
 type MediaType = 'image' | 'video'
@@ -30,9 +32,11 @@ const MAX_FRAMES = 5
 export function MediaReference({
   onImageAnalysis,
   onVideoAnalysis,
+  onRawMedia,
   onClear,
   platform = 'Instagram',
   tone = 'Aspirational',
+  skipAnalysis = false,
 }: MediaReferenceProps) {
   const [mediaType, setMediaType]         = useState<MediaType | null>(null)
   const [mode, setMode]                   = useState<InputMode>('upload')
@@ -113,14 +117,25 @@ export function MediaReference({
     setError(null)
     setImageAnalysis(null)
     setVideoAnalysis(null)
+
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      setError('Please upload an image or video file.')
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(file)
+    setMediaType(file.type.startsWith('image/') ? 'image' : 'video')
+    setPreview(objectUrl)
+
+    // Skip Claude analysis for image/video generation — just use as starting frame
+    if (skipAnalysis) {
+      onRawMedia?.(objectUrl, objectUrl)
+      return
+    }
+
     setAnalysing(true)
 
     if (file.type.startsWith('image/')) {
-      setMediaType('image')
-      const reader = new FileReader()
-      reader.onload = (e) => setPreview(e.target?.result as string)
-      reader.readAsDataURL(file)
-
       try {
         let upload: File | Blob = file
         if (file.size > 4 * 1024 * 1024) upload = await compressImage(file)
@@ -130,23 +145,19 @@ export function MediaReference({
         const data = await res.json()
         if (!data.success) throw new Error(data.error)
         setImageAnalysis(data.analysis)
-        onImageAnalysis(data.analysis, URL.createObjectURL(file))
+        onImageAnalysis(data.analysis, objectUrl)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Image analysis failed')
         setPreview(null)
       }
 
-    } else if (file.type.startsWith('video/')) {
-      setMediaType('video')
-      const url = URL.createObjectURL(file)
-      setPreview(url)
-
+    } else {
       try {
         await new Promise<void>((res, rej) => {
           const v = videoRef.current!
           v.onloadedmetadata = () => res()
           v.onerror = () => rej(new Error('Could not load video'))
-          v.src = url
+          v.src = objectUrl
           v.load()
         })
         const frames = await extractFrames(videoRef.current!, MAX_FRAMES)
@@ -158,18 +169,15 @@ export function MediaReference({
         const data = await res.json()
         if (!data.success) throw new Error(data.error)
         setVideoAnalysis(data.analysis)
-        onVideoAnalysis(data.analysis, url)
+        onVideoAnalysis(data.analysis, objectUrl)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Video analysis failed')
         setPreview(null)
       }
-
-    } else {
-      setError('Please upload an image or video file.')
     }
 
     setAnalysing(false)
-  }, [onImageAnalysis, onVideoAnalysis, platform, tone])
+  }, [onImageAnalysis, onVideoAnalysis, onRawMedia, skipAnalysis, platform, tone])
 
   const analyseUrl = useCallback(async () => {
     if (!driveUrl.trim()) return
@@ -208,7 +216,8 @@ export function MediaReference({
     onClear()
   }
 
-  const hasResult = imageAnalysis || videoAnalysis
+  const hasResult  = imageAnalysis || videoAnalysis
+  const hasRawMedia = skipAnalysis && !!preview
 
   return (
     <Card className="border-violet-100 bg-gradient-to-br from-violet-50/40 to-pink-50/40">
@@ -223,8 +232,10 @@ export function MediaReference({
               <Upload className="w-3.5 h-3.5 text-white" />
             </div>
             <span className="text-sm font-semibold text-zinc-800">Image / Video Reference</span>
-            <Badge variant="info" className="text-xs">Claude Vision</Badge>
+            {!skipAnalysis && <Badge variant="info" className="text-xs">Claude Vision</Badge>}
+            {skipAnalysis && <Badge variant="default" className="text-xs">Starting frame</Badge>}
             {hasResult && <Badge variant="success" className="text-xs">Analysed ✓</Badge>}
+            {skipAnalysis && preview && !hasResult && <Badge variant="success" className="text-xs">Ready ✓</Badge>}
           </div>
           {expanded ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
         </button>
@@ -238,8 +249,21 @@ export function MediaReference({
               transition={{ duration: 0.2 }}
               className="overflow-hidden space-y-3"
             >
+              {/* Raw media preview (skip analysis mode) */}
+              {hasRawMedia && (
+                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={preview!} alt="Reference" className="w-20 h-20 object-cover rounded-xl flex-shrink-0 border border-zinc-200" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-zinc-800">Starting frame ready</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">Will be used directly by the video/image generator</p>
+                  </div>
+                  <button onClick={clear} className="text-zinc-400 hover:text-zinc-600"><X className="w-4 h-4" /></button>
+                </motion.div>
+              )}
+
               {/* Upload / URL tabs */}
-              {!hasResult && !analysing && (
+              {!hasResult && !analysing && !hasRawMedia && (
                 <>
                   <div className="flex rounded-lg border border-zinc-200 overflow-hidden">
                     {(['upload', 'url'] as InputMode[]).map((m) => (
@@ -262,7 +286,7 @@ export function MediaReference({
                       <Upload className="w-6 h-6 text-violet-400" />
                       <p className="text-sm text-zinc-600 font-medium">Drop image or video here</p>
                       <p className="text-xs text-zinc-400">JPG · PNG · WebP · MP4 · MOV</p>
-                      <p className="text-xs text-violet-500 mt-1">✨ Claude analyses your media and uses it as context for generation</p>
+                      <p className="text-xs text-violet-500 mt-1">{skipAnalysis ? '🎬 Used directly as starting frame — no API cost' : '✨ Claude analyses your media and uses it as context for generation'}</p>
                     </button>
                   ) : (
                     <div className="flex gap-2">
