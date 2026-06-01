@@ -1,65 +1,115 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { AgentCard } from '@/components/dashboard/agent-card'
+import { StatsCard } from '@/components/dashboard/stats-card'
+import { RecentRuns } from '@/components/dashboard/recent-runs'
+import { createServiceClient } from '@/lib/supabase'
+import type { AgentRun } from '@/types'
 
-export default function Home() {
+const agents = [
+  {
+    title: 'Content Creator',
+    description: 'Generate captions, product descriptions, promo emails, DALL-E images, Runway videos, and Canva templates.',
+    href: '/agents/creator',
+    iconName: 'Sparkles' as const,
+    color: 'bg-violet-500',
+    capabilities: ['Captions', 'Emails', 'DALL-E 3', 'Runway Video', 'Canva'],
+  },
+  {
+    title: 'Trend Analyst',
+    description: 'Search live fashion trends and get structured insights on colors, silhouettes, and styles.',
+    href: '/agents/trend',
+    iconName: 'TrendingUp' as const,
+    color: 'bg-emerald-500',
+    capabilities: ['Live Search', 'Color Trends', 'Silhouettes', 'Style Directions'],
+  },
+  {
+    title: 'Campaign Planner',
+    description: 'Build 4-week campaign calendars with Todoist tasks, Google Calendar events, and Drive briefs.',
+    href: '/agents/campaign',
+    iconName: 'CalendarDays' as const,
+    color: 'bg-blue-500',
+    capabilities: ['4-Week Calendar', 'Todoist Tasks', 'Google Calendar', 'Drive Brief'],
+  },
+  {
+    title: 'Performance Reviewer',
+    description: 'Paste metrics or upload a CSV to get AI-generated insights saved to Google Drive.',
+    href: '/agents/performance',
+    iconName: 'BarChart3' as const,
+    color: 'bg-amber-500',
+    capabilities: ['Paste Metrics', 'CSV Upload', 'AI Insights', 'Drive Report'],
+  },
+]
+
+async function getDashboardData() {
+  try {
+    const db = createServiceClient()
+    const [runsRes, contentRes, campaignsRes, trendsRes] = await Promise.all([
+      db.from('agent_runs').select('*').order('created_at', { ascending: false }).limit(8),
+      db.from('content_items').select('id', { count: 'exact', head: true }),
+      db.from('campaigns').select('id', { count: 'exact', head: true }),
+      db.from('trend_reports').select('id', { count: 'exact', head: true }),
+    ])
+    return {
+      runs: (runsRes.data ?? []) as AgentRun[],
+      contentCount: contentRes.count ?? 0,
+      campaignCount: campaignsRes.count ?? 0,
+      trendCount: trendsRes.count ?? 0,
+    }
+  } catch {
+    return { runs: [], contentCount: 0, campaignCount: 0, trendCount: 0 }
+  }
+}
+
+export default async function DashboardPage() {
+  const { runs, contentCount, campaignCount, trendCount } = await getDashboardData()
+  const completedRuns = runs.filter((r) => r.status === 'completed').length
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-900">Fashion Marketing HQ</h1>
+        <p className="text-sm text-zinc-500 mt-1">Your AI-powered marketing command centre</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard label="Content Items" value={contentCount} sub="in library"    iconName="Image"     color="bg-violet-500" index={0} />
+        <StatsCard label="Campaigns"     value={campaignCount} sub="planned"      iconName="Layers"    color="bg-blue-500"   index={1} />
+        <StatsCard label="Trend Reports" value={trendCount}   sub="generated"     iconName="TrendingUp" color="bg-emerald-500" index={2} />
+        <StatsCard label="Agent Runs"    value={completedRuns} sub="completed"    iconName="FileText"  color="bg-amber-500"  index={3} />
+      </div>
+
+      {/* Full Campaign Agent Hero */}
+      <Link href="/agents/full-campaign">
+        <div className="rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 p-6 text-white cursor-pointer hover:opacity-95 transition-opacity">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">⚡</span>
+                <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">Level 3 · Multi-Step Agent</span>
+              </div>
+              <h2 className="text-xl font-bold mb-1">Full Campaign Agent</h2>
+              <p className="text-white/80 text-sm">One sentence → trends + brief + 7-day content + Todoist + Calendar + Drive</p>
+              <p className="text-white/60 text-xs mt-2">Try: &quot;Launch our Eid collection on June 1st&quot;</p>
+            </div>
+            <div className="text-4xl opacity-60">🚀</div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </Link>
+
+      {/* Agents grid */}
+      <div>
+        <h2 className="text-base font-semibold text-zinc-700 mb-4">Individual Agents</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {agents.map((agent, i) => (
+            <AgentCard key={agent.href} {...agent} index={i} />
+          ))}
         </div>
-      </main>
+      </div>
+
+      {/* Recent runs */}
+      <RecentRuns runs={runs} />
     </div>
-  );
+  )
 }
