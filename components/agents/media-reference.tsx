@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Upload, Link, X, Loader2, Sparkles,
-  Wand2, Palette, ChevronDown, ChevronUp, Video as VideoIcon,
+  Palette, ChevronDown, ChevronUp, Video as VideoIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,9 +43,6 @@ export function MediaReference({
   const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null)
   const [error, setError]                 = useState<string | null>(null)
   const [expanded, setExpanded]           = useState(true)
-  const [customInstructions, setCustomInstructions] = useState('')
-  const [similarImageUrl, setSimilarImageUrl]       = useState<string | null>(null)
-  const [generatingSimilar, setGeneratingSimilar]   = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef     = useRef<HTMLVideoElement>(null)
@@ -200,33 +197,12 @@ export function MediaReference({
     }
   }, [driveUrl, onImageAnalysis])
 
-  async function handleSimilarImage() {
-    if (!imageAnalysis) return
-    setGeneratingSimilar(true)
-    setSimilarImageUrl(null)
-    try {
-      const res  = await fetch('/api/agents/creator/similar-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ analysis: imageAnalysis, customInstructions }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      setSimilarImageUrl(data.imageUrl)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Generation failed')
-    } finally {
-      setGeneratingSimilar(false)
-    }
-  }
-
   function clear() {
     setMediaType(null)
     setPreview(null)
     setImageAnalysis(null)
     setVideoAnalysis(null)
     setError(null)
-    setSimilarImageUrl(null)
     setDriveUrl('')
     if (fileInputRef.current) fileInputRef.current.value = ''
     onClear()
@@ -343,24 +319,8 @@ export function MediaReference({
                   </div>
 
                   <p className="text-xs text-violet-600 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Context active — click Generate to create content based on this image
+                    <Sparkles className="w-3 h-3" /> Context active — click Generate below to create content based on this image
                   </p>
-
-                  <div className="space-y-2">
-                    <Input value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)}
-                      placeholder="Custom instructions for similar image (optional)…" className="text-xs" />
-                    <Button onClick={handleSimilarImage} loading={generatingSimilar} variant="secondary" size="sm" className="w-full justify-start gap-2">
-                      <Wand2 className="w-3.5 h-3.5 text-violet-500" /> Generate similar image with DALL-E 3
-                    </Button>
-                  </div>
-
-                  {similarImageUrl && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={similarImageUrl} alt="Generated" className="w-full rounded-xl border border-zinc-200" />
-                      <p className="text-xs text-emerald-600 mt-1">✓ Saved to Content Library</p>
-                    </motion.div>
-                  )}
                 </motion.div>
               )}
 
