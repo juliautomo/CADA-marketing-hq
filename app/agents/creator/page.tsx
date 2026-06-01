@@ -154,9 +154,10 @@ export default function CreatorPage() {
     setVideoAnalysis(null)
   }
 
-  const canGenerate = !!(product || customPrompt || imageAnalysis || videoAnalysis)
+  const canGenerate = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
   const needsPrompt  = ['image', 'video'].includes(task)
+  const showCatalog  = products.length > 0
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -230,7 +231,7 @@ export default function CreatorPage() {
           <CardContent className="pt-5 space-y-4">
 
             {/* Product picker from catalog */}
-            {products.length > 0 && (needsProduct || task === 'canva') && (
+            {showCatalog && (needsProduct || task === 'canva' || needsPrompt) && (
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                   Pick from catalog <span className="text-zinc-400 font-normal">(optional)</span>
@@ -265,7 +266,7 @@ export default function CreatorPage() {
             )}
 
             {/* Product / subject */}
-            {(needsProduct || task === 'canva') && (
+            {(needsProduct || task === 'canva' || needsPrompt) && (
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                   {selectedProduct ? 'Additional context' : task === 'email' ? 'Product or campaign name' : 'Product / subject'}
@@ -277,6 +278,8 @@ export default function CreatorPage() {
                     selectedProduct ? 'Any extra notes (optional)…' :
                     task === 'email' ? 'e.g. Raya Eid Collection launch' :
                     task === 'canva' ? 'e.g. Linen wide-leg pants' :
+                    task === 'image' ? 'e.g. silk slip dress in champagne (or pick from catalog above)' :
+                    task === 'video' ? 'e.g. linen wide-leg pants (or pick from catalog above)' :
                     'e.g. silk slip dress in champagne'
                   }
                 />
