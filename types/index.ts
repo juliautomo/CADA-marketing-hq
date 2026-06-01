@@ -145,8 +145,9 @@ export interface CreatorInput {
   language?: 'english' | 'bahasa-indonesia' | 'bahasa-melayu'
   captionLength?: 'short' | 'standard' | 'long'
   videoLength?: 5 | 10
-  videoProvider?: 'runway' | 'kling'
+  videoProvider?: 'runway' | 'kling' | 'runway-ref'
   referenceImageUrl?: string
+  referenceImageUrls?: string[]
 }
 
 // Trend analyst inputs

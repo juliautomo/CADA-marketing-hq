@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage } from '@/lib/openai'
-import { generateVideoRunway } from '@/lib/runway'
+import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
 import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
 import { createServiceClient } from '@/lib/supabase'
@@ -116,10 +116,12 @@ Include:
         const provider  = body.videoProvider ?? 'kling'
         const refImage  = body.referenceImageUrl
 
-        // Kling and Runway are fully independent — both support text-to-video natively
-        const videoUrl = provider === 'kling'
-          ? await generateVideoKling(videoPrompt, duration, refImage)
-          : await generateVideoRunway(videoPrompt, duration, refImage)
+        // Three independent providers
+        const refUrls = body.referenceImageUrls ?? []
+        const videoUrl =
+          provider === 'kling'       ? await generateVideoKling(videoPrompt, duration, refImage) :
+          provider === 'runway-ref'  ? await generateVideoRunwayRef(videoPrompt, refUrls.length > 0 ? refUrls : (refImage ? [refImage] : []), duration) :
+                                       await generateVideoRunway(videoPrompt, duration, refImage)
         const { data } = await db.from('cada_content_items')
           .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()

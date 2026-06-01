@@ -54,7 +54,8 @@ export default function CreatorPage() {
   const [language, setLanguage]         = useState<CreatorInput['language']>('english')
   const [captionLength, setCaptionLen]  = useState<CreatorInput['captionLength']>('standard')
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
-  const [videoProvider, setVideoProvider] = useState<'runway' | 'kling'>('kling')
+  const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
+  const [refImageUrls, setRefImageUrls]   = useState<string[]>([])
   const [customPrompt, setCustomPrompt] = useState('')
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
   const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null)
@@ -130,6 +131,7 @@ export default function CreatorPage() {
       videoLength:    task === 'video'   ? videoLength   : undefined,
       videoProvider:  task === 'video'   ? videoProvider : undefined,
       referenceImageUrl: rawMediaUrl ?? undefined,
+      referenceImageUrls: refImageUrls.length > 0 ? refImageUrls : undefined,
       prompt:         customPrompt || undefined,
       additionalContext: (productContext + imageContext) || undefined,
     }
@@ -170,6 +172,7 @@ export default function CreatorPage() {
     setImageAnalysis(null)
     setVideoAnalysis(null)
     setRawMediaUrl(null)
+    setRefImageUrls([])
   }
 
   const canGenerate  = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct || rawMediaUrl)
@@ -394,10 +397,11 @@ export default function CreatorPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-600 mb-1.5">Video provider</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {([
-                      { id: 'kling',  label: 'Kling AI',    sub: 'More realistic motion' },
-                      { id: 'runway', label: 'Runway ML',   sub: 'Fast generation' },
+                      { id: 'kling',      label: 'Kling AI',         sub: 'Realistic motion' },
+                      { id: 'runway',     label: 'Runway Gen4.5',    sub: 'Fast text-to-video' },
+                      { id: 'runway-ref', label: 'Runway References', sub: 'Upload 1–3 ref photos' },
                     ] as const).map((p) => (
                       <button key={p.id} onClick={() => setVideoProvider(p.id)}
                         className={cn('rounded-xl border p-3 text-left transition-all',
@@ -408,6 +412,43 @@ export default function CreatorPage() {
                       </button>
                     ))}
                   </div>
+
+                  {/* Reference image slots for Runway References */}
+                  {videoProvider === 'runway-ref' && (
+                    <div className="mt-3">
+                      <p className="text-xs text-zinc-500 mb-2">Upload up to 3 reference photos — style &amp; subject only, not a starting frame</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[0, 1, 2].map((i) => (
+                          <label key={i} className={cn(
+                            'relative rounded-xl border-2 border-dashed cursor-pointer overflow-hidden flex items-center justify-center aspect-square transition-colors',
+                            refImageUrls[i] ? 'border-violet-300' : 'border-zinc-200 hover:border-violet-300'
+                          )}>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (!file) return
+                              const url = URL.createObjectURL(file)
+                              setRefImageUrls(prev => { const next = [...prev]; next[i] = url; return next })
+                            }} />
+                            {refImageUrls[i] ? (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={refImageUrls[i]} alt="ref" className="w-full h-full object-cover" />
+                                <button onClick={(e) => { e.preventDefault(); setRefImageUrls(prev => { const next = [...prev]; next[i] = ''; return next }) }}
+                                  className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow">
+                                  <X className="w-3 h-3 text-zinc-500" />
+                                </button>
+                              </>
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                <Upload className="w-4 h-4 text-zinc-300" />
+                                <span className="text-xs text-zinc-400">Ref {i + 1}</span>
+                              </div>
+                            )}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-zinc-600 mb-1.5">Video length</label>
