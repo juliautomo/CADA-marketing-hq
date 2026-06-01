@@ -109,12 +109,13 @@ Output a JSON object with this exact shape:
 
     // Google Drive
     let driveUrl = ''
+    let driveError = ''
     try {
       driveUrl = await uploadTextToDrive({
         fileName: `CADA Campaign Brief — ${body.name}.txt`,
         content: `CADA CAMPAIGN BRIEF\n===================\n${body.name}\n\n${briefText}`,
       })
-    } catch { /* Google key not set */ }
+    } catch (e) { driveError = e instanceof Error ? e.message : 'Unknown Drive error' }
 
     const { data: campaign } = await db.from('campaigns')
       .insert({
@@ -149,6 +150,7 @@ Output a JSON object with this exact shape:
       todoistError,
       calendarOk: calendarEventIds.length > 0,
       driveOk: !!driveUrl,
+      driveError,
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'

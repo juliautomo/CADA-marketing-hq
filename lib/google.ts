@@ -25,24 +25,49 @@ export async function uploadTextToDrive(params: {
   content: string
   mimeType?: string
 }): Promise<string> {
-  const token = await getAccessToken()
+  const token    = await getAccessToken()
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+  const mime     = params.mimeType ?? 'text/plain'
+  const boundary = 'cada_boundary_xyz123'
 
-  const metadata = {
+  const metadata = JSON.stringify({
     name: params.fileName,
-    mimeType: params.mimeType ?? 'text/plain',
+    mimeType: mime,
     ...(folderId ? { parents: [folderId] } : {}),
-  }
+  })
 
-  const form = new FormData()
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
-  form.append('file', new Blob([params.content], { type: params.mimeType ?? 'text/plain' }))
+  // Build multipart body manually — more reliable than FormData on Vercel Node
+  const body = [
+    `--${boundary}`,
+    'Content-Type: application/json; charset=UTF-8',
+    '',
+    metadata,
+    `--${boundary}`,
+    `Content-Type: ${mime}`,
+    '',
+    params.content,
+    `--${boundary}--`,
+  ].join('\r\n')
 
   const res = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',
-    { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    }
   )
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Drive upload failed (${res.status}): ${err}`)
+  }
+
   const data = await res.json()
+  if (!data.webViewLink) throw new Error(`Drive: no webViewLink in response: ${JSON.stringify(data)}`)
   return data.webViewLink as string
 }
 
