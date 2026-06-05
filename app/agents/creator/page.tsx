@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Type, FileText, Mail, Image, Video, Layout,
-  ArrowRight, Copy, Check, ExternalLink, RotateCcw, X,
+  ArrowRight, Copy, Check, ExternalLink, RotateCcw, X, Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
