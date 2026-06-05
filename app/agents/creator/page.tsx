@@ -105,7 +105,7 @@ export default function CreatorPage() {
 
   // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
-    if (!product && !customPrompt && !imageAnalysis) return
+    if (!product && !customPrompt && !imageAnalysis && !videoAnalysis && !selectedProduct && !rawMediaUrl) return
     setLoading(true)
     setResult(null)
     setError(null)
