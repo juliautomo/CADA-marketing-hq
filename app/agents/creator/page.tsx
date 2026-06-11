@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { MediaReference } from '@/components/agents/media-reference'
 import { ContentLibrary } from '@/components/agents/content-library'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 import type { ContentItem, ContentType, CreatorInput } from '@/types'
 import type { ImageAnalysis } from '@/lib/anthropic'
 import type { VideoAnalysis } from '@/app/api/analyze-video/route'
@@ -423,11 +424,15 @@ export default function CreatorPage() {
                             'relative rounded-xl border-2 border-dashed cursor-pointer overflow-hidden flex items-center justify-center aspect-square transition-colors',
                             refImageUrls[i] ? 'border-violet-300' : 'border-zinc-200 hover:border-violet-300'
                           )}>
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                               const file = e.target.files?.[0]
                               if (!file) return
-                              const url = URL.createObjectURL(file)
-                              setRefImageUrls(prev => { const next = [...prev]; next[i] = url; return next })
+                              const ext = file.name.split('.').pop()
+                              const path = `runway-refs/${Date.now()}-${i}.${ext}`
+                              const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+                              if (error) { console.error('Upload failed', error); return }
+                              const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+                              setRefImageUrls(prev => { const next = [...prev]; next[i] = data.publicUrl; return next })
                             }} />
                             {refImageUrls[i] ? (
                               <>
