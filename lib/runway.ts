@@ -59,7 +59,7 @@ export async function generateVideoRunwayRef(
   const body = {
     model: 'seedance2',
     promptText: prompt,
-    referenceImages: referenceUrls.slice(0, 3),
+    references: referenceUrls.slice(0, 3).map((uri) => ({ uri })),
     duration,
     ratio: '1280:720',
   }
