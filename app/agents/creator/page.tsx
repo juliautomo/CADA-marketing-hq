@@ -228,9 +228,12 @@ export default function CreatorPage() {
         </div>
       </div>
 
-      {/* ── STEP 2: Reference (optional) ── */}
+      {/* ── STEP 2: Reference (optional) — hidden for Runway References which has its own slots ── */}
+      {videoProvider !== 'runway-ref' && (
       <div>
-        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">2 — Add a reference <span className="normal-case font-normal text-zinc-300">(optional)</span></p>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+          2 — {needsPrompt ? 'Starting frame' : 'Add a reference'} <span className="normal-case font-normal text-zinc-300">(optional)</span>
+        </p>
         <MediaReference
           onImageAnalysis={(analysis) => setImageAnalysis(analysis)}
           onVideoAnalysis={(analysis) => setVideoAnalysis(analysis)}
@@ -246,6 +249,7 @@ export default function CreatorPage() {
           </p>
         )}
       </div>
+      )}
 
       {/* ── STEP 3: Settings ── */}
       <div>
