@@ -16,7 +16,7 @@ export async function generateVideoRunway(
   const model    = isImage ? 'gen3a_turbo' : 'gen4.5'
   const body     = isImage
     ? { promptImage: imageUrl, promptText: prompt, model, duration }
-    : { promptText: prompt, model, duration, ratio: '9:16' }
+    : { promptText: prompt, model, duration, ratio: '1280:720' }
 
   const createRes = await fetch(endpoint, {
     method: 'POST',
@@ -59,9 +59,9 @@ export async function generateVideoRunwayRef(
   const body = {
     model: 'seedance2',
     promptText: prompt,
-    promptImage: referenceUrls.slice(0, 3),  // seedance2 accepts array of reference images
+    referenceImages: referenceUrls.slice(0, 3),
     duration,
-    ratio: '9:16',
+    ratio: '1280:720',
   }
 
   const createRes = await fetch(`${RUNWAY_BASE}/text_to_video`, {
