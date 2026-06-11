@@ -6,6 +6,7 @@ import {
   Upload, Link, X, Loader2, Sparkles,
   Palette, ChevronDown, ChevronUp, Video as VideoIcon,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -127,9 +128,14 @@ export function MediaReference({
     setMediaType(file.type.startsWith('image/') ? 'image' : 'video')
     setPreview(objectUrl)
 
-    // Skip Claude analysis for image/video generation — just use as starting frame
+    // Skip Claude analysis for image/video generation — upload to Supabase and use as starting frame
     if (skipAnalysis) {
-      onRawMedia?.(objectUrl, objectUrl)
+      const ext = file.name.split('.').pop()
+      const path = `starting-frames/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+      if (uploadError) { setError('Upload failed: ' + uploadError.message); return }
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+      onRawMedia?.(data.publicUrl, objectUrl)
       return
     }
 
