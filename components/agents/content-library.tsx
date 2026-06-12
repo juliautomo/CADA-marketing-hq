@@ -106,7 +106,7 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
               <ChevronLeft className="w-4 h-4" />
             </Button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <Button key={p} variant={p === page ? 'default' : 'secondary'} size="sm"
+              <Button key={p} variant={p === page ? 'primary' : 'secondary'} size="sm"
                 onClick={() => setPage(p)} className="w-8">
                 {p}
               </Button>

@@ -213,7 +213,7 @@ function Pagination({ page, totalPages, total, pageSize, onChange }: { page: num
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={() => onChange(page - 1)} disabled={page === 1}><ChevronLeft className="w-4 h-4" /></Button>
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-          <Button key={p} variant={p === page ? 'default' : 'secondary'} size="sm" onClick={() => onChange(p)} className="w-8">{p}</Button>
+          <Button key={p} variant={p === page ? 'primary' : 'secondary'} size="sm" onClick={() => onChange(p)} className="w-8">{p}</Button>
         ))}
         <Button variant="secondary" size="sm" onClick={() => onChange(page + 1)} disabled={page === totalPages}><ChevronRight className="w-4 h-4" /></Button>
       </div>
