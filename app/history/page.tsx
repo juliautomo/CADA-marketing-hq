@@ -5,8 +5,9 @@ import { motion } from 'framer-motion'
 import {
   TrendingUp, CalendarDays, BarChart3, FileText,
   Image, Palette, Layers, ExternalLink, ChevronDown,
-  ChevronUp, Type, Mail, Video, Layout, LayoutGrid,
+  ChevronUp, Type, Mail, Video, Layout, LayoutGrid, ChevronLeft, ChevronRight,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
@@ -43,6 +44,9 @@ export default function HistoryPage() {
   const [reports, setReports]     = useState<PerformanceReport[]>([])
   const [loading, setLoading]     = useState(true)
   const [expanded, setExpanded]   = useState<string | null>(null)
+  const [contentPage, setContentPage] = useState(1)
+  const [allPage, setAllPage]         = useState(1)
+  const PAGE_SIZE = 10
 
   useEffect(() => {
     async function load() {
@@ -123,29 +127,45 @@ export default function HistoryPage() {
         <div className="space-y-4">
 
           {/* ── ALL ── */}
-          {tab === 'all' && (
-            allItems.length === 0 ? <Empty label="Nothing yet — run an agent to get started" /> :
-            allItems.map((item, i) => (
-              <motion.div key={`${item.kind}-${item.data.id}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                {item.kind === 'content'  && <ContentCard  item={item.data} />}
-                {item.kind === 'trend'    && <TrendCard    item={item.data} expanded={expanded} setExpanded={setExpanded} />}
-                {item.kind === 'campaign' && <CampaignCard item={item.data} expanded={expanded} setExpanded={setExpanded} />}
-                {item.kind === 'report'   && <ReportCard   item={item.data} expanded={expanded} setExpanded={setExpanded} />}
-              </motion.div>
-            ))
-          )}
+          {tab === 'all' && (() => {
+            if (allItems.length === 0) return <Empty label="Nothing yet — run an agent to get started" />
+            const totalPages = Math.ceil(allItems.length / PAGE_SIZE)
+            const paged = allItems.slice((allPage - 1) * PAGE_SIZE, allPage * PAGE_SIZE)
+            return (
+              <div className="space-y-2">
+                <div className="divide-y divide-zinc-100 border border-zinc-100 rounded-xl overflow-hidden">
+                  {paged.map((item, i) => (
+                    <motion.div key={`${item.kind}-${item.data.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}>
+                      {item.kind === 'content'  && <ContentRow   item={item.data} />}
+                      {item.kind === 'trend'    && <TrendCard    item={item.data} expanded={expanded} setExpanded={setExpanded} />}
+                      {item.kind === 'campaign' && <CampaignCard item={item.data} expanded={expanded} setExpanded={setExpanded} />}
+                      {item.kind === 'report'   && <ReportCard   item={item.data} expanded={expanded} setExpanded={setExpanded} />}
+                    </motion.div>
+                  ))}
+                </div>
+                <Pagination page={allPage} totalPages={totalPages} total={allItems.length} pageSize={PAGE_SIZE} onChange={setAllPage} />
+              </div>
+            )
+          })()}
 
           {/* ── CONTENT ── */}
-          {tab === 'content' && (
-            content.length === 0 ? <Empty label="No content yet — try the Content Creator" /> :
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {content.map((item, i) => (
-                <motion.div key={item.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}>
-                  <ContentCard item={item} />
-                </motion.div>
-              ))}
-            </div>
-          )}
+          {tab === 'content' && (() => {
+            if (content.length === 0) return <Empty label="No content yet — try the Content Creator" />
+            const totalPages = Math.ceil(content.length / PAGE_SIZE)
+            const paged = content.slice((contentPage - 1) * PAGE_SIZE, contentPage * PAGE_SIZE)
+            return (
+              <div className="space-y-2">
+                <div className="divide-y divide-zinc-100 border border-zinc-100 rounded-xl overflow-hidden">
+                  {paged.map((item, i) => (
+                    <motion.div key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}>
+                      <ContentRow item={item} />
+                    </motion.div>
+                  ))}
+                </div>
+                <Pagination page={contentPage} totalPages={totalPages} total={content.length} pageSize={PAGE_SIZE} onChange={setContentPage} />
+              </div>
+            )
+          })()}
 
           {/* ── TRENDS ── */}
           {tab === 'trends' && (
@@ -184,6 +204,53 @@ export default function HistoryPage() {
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
+
+function Pagination({ page, totalPages, total, pageSize, onChange }: { page: number; totalPages: number; total: number; pageSize: number; onChange: (p: number) => void }) {
+  if (totalPages <= 1) return null
+  return (
+    <div className="flex items-center justify-between pt-1">
+      <p className="text-xs text-zinc-400">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total} items</p>
+      <div className="flex items-center gap-1">
+        <Button variant="secondary" size="sm" onClick={() => onChange(page - 1)} disabled={page === 1}><ChevronLeft className="w-4 h-4" /></Button>
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <Button key={p} variant={p === page ? 'default' : 'secondary'} size="sm" onClick={() => onChange(p)} className="w-8">{p}</Button>
+        ))}
+        <Button variant="secondary" size="sm" onClick={() => onChange(page + 1)} disabled={page === totalPages}><ChevronRight className="w-4 h-4" /></Button>
+      </div>
+    </div>
+  )
+}
+
+function ContentRow({ item }: { item: ContentItem }) {
+  const meta = CONTENT_TYPE_META[item.type] ?? { label: item.type, color: 'bg-zinc-500', icon: FileText }
+  const Icon = meta.icon
+  return (
+    <div className="flex items-start gap-4 px-4 py-3 bg-white hover:bg-zinc-50 transition-colors">
+      <span className={`flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium text-white px-2 py-1 rounded-full mt-0.5 ${meta.color}`}>
+        <Icon className="w-3 h-3" /> {meta.label}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-zinc-800 truncate">{item.title}</p>
+        {item.body && <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1">{item.body}</p>}
+        {item.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {item.tags.map((tag) => <Badge key={tag} variant="default" className="text-xs">{tag}</Badge>)}
+          </div>
+        )}
+      </div>
+      {item.image_url && <img src={item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
+      {item.video_url && <video src={item.video_url} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
+      <div className="flex-shrink-0 flex flex-col items-end gap-1">
+        <span className="text-xs text-zinc-400 whitespace-nowrap">{formatRelativeTime(item.created_at)}</span>
+        {item.canva_url && (
+          <a href={item.canva_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+            Canva <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function ContentCard({ item }: { item: ContentItem }) {
   return (
