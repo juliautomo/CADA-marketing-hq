@@ -114,7 +114,8 @@ Include:
           `Cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, modest fashion aesthetic.`
         const duration  = body.videoLength ?? 5
         const provider  = body.videoProvider ?? 'kling'
-        const refImage  = body.referenceImageUrl
+        const refImage  = body.referenceImageUrl || undefined
+        console.log('[video] provider:', provider, 'refImage:', refImage ?? 'NONE')
 
         // Three independent providers
         const refUrls = body.referenceImageUrls ?? []
