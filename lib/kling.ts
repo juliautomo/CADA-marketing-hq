@@ -30,8 +30,18 @@ export async function generateVideoKling(
 
   const isImage  = !!imageUrl
   const endpoint = isImage ? '/videos/image2video' : '/videos/text2video'
+
+  // Kling requires base64 image, not a URL
+  let imageBase64: string | undefined
+  if (isImage && imageUrl) {
+    const imgRes = await fetch(imageUrl)
+    const buf    = await imgRes.arrayBuffer()
+    const mime   = imgRes.headers.get('content-type') ?? 'image/jpeg'
+    imageBase64  = `data:${mime};base64,${Buffer.from(buf).toString('base64')}`
+  }
+
   const body     = isImage
-    ? { model_name: 'kling-v2-master', image_url: imageUrl, prompt, duration, aspect_ratio: '9:16', mode: 'pro' }
+    ? { model_name: 'kling-v2-master', image: imageBase64, prompt, duration, aspect_ratio: '9:16', mode: 'pro' }
     : { model_name: 'kling-v2-master', prompt, duration, aspect_ratio: '9:16', mode: 'pro' }
 
   const createRes = await fetch(`${KLING_BASE}${endpoint}`, {
