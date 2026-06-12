@@ -98,7 +98,7 @@ export default function AutomationsPage() {
   function getLastRun(automationId: string): AgentRun | undefined {
     const agentMap: Record<string, string> = {
       'monday-trend': 'trend_analyst',
-      'daily-content': 'creator',
+      'daily-content': 'daily_content',
     }
     const agentName = agentMap[automationId]
     return runs.find((r) => r.agent === agentName)

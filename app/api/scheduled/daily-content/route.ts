@@ -41,18 +41,6 @@ Caption: [caption]
 CTA: [cta]
 ---`
 
-// Rotate products day by day so we don't repeat
-const PRODUCTS = [
-  { name: 'Pleated Linen Pants', price: 'Rp 350,000' },
-  { name: 'Butter Yellow Ruffle Sleeve Button-Up Shirt', price: 'Rp 280,000' },
-  { name: 'High Waisted Denim Maxi Skirt', price: 'Rp 385,000' },
-]
-
-function getDayProduct(): typeof PRODUCTS[0] {
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)
-  return PRODUCTS[dayOfYear % PRODUCTS.length]
-}
-
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
@@ -65,7 +53,20 @@ export async function GET(req: NextRequest) {
   const db = createServiceClient()
   const today = format(new Date(), 'MMMM d, yyyy')
   const todayISO = format(new Date(), 'yyyy-MM-dd')
-  const featuredProduct = getDayProduct()
+
+  // Pull active products from catalog
+  const { data: catalogProducts } = await db.from('cada_products').select('name, colors, fabric').eq('active', true)
+  const products = (catalogProducts ?? []).length > 0
+    ? (catalogProducts ?? []).map((p) => ({ name: p.name, price: '' }))
+    : [{ name: 'CADA modest fashion collection', price: '' }]
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)
+  const featuredProduct = products[dayOfYear % products.length]
+
+  // Log run start
+  const { data: runRow } = await db.from('cada_agent_runs').insert({
+    agent: 'daily_content', status: 'running', input: { date: todayISO },
+  }).select().single()
+  const runId = runRow?.id
 
   try {
     const text = await generateText(
@@ -142,6 +143,7 @@ Think about what Indonesian Muslim women engage with most on TikTok and Instagra
     }
 
     const duration = Date.now() - start
+    if (runId) await db.from('cada_agent_runs').update({ status: 'completed', output: { ideas: ideas.length }, duration_ms: duration }).eq('id', runId)
 
     return NextResponse.json({
       success: true,
@@ -154,6 +156,7 @@ Think about what Indonesian Muslim women engage with most on TikTok and Instagra
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
+    if (runId) await db.from('cada_agent_runs').update({ status: 'failed', output: { error: msg } }).eq('id', runId)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
