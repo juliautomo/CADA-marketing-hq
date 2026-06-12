@@ -155,6 +155,9 @@ export default function CreatorPage() {
     setResult(null)
     setError(null)
     setSelectedProduct(null)
+    setImageAnalysis(null)
+    setVideoAnalysis(null)
+    setRawMediaUrl(null)
   }
 
   function copyText() {
