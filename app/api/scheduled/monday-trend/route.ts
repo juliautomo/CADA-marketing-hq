@@ -1,4 +1,5 @@
-// Monday Trend Brief — runs every Monday at 8am via Vercel Cron
+﻿export const dynamic = 'force-dynamic'
+// Monday Trend Brief â€” runs every Monday at 8am via Vercel Cron
 // Cron schedule defined in vercel.json: "0 8 * * 1"
 // Can also be triggered manually from /automations
 
@@ -85,7 +86,7 @@ Include 5 specific content ideas CADA can execute this week.`
       if (!match) return []
       return match[1]
         .split('\n')
-        .map((l) => l.replace(/^[-•*\d.]+\s*/, '').trim())
+        .map((l) => l.replace(/^[-â€¢*\d.]+\s*/, '').trim())
         .filter((l) => l.length > 1 && l.length < 200)
         .slice(0, 8)
     }
@@ -105,7 +106,7 @@ Include 5 specific content ideas CADA can execute this week.`
     const analysisMatch = text.match(/FULL ANALYSIS[:\s]*\n([\s\S]+?)(?=THIS WEEK|$)/i)
     const summary = analysisMatch ? analysisMatch[1].trim() : text
 
-    const title = `Monday Trend Brief — Week of ${weekOf}`
+    const title = `Monday Trend Brief â€” Week of ${weekOf}`
 
     // Save to DB
     const { data: report } = await db
@@ -138,11 +139,11 @@ Include 5 specific content ideas CADA can execute this week.`
       ].join('\n')
 
       driveUrl = await uploadTextToDrive({
-        fileName: `CADA Monday Brief — ${weekOf}.txt`,
+        fileName: `CADA Monday Brief â€” ${weekOf}.txt`,
         content: driveContent,
       })
     } catch {
-      // Drive not configured — saved to DB only
+      // Drive not configured â€” saved to DB only
     }
 
     const duration = Date.now() - start
@@ -158,3 +159,4 @@ Include 5 specific content ideas CADA can execute this week.`
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+

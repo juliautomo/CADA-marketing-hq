@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { uploadTextToDrive } from '@/lib/google'
@@ -38,7 +39,7 @@ Provide a structured analysis with:
 2. **Top 3 Wins** (what worked on Shopee/TikTok/Instagram)
 3. **Top 3 Areas for Improvement** (specific to our channels)
 4. **Actionable Recommendations** for next period (channel-specific: Shopee, TikTok, Instagram)
-5. **Modest Fashion Market Insights** — any broader trends we should act on
+5. **Modest Fashion Market Insights** â€” any broader trends we should act on
 
 Keep recommendations practical for a small-mid Indonesian fashion brand.`
     )
@@ -56,7 +57,7 @@ Keep recommendations practical for a small-mid Indonesian fashion brand.`
     let driveUrl = ''
     try {
       const reportContent = `CADA PERFORMANCE REPORT\n=======================\n${body.title}\nPeriod: ${body.period ?? 'N/A'}\nGenerated: ${new Date().toLocaleString()}\n\n${insights}\n\n---\nRAW DATA:\n${metricsData}`
-      driveUrl = await uploadTextToDrive({ fileName: `CADA Performance — ${body.title}.txt`, content: reportContent })
+      driveUrl = await uploadTextToDrive({ fileName: `CADA Performance â€” ${body.title}.txt`, content: reportContent })
     } catch { /* Google key not set */ }
 
     const { data: report } = await db.from('cada_performance_reports')
@@ -71,3 +72,4 @@ Keep recommendations practical for a small-mid Indonesian fashion brand.`
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+

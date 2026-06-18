@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateImage } from '@/lib/openai'
 import { generateText } from '@/lib/anthropic'
@@ -59,3 +60,4 @@ Write ONLY the enhanced DALL-E prompt, nothing else. Be very specific and detail
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+

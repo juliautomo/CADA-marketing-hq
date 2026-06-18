@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
@@ -15,3 +16,4 @@ export async function GET() {
     return NextResponse.json({ campaigns: [], error: String(e) }, { status: 500 })
   }
 }
+

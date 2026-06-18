@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage } from '@/lib/openai'
@@ -10,18 +11,18 @@ import type { CreatorInput } from '@/types'
 
 const SYSTEM_PROMPT = getBrandSystemPrompt('Content Creator') + `
 You are an expert copywriter specialising in modest fashion content for Indonesian and Singaporean Muslim women.
-Write content that is warm, elegant, and aspirational. Always output ONLY the requested content — no preamble or meta-commentary.`
+Write content that is warm, elegant, and aspirational. Always output ONLY the requested content â€” no preamble or meta-commentary.`
 
 const LANG_INSTRUCTION: Record<string, string> = {
   'english':          'Write entirely in English.',
-  'bahasa-indonesia': 'Write entirely in Bahasa Indonesia. Use natural, modern Indonesian as spoken by young Muslim women aged 20–35.',
-  'bahasa-melayu':    'Write entirely in Bahasa Melayu (Malaysian). Use natural, modern Malay as spoken by young Muslim women aged 20–35.',
+  'bahasa-indonesia': 'Write entirely in Bahasa Indonesia. Use natural, modern Indonesian as spoken by young Muslim women aged 20â€“35.',
+  'bahasa-melayu':    'Write entirely in Bahasa Melayu (Malaysian). Use natural, modern Malay as spoken by young Muslim women aged 20â€“35.',
 }
 
 const LENGTH_INSTRUCTION: Record<string, string> = {
-  short:    'Keep it short and punchy — under 80 words (not counting hashtags).',
-  standard: 'Write a standard length caption — 100 to 180 words (not counting hashtags).',
-  long:     'Write a detailed, storytelling caption — 200 to 300 words (not counting hashtags).',
+  short:    'Keep it short and punchy â€” under 80 words (not counting hashtags).',
+  standard: 'Write a standard length caption â€” 100 to 180 words (not counting hashtags).',
+  long:     'Write a detailed, storytelling caption â€” 200 to 300 words (not counting hashtags).',
 }
 
 export async function POST(req: NextRequest) {
@@ -51,7 +52,7 @@ ${body.additionalContext ?? ''}
 ${langNote}
 ${lenNote}
 Include relevant hashtags at the end (#CADA #wearcada #modestfashion etc).
-The caption should appeal to Muslim women in Indonesia/Singapore aged 20–35.`
+The caption should appeal to Muslim women in Indonesia/Singapore aged 20â€“35.`
         )
         const { data } = await db.from('cada_content_items')
           .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, tags: [body.platform ?? 'instagram', 'cada'] })
@@ -133,7 +134,7 @@ Include:
       case 'canva':
       case 'canva_template': {
         const design = await createDesignFromTemplate({
-          title: `CADA — ${body.product ?? body.prompt ?? 'Template'}`,
+          title: `CADA â€” ${body.product ?? body.prompt ?? 'Template'}`,
           designType: 'INSTAGRAM_POST',
         })
         const { data } = await db.from('cada_content_items')
@@ -152,3 +153,4 @@ Include:
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+

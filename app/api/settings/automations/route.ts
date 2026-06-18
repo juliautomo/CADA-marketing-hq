@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
@@ -32,3 +33,4 @@ export async function POST(req: NextRequest) {
   await supabase.from('cada_settings').upsert({ key, value: enabled, updated_at: new Date().toISOString() })
   return NextResponse.json({ ok: true })
 }
+

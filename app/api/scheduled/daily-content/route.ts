@@ -1,4 +1,5 @@
-// Daily Content Queue — runs every day at 9am via Vercel Cron
+﻿export const dynamic = 'force-dynamic'
+// Daily Content Queue â€” runs every day at 9am via Vercel Cron
 // Cron schedule defined in vercel.json: "0 9 * * *"
 // Generates 3 ready-to-post content ideas and saves to DB + Todoist
 
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
       `Generate 3 content ideas for CADA for today, ${today}.
 Featured product today: ${featuredProduct.name} (${featuredProduct.price})
 Also feel free to feature the other products in ideas 2 and 3.
-Make each idea different — vary the platform, format, and angle.
+Make each idea different â€” vary the platform, format, and angle.
 Think about what Indonesian Muslim women engage with most on TikTok and Instagram right now.`
     )
 
@@ -107,7 +108,7 @@ Think about what Indonesian Muslim women engage with most on TikTok and Instagra
     for (const idea of ideas) {
       const { data } = await db.from('cada_content_items').insert({
         type: 'caption',
-        title: `Daily Queue: Day ${idea.number} — ${idea.platform} ${idea.format} (${today})`,
+        title: `Daily Queue: Day ${idea.number} â€” ${idea.platform} ${idea.format} (${today})`,
         body: idea.caption,
         metadata: {
           type: 'daily_queue',
@@ -130,12 +131,12 @@ Think about what Indonesian Muslim women engage with most on TikTok and Instagra
       // Find or create a "Daily Content Queue" project
       let projectId = process.env.CADA_DAILY_CONTENT_PROJECT_ID ?? ''
       if (!projectId) {
-        projectId = await createProject('CADA — Daily Content Queue')
+        projectId = await createProject('CADA â€” Daily Content Queue')
       }
 
       for (const idea of ideas) {
         const taskId = await createTask({
-          content: `📱 Post ${idea.platform} ${idea.format}: ${idea.product}`,
+          content: `ðŸ“± Post ${idea.platform} ${idea.format}: ${idea.product}`,
           projectId,
           dueDate: todayISO,
           description: `Hook: ${idea.hook}\n\nCaption: ${idea.caption.slice(0, 200)}\n\nCTA: ${idea.cta}`,
@@ -165,3 +166,4 @@ Think about what Indonesian Muslim women engage with most on TikTok and Instagra
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+

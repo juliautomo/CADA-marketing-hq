@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { createProject, createTask } from '@/lib/todoist'
@@ -77,23 +78,23 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       milestones = [
         { title: 'Content creation & assets', day_offset: 0, week: 1 },
         { title: 'Pre-launch teaser on TikTok & Instagram', day_offset: 7, week: 2 },
-        { title: 'Launch day — Shopee + TikTok Live', day_offset: 14, week: 3 },
+        { title: 'Launch day â€” Shopee + TikTok Live', day_offset: 14, week: 3 },
         { title: 'Post-launch engagement & retargeting', day_offset: 21, week: 4 },
       ]
     }
 
-    // Todoist — try to create a project, fall back to Inbox if limit reached
+    // Todoist â€” try to create a project, fall back to Inbox if limit reached
     let todoistProjectId = ''
     let todoistError = ''
     const todoistTaskIds: string[] = []
     try {
       try {
-        todoistProjectId = await createProject(`CADA — ${body.name}`)
+        todoistProjectId = await createProject(`CADA â€” ${body.name}`)
       } catch (e) {
         // If project limit reached (403), use Inbox (no project_id needed)
         const msg = e instanceof Error ? e.message : ''
         if (msg.includes('403') || msg.includes('Maximum')) {
-          todoistProjectId = 'inbox'  // sentinel — tasks go to Inbox
+          todoistProjectId = 'inbox'  // sentinel â€” tasks go to Inbox
         } else {
           throw e
         }
@@ -104,7 +105,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
           content: `[${body.name}] ${m.title}`,
           projectId: todoistProjectId === 'inbox' ? '' : todoistProjectId,
           dueDate,
-          description: `Week ${m.week} | CADA — ${body.name}`,
+          description: `Week ${m.week} | CADA â€” ${body.name}`,
           priority: m.week === 3 ? 4 : 3,
         })
         todoistTaskIds.push(taskId)
@@ -117,7 +118,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
     try {
       for (let w = 0; w < 4; w++) {
         const eventId = await createCalendarEvent({
-          summary: `CADA — ${body.name} · Week ${w + 1}`,
+          summary: `CADA â€” ${body.name} Â· Week ${w + 1}`,
           description: `Campaign week ${w + 1} of 4`,
           startDate: format(addDays(startDate, w * 7), 'yyyy-MM-dd'),
           endDate: format(addDays(startDate, w * 7 + 6), 'yyyy-MM-dd'),
@@ -126,7 +127,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       }
     } catch { /* Google key not set */ }
 
-    // Google Drive — generate PDF brief
+    // Google Drive â€” generate PDF brief
     let driveUrl = ''
     let driveError = ''
     try {
@@ -141,7 +142,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
         weeks: Array.isArray(brief.weeks) ? brief.weeks as never : undefined,
       })
       driveUrl = await uploadFileToDrive({
-        fileName: `CADA Campaign Brief — ${body.name}.pdf`,
+        fileName: `CADA Campaign Brief â€” ${body.name}.pdf`,
         buffer: pdfBuffer,
         mimeType: 'application/pdf',
       })
@@ -188,3 +189,4 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+

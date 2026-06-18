@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { createProject, createTask } from '@/lib/todoist'
@@ -6,7 +7,7 @@ import { createServiceClient } from '@/lib/supabase'
 import { getBrandSystemPrompt } from '@/lib/brand'
 import { addDays, format } from 'date-fns'
 
-// ─── SSE helper ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ SSE helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function createSSE() {
   const encoder = new TextEncoder()
   let controller: ReadableStreamDefaultController
@@ -24,7 +25,7 @@ function createSSE() {
   return { stream, send, close }
 }
 
-// ─── Prompts ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BASE = getBrandSystemPrompt('Full Campaign Agent')
 
 export async function POST(req: NextRequest) {
@@ -37,8 +38,8 @@ export async function POST(req: NextRequest) {
     const start = Date.now()
 
     try {
-      // ── STEP 1: Parse the campaign prompt ────────────────────────────────────
-      send({ step: 1, status: 'running', label: 'Parsing your campaign brief…' })
+      // â”€â”€ STEP 1: Parse the campaign prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 1, status: 'running', label: 'Parsing your campaign briefâ€¦' })
 
       const parseResult = await generateText(
         BASE + '\nExtract campaign details from the user prompt and return ONLY valid JSON, no markdown.',
@@ -93,8 +94,8 @@ Return ONLY this JSON (no markdown, no explanation):
         data: { name: parsed.name, theme: parsed.theme, startDate: parsed.startDate },
       })
 
-      // ── STEP 2: Trend Research ────────────────────────────────────────────────
-      send({ step: 2, status: 'running', label: 'Researching trends for this campaign…' })
+      // â”€â”€ STEP 2: Trend Research â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 2, status: 'running', label: 'Researching trends for this campaignâ€¦' })
 
       const trendText = await generateText(
         BASE + '\nYou are a trend analyst. Be specific and actionable.',
@@ -107,10 +108,10 @@ List:
 - 3 specific content hooks that are performing well right now`
       )
 
-      send({ step: 2, status: 'done', label: 'Trends researched', data: { trends: trendText.slice(0, 300) + '…' } })
+      send({ step: 2, status: 'done', label: 'Trends researched', data: { trends: trendText.slice(0, 300) + 'â€¦' } })
 
-      // ── STEP 3: Campaign Brief ────────────────────────────────────────────────
-      send({ step: 3, status: 'running', label: 'Writing campaign concept & brief…' })
+      // â”€â”€ STEP 3: Campaign Brief â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 3, status: 'running', label: 'Writing campaign concept & briefâ€¦' })
 
       const briefText = await generateText(
         BASE + '\nYou are a campaign strategist. Write compelling, specific copy.',
@@ -134,8 +135,8 @@ Include:
 
       send({ step: 3, status: 'done', label: 'Campaign brief written' })
 
-      // ── STEP 4: Generate 7 Days of Content ───────────────────────────────────
-      send({ step: 4, status: 'running', label: 'Generating 7 days of content…' })
+      // â”€â”€ STEP 4: Generate 7 Days of Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 4, status: 'running', label: 'Generating 7 days of contentâ€¦' })
 
       const contentText = await generateText(
         BASE + '\nYou are a social media copywriter. Write ready-to-post content.',
@@ -145,7 +146,7 @@ Starting: ${parsed.startDate}
 Products to feature: Pleated Linen Pants (Rp 350,000), Butter Yellow Ruffle Sleeve Shirt (Rp 280,000), High Waisted Denim Maxi Skirt (Rp 385,000)
 
 For each day provide:
-DAY [N] — [Date] — [Platform: TikTok or Instagram]
+DAY [N] â€” [Date] â€” [Platform: TikTok or Instagram]
 Caption: [full ready-to-post caption with hashtags]
 Content Type: [Reel/TikTok/Carousel/Static]
 Hook: [opening line for video]
@@ -158,7 +159,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
       // Parse days into structured array
       const dayBlocks = contentText.split(/---+/).filter((b) => b.trim())
       const contentDays = dayBlocks.slice(0, 7).map((block, i) => {
-        const dayMatch = block.match(/DAY\s+(\d+)[^—\n]*—[^—\n]*—\s*(.+)/i)
+        const dayMatch = block.match(/DAY\s+(\d+)[^â€”\n]*â€”[^â€”\n]*â€”\s*(.+)/i)
         const captionMatch = block.match(/Caption:\s*([\s\S]+?)(?=Content Type:|Hook:|CTA:|$)/i)
         const typeMatch = block.match(/Content Type:\s*(.+)/i)
         const hookMatch = block.match(/Hook:\s*(.+)/i)
@@ -180,8 +181,8 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         data: { days: contentDays.length },
       })
 
-      // ── STEP 5: Save content to DB ────────────────────────────────────────────
-      send({ step: 5, status: 'running', label: 'Saving campaign & content to database…' })
+      // â”€â”€ STEP 5: Save content to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 5, status: 'running', label: 'Saving campaign & content to databaseâ€¦' })
 
       // Save campaign
       const { data: campaign } = await db.from('cada_campaigns').insert({
@@ -202,7 +203,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
       // Save content days as content_items
       const contentInserts = contentDays.map((day) => ({
         type: 'caption' as const,
-        title: `Day ${day.day} — ${day.platform} — ${parsed.name}`,
+        title: `Day ${day.day} â€” ${day.platform} â€” ${parsed.name}`,
         body: day.caption,
         metadata: {
           day: day.day,
@@ -220,8 +221,8 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
 
       send({ step: 5, status: 'done', label: 'Saved to database' })
 
-      // ── STEP 6: Todoist tasks ─────────────────────────────────────────────────
-      send({ step: 6, status: 'running', label: 'Creating Todoist tasks…' })
+      // â”€â”€ STEP 6: Todoist tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 6, status: 'running', label: 'Creating Todoist tasksâ€¦' })
 
       let todoistProjectId = ''
       const milestoneRows: Array<{
@@ -233,17 +234,17 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
       }> = []
 
       try {
-        todoistProjectId = await createProject(`CADA — ${parsed.name}`)
+        todoistProjectId = await createProject(`CADA â€” ${parsed.name}`)
 
         const milestones = [
-          { title: '📸 Shoot & prepare all campaign assets', offset: 0, week: 1 },
-          { title: '📝 Finalise all 7-day captions & hooks', offset: 1, week: 1 },
-          { title: '🚀 Day 1 post goes live', offset: 0, week: 1 },
-          { title: '📊 Week 1 engagement check', offset: 7, week: 2 },
-          { title: '🎬 Week 2 TikTok push', offset: 7, week: 2 },
-          { title: '💥 Mid-campaign promo / discount drop', offset: 14, week: 3 },
-          { title: '📊 Week 3 performance review', offset: 21, week: 4 },
-          { title: '🏁 Campaign wrap-up & report', offset: 27, week: 4 },
+          { title: 'ðŸ“¸ Shoot & prepare all campaign assets', offset: 0, week: 1 },
+          { title: 'ðŸ“ Finalise all 7-day captions & hooks', offset: 1, week: 1 },
+          { title: 'ðŸš€ Day 1 post goes live', offset: 0, week: 1 },
+          { title: 'ðŸ“Š Week 1 engagement check', offset: 7, week: 2 },
+          { title: 'ðŸŽ¬ Week 2 TikTok push', offset: 7, week: 2 },
+          { title: 'ðŸ’¥ Mid-campaign promo / discount drop', offset: 14, week: 3 },
+          { title: 'ðŸ“Š Week 3 performance review', offset: 21, week: 4 },
+          { title: 'ðŸ Campaign wrap-up & report', offset: 27, week: 4 },
         ]
 
         for (const m of milestones) {
@@ -252,7 +253,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
             content: m.title,
             projectId: todoistProjectId,
             dueDate,
-            description: `CADA Campaign: ${parsed.name} · ${parsed.theme}`,
+            description: `CADA Campaign: ${parsed.name} Â· ${parsed.theme}`,
             priority: m.week === 1 ? 4 : 3,
           })
           if (campaign) {
@@ -263,7 +264,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         // Add one task per content day
         for (const day of contentDays) {
           await createTask({
-            content: `📱 Post Day ${day.day} — ${day.platform} (${day.contentType})`,
+            content: `ðŸ“± Post Day ${day.day} â€” ${day.platform} (${day.contentType})`,
             projectId: todoistProjectId,
             dueDate: day.date,
             description: day.caption.slice(0, 200),
@@ -276,14 +277,14 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         send({ step: 6, status: 'skipped', label: 'Todoist skipped (API key not set)' })
       }
 
-      // ── STEP 7: Google Calendar ───────────────────────────────────────────────
-      send({ step: 7, status: 'running', label: 'Blocking campaign dates in Google Calendar…' })
+      // â”€â”€ STEP 7: Google Calendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 7, status: 'running', label: 'Blocking campaign dates in Google Calendarâ€¦' })
 
       const calendarEventIds: string[] = []
       try {
         for (let w = 0; w < 4; w++) {
           const eventId = await createCalendarEvent({
-            summary: `CADA — ${parsed.name} · Week ${w + 1}`,
+            summary: `CADA â€” ${parsed.name} Â· Week ${w + 1}`,
             description: `Campaign week ${w + 1}. Theme: ${parsed.theme}`,
             startDate: format(addDays(new Date(parsed.startDate), w * 7), 'yyyy-MM-dd'),
             endDate: format(addDays(new Date(parsed.startDate), w * 7 + 6), 'yyyy-MM-dd'),
@@ -295,8 +296,8 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         send({ step: 7, status: 'skipped', label: 'Calendar skipped (API key not set)' })
       }
 
-      // ── STEP 8: Google Drive ──────────────────────────────────────────────────
-      send({ step: 8, status: 'running', label: 'Exporting full brief to Google Drive…' })
+      // â”€â”€ STEP 8: Google Drive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      send({ step: 8, status: 'running', label: 'Exporting full brief to Google Driveâ€¦' })
 
       let driveUrl = ''
       try {
@@ -329,7 +330,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         ].join('\n')
 
         driveUrl = await uploadTextToDrive({
-          fileName: `CADA Campaign — ${parsed.name}.txt`,
+          fileName: `CADA Campaign â€” ${parsed.name}.txt`,
           content: driveContent,
         })
         send({ step: 8, status: 'done', label: 'Brief exported to Google Drive', data: { driveUrl } })
@@ -337,7 +338,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         send({ step: 8, status: 'skipped', label: 'Drive skipped (API key not set)' })
       }
 
-      // ── STEP 9: Finalise DB ───────────────────────────────────────────────────
+      // â”€â”€ STEP 9: Finalise DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (campaign) {
         await db.from('cada_campaigns').update({
           todoist_project_id: todoistProjectId || null,
@@ -350,7 +351,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         }
       }
 
-      // ── DONE ─────────────────────────────────────────────────────────────────
+      // â”€â”€ DONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       send({
         step: 9, status: 'done',
         label: 'Campaign fully launched!',
@@ -385,3 +386,4 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
     },
   })
 }
+

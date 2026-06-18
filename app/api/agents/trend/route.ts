@@ -1,3 +1,4 @@
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { searchFashionImages } from '@/lib/pexels'
@@ -10,7 +11,7 @@ const SYSTEM_PROMPT = getBrandSystemPrompt('Trend Analyst') + `
 You are a leading fashion trend analyst specialising in modest fashion and Southeast Asian markets.
 Today's date is ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
 
-You MUST respond using EXACTLY this format with these exact section headers — no deviations:
+You MUST respond using EXACTLY this format with these exact section headers â€” no deviations:
 
 TRENDING COLORS:
 - [specific color name]
@@ -75,18 +76,18 @@ export async function POST(req: NextRequest) {
 
 Include real TikTok and Instagram creators who post modest fashion content with significant Indonesian/Malaysian/Singaporean audiences.
 Include hashtags that are actually trending in the modest fashion space right now.
-Be specific — real creator handles, real hashtags, real content formats that perform well on TikTok Reels.`
+Be specific â€” real creator handles, real hashtags, real content formats that perform well on TikTok Reels.`
 
     const text = await generateText(SYSTEM_PROMPT, userMessage)
 
-    // ── Section parser ─────────────────────────────────────────────
+    // â”€â”€ Section parser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function extractSection(label: string, src: string): string[] {
       const regex = new RegExp(`${label}[:\\s]*\\n([\\s\\S]*?)(?=\\n[A-Z ]+:|$)`, 'i')
       const match = src.match(regex)
       if (!match) return []
       return match[1]
         .split('\n')
-        .map((l) => l.replace(/^[-•*\d.]+\s*/, '').trim())
+        .map((l) => l.replace(/^[-â€¢*\d.]+\s*/, '').trim())
         .filter((l) => l.length > 1 && l.length < 200)
         .slice(0, 8)
     }
@@ -95,7 +96,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
     const silhouettes = extractSection('KEY SILHOUETTES', text)
     const styles = extractSection('TRENDING STYLES', text)
 
-    // ── Parse hashtags ─────────────────────────────────────────────
+    // â”€â”€ Parse hashtags â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const hashtagLines = extractSection('TRENDING HASHTAGS', text)
     const trending_hashtags = hashtagLines.map((line) => {
       const [tag, platform, description] = line.split('|').map((s) => s.trim())
@@ -109,7 +110,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
       }
     }).filter((h) => h.tag)
 
-    // ── Parse creators ─────────────────────────────────────────────
+    // â”€â”€ Parse creators â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const creatorLines = extractSection('TRENDING CREATORS', text)
     const trending_creators = creatorLines.map((line) => {
       const [handle, platform, followers, reason] = line.split('|').map((s) => s.trim())
@@ -126,18 +127,18 @@ Be specific — real creator handles, real hashtags, real content formats that p
       }
     }).filter((c) => c.handle)
 
-    // ── Parse content ideas ────────────────────────────────────────
+    // â”€â”€ Parse content ideas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const contentLines = extractSection('TRENDING CONTENT IDEAS', text)
     const trending_content = contentLines.map((line) => {
       const [format, idea, why] = line.split('|').map((s) => s.trim())
       return { format: format ?? '', idea: idea ?? '', why: why ?? '' }
     }).filter((c) => c.format)
 
-    // ── Full analysis ──────────────────────────────────────────────
+    // â”€â”€ Full analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const analysisMatch = text.match(/FULL ANALYSIS[:\s]*\n([\s\S]+)$/i)
     const summary = analysisMatch ? analysisMatch[1].trim() : text
 
-    // ── Pexels mood board ──────────────────────────────────────────
+    // â”€â”€ Pexels mood board â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Build search query from top styles + focus
     const imageQuery = [
       body.focus ?? 'modest fashion hijab',
@@ -156,8 +157,8 @@ Be specific — real creator handles, real hashtags, real content formats that p
       pexels_url: p.url,
     }))
 
-    // ── Save to DB ─────────────────────────────────────────────────
-    const title = `Trend Report — ${body.season ?? 'Current Season'} ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}${body.focus ? ` · ${body.focus}` : ' · Modest Fashion'}`
+    // â”€â”€ Save to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const title = `Trend Report â€” ${body.season ?? 'Current Season'} ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}${body.focus ? ` Â· ${body.focus}` : ' Â· Modest Fashion'}`
 
     const { data: report } = await db
       .from('cada_trend_reports')
@@ -189,3 +190,4 @@ Be specific — real creator handles, real hashtags, real content formats that p
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+
