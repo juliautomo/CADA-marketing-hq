@@ -90,7 +90,12 @@ export default function AutomationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, enabled: value }),
       })
-    } catch { /* silently fail */ } finally {
+      // Re-fetch to confirm saved state
+      await fetchEnabled()
+    } catch {
+      // Rollback optimistic update on failure
+      setEnabled((prev) => ({ ...prev, [id]: !value }))
+    } finally {
       setTogglingId(null)
     }
   }

@@ -14,8 +14,9 @@ export async function GET() {
     'daily-content': true,
   }
   for (const row of data ?? []) {
-    if (row.key === 'automation_monday_trend_enabled') result['monday-trend'] = row.value === true
-    if (row.key === 'automation_daily_content_enabled') result['daily-content'] = row.value === true
+    const val = row.value !== false && row.value !== 'false'
+    if (row.key === 'automation_monday_trend_enabled') result['monday-trend'] = val
+    if (row.key === 'automation_daily_content_enabled') result['daily-content'] = val
   }
   return NextResponse.json(result)
 }
