@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { formatRelativeTime } from '@/lib/utils'
 import type { AgentRun } from '@/types'
 
@@ -55,6 +56,8 @@ export default function AutomationsPage() {
   const [triggering, setTriggering] = useState<string | null>(null)
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({})
   const [isVercel, setIsVercel] = useState<boolean | null>(null)
+  const [enabled, setEnabled] = useState<Record<string, boolean>>({ 'monday-trend': true, 'daily-content': true })
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const fetchRuns = useCallback(async () => {
     try {
@@ -64,11 +67,33 @@ export default function AutomationsPage() {
     } catch { /* silently fail */ }
   }, [])
 
+  const fetchEnabled = useCallback(async () => {
+    try {
+      const res = await fetch('/api/settings/automations')
+      const data = await res.json()
+      setEnabled(data)
+    } catch { /* silently fail */ }
+  }, [])
+
   useEffect(() => {
     fetchRuns()
-    // Check if running on Vercel
+    fetchEnabled()
     setIsVercel(window.location.hostname !== 'localhost')
-  }, [fetchRuns])
+  }, [fetchRuns, fetchEnabled])
+
+  async function toggleEnabled(id: string, value: boolean) {
+    setTogglingId(id)
+    setEnabled((prev) => ({ ...prev, [id]: value }))
+    try {
+      await fetch('/api/settings/automations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, enabled: value }),
+      })
+    } catch { /* silently fail */ } finally {
+      setTogglingId(null)
+    }
+  }
 
   async function triggerAutomation(automation: Automation) {
     setTriggering(automation.id)
@@ -143,11 +168,12 @@ export default function AutomationsPage() {
             const lastRun = getLastRun(auto.id)
             const result = results[auto.id]
             const isRunning = triggering === auto.id
+            const isEnabled = enabled[auto.id] ?? true
             const Icon = auto.icon
 
             return (
               <motion.div key={auto.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                <Card className="h-full">
+                <Card className={`h-full transition-opacity ${!isEnabled ? 'opacity-60' : ''}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
@@ -158,6 +184,14 @@ export default function AutomationsPage() {
                           <CardTitle className="text-base">{auto.name}</CardTitle>
                           <Badge variant="default" className="mt-1 text-xs">{auto.level}</Badge>
                         </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-500">{isEnabled ? 'On' : 'Off'}</span>
+                        <Switch
+                          checked={isEnabled}
+                          onCheckedChange={(val) => toggleEnabled(auto.id, val)}
+                          disabled={togglingId === auto.id}
+                        />
                       </div>
                     </div>
                     <CardDescription className="mt-3 text-sm leading-relaxed">

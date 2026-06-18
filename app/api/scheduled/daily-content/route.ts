@@ -51,6 +51,11 @@ export async function GET(req: NextRequest) {
 
   const start = Date.now()
   const db = createServiceClient()
+
+  const { data: setting } = await db.from('cada_settings').select('value').eq('key', 'automation_daily_content_enabled').single()
+  if (setting && setting.value === false) {
+    return NextResponse.json({ success: true, message: 'Daily Content Queue is disabled. Enable it in Automations settings.' })
+  }
   const today = format(new Date(), 'MMMM d, yyyy')
   const todayISO = format(new Date(), 'yyyy-MM-dd')
 

@@ -62,6 +62,11 @@ export async function GET(req: NextRequest) {
 
   const start = Date.now()
   const db = createServiceClient()
+
+  const { data: setting } = await db.from('cada_settings').select('value').eq('key', 'automation_monday_trend_enabled').single()
+  if (setting && setting.value === false) {
+    return NextResponse.json({ success: true, message: 'Monday Trend Brief is disabled. Enable it in Automations settings.' })
+  }
   const weekOf = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   try {
