@@ -56,7 +56,17 @@ export default function AutomationsPage() {
   const [triggering, setTriggering] = useState<string | null>(null)
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({})
   const [isVercel, setIsVercel] = useState<boolean | null>(null)
-  const [enabled, setEnabled] = useState<Record<string, boolean>>({ 'monday-trend': true, 'daily-content': true })
+  const STORAGE_KEY = 'cada_automation_enabled'
+
+  const loadEnabled = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) return JSON.parse(stored) as Record<string, boolean>
+    } catch { /* ignore */ }
+    return { 'monday-trend': true, 'daily-content': true }
+  }
+
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(loadEnabled)
 
   const fetchRuns = useCallback(async () => {
     try {
@@ -66,22 +76,15 @@ export default function AutomationsPage() {
     } catch { /* silently fail */ }
   }, [])
 
-  const fetchEnabled = useCallback(async () => {
-    try {
-      const res = await fetch('/api/settings/automations')
-      const data = await res.json()
-      setEnabled(data)
-    } catch { /* silently fail */ }
-  }, [])
-
   useEffect(() => {
     fetchRuns()
-    fetchEnabled()
     setIsVercel(window.location.hostname !== 'localhost')
-  }, [fetchRuns, fetchEnabled])
+  }, [fetchRuns])
 
   async function toggleEnabled(id: string, value: boolean) {
-    setEnabled((prev) => ({ ...prev, [id]: value }))
+    const next = { ...loadEnabled(), [id]: value }
+    setEnabled(next)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
     fetch('/api/settings/automations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
