@@ -166,7 +166,6 @@ export default function AutomationsPage() {
             const result = results[auto.id]
             const isRunning = triggering === auto.id
             const isEnabled = enabled[auto.id] ?? true
-            const isRunning = triggering === auto.id
             const Icon = auto.icon
 
             return (
