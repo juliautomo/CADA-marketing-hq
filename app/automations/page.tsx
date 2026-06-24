@@ -57,7 +57,6 @@ export default function AutomationsPage() {
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({})
   const [isVercel, setIsVercel] = useState<boolean | null>(null)
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ 'monday-trend': true, 'daily-content': true })
-  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const fetchRuns = useCallback(async () => {
     try {
@@ -82,22 +81,15 @@ export default function AutomationsPage() {
   }, [fetchRuns, fetchEnabled])
 
   async function toggleEnabled(id: string, value: boolean) {
-    setTogglingId(id)
     setEnabled((prev) => ({ ...prev, [id]: value }))
-    try {
-      await fetch('/api/settings/automations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, enabled: value }),
-      })
-      // Re-fetch to confirm saved state
-      await fetchEnabled()
-    } catch {
-      // Rollback optimistic update on failure
+    fetch('/api/settings/automations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, enabled: value }),
+    }).catch(() => {
+      // Rollback on network failure
       setEnabled((prev) => ({ ...prev, [id]: !value }))
-    } finally {
-      setTogglingId(null)
-    }
+    })
   }
 
   async function triggerAutomation(automation: Automation) {
@@ -174,6 +166,7 @@ export default function AutomationsPage() {
             const result = results[auto.id]
             const isRunning = triggering === auto.id
             const isEnabled = enabled[auto.id] ?? true
+            const isRunning = triggering === auto.id
             const Icon = auto.icon
 
             return (
@@ -195,7 +188,6 @@ export default function AutomationsPage() {
                         <Switch
                           checked={isEnabled}
                           onCheckedChange={(val) => toggleEnabled(auto.id, val)}
-                          disabled={togglingId === auto.id}
                         />
                       </div>
                     </div>
