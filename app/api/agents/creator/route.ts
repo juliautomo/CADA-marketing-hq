@@ -48,11 +48,11 @@ export async function POST(req: NextRequest) {
           SYSTEM_PROMPT,
           `Write a ${body.platform ?? 'Instagram'} caption for CADA's product: ${body.product}.
 Tone: ${body.tone ?? 'elegant and aspirational'}.
-${body.additionalContext ?? ''}
+${body.additionalContext ? `IMPORTANT — use the following context to shape the caption's setting, mood, and angle. Do NOT write a generic product description; let the visual reference drive the creative direction:\n${body.additionalContext}\n` : ''}
 ${langNote}
 ${lenNote}
 Include relevant hashtags at the end (#CADA #wearcada #modestfashion etc).
-The caption should appeal to Muslim women in Indonesia/Singapore aged 20â€“35.`
+The caption should appeal to Muslim women in Indonesia/Singapore aged 20â€”35.`
         )
         const { data } = await db.from('cada_content_items')
           .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, tags: [body.platform ?? 'instagram', 'cada'] })
