@@ -58,6 +58,7 @@ export default function CreatorPage() {
   const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
   const [refImageUrls, setRefImageUrls]   = useState<string[]>([])
   const [customPrompt, setCustomPrompt] = useState('')
+  const [captionNotes, setCaptionNotes] = useState('')
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
   const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null)
   const [rawMediaUrl, setRawMediaUrl]     = useState<string | null>(null)
@@ -134,7 +135,7 @@ export default function CreatorPage() {
       referenceImageUrl: rawMediaUrl ?? undefined,
       referenceImageUrls: refImageUrls.length > 0 ? refImageUrls : undefined,
       prompt:         customPrompt || undefined,
-      additionalContext: (productContext + imageContext) || undefined,
+      additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '')) || undefined,
     }
 
     try {
@@ -158,6 +159,7 @@ export default function CreatorPage() {
     setImageAnalysis(null)
     setVideoAnalysis(null)
     setRawMediaUrl(null)
+    setCaptionNotes('')
   }
 
   function copyText() {
@@ -475,6 +477,20 @@ export default function CreatorPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Caption direction notes */}
+            {task === 'caption' && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Caption direction <span className="text-zinc-400 font-normal">(optional)</span></label>
+                <textarea
+                  rows={2}
+                  value={captionNotes}
+                  onChange={e => setCaptionNotes(e.target.value)}
+                  placeholder="e.g. focus on the flower shop vibe, make it feel dreamy and romantic..."
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
               </div>
             )}
 
