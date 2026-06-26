@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import {
   Settings, Save, CheckCircle2, Globe,
-  Palette, Users, FileText, Sparkles, Calendar, Link, Eye, EyeOff,
+  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,10 @@ interface ConnectionSettings {
   instagram_app_secret: string
   instagram_access_token: string
   instagram_business_account_id: string
+  tiktok_client_key: string
+  tiktok_client_secret: string
+  tiktok_access_token: string
+  tiktok_open_id: string
 }
 
 const BRAND_DEFAULTS: BrandSettings = {
@@ -39,6 +43,10 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
   instagram_app_secret: '',
   instagram_access_token: '',
   instagram_business_account_id: '',
+  tiktok_client_key: '',
+  tiktok_client_secret: '',
+  tiktok_access_token: '',
+  tiktok_open_id: '',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -364,19 +372,69 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* TikTok — coming soon */}
-          <Card className="opacity-50">
+          {/* TikTok */}
+          <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-zinc-900 flex items-center justify-center">
-                  <Link className="w-4 h-4 text-white" />
+                <div className="w-7 h-7 rounded-lg bg-zinc-900 flex items-center justify-center text-white text-xs font-bold">
+                  TT
                 </div>
                 <div>
                   <CardTitle className="text-base">TikTok</CardTitle>
-                  <CardDescription className="mt-0.5">Coming soon — publish videos and read TikTok analytics.</CardDescription>
+                  <CardDescription className="mt-0.5">Connect via TikTok Content Posting API to publish videos and read analytics.</CardDescription>
                 </div>
               </div>
             </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-xs text-blue-700 space-y-1">
+                <p className="font-semibold">How to get these credentials:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-blue-600">
+                  <li>Go to developers.tiktok.com → apply for Content Posting API access</li>
+                  <li>Create an app and get your Client Key + Client Secret</li>
+                  <li>Complete OAuth flow to get Access Token + Open ID</li>
+                  <li>Paste the values below and save</li>
+                </ol>
+                <p className="text-amber-600 font-medium mt-2">⚠ TikTok API approval can take several days — apply early.</p>
+              </div>
+
+              <Field
+                label="Client Key"
+                placeholder="awxxxxxxxxxxxxxx"
+                value={connections.tiktok_client_key}
+                onChange={v => updateConnections('tiktok_client_key', v)}
+                rows={1}
+              />
+              <Field
+                label="Client Secret"
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxx"
+                value={connections.tiktok_client_secret}
+                onChange={v => updateConnections('tiktok_client_secret', v)}
+                rows={1}
+                secret
+              />
+              <Field
+                label="Access Token"
+                placeholder="act.xxxxxxxxxxxxxxxxxx"
+                value={connections.tiktok_access_token}
+                onChange={v => updateConnections('tiktok_access_token', v)}
+                rows={1}
+                secret
+              />
+              <Field
+                label="Open ID"
+                placeholder="Your TikTok user Open ID"
+                value={connections.tiktok_open_id}
+                onChange={v => updateConnections('tiktok_open_id', v)}
+                rows={1}
+              />
+
+              {connections.tiktok_access_token && (
+                <div className="flex items-center gap-2 text-xs text-emerald-600">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Token saved — ready to connect
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           <SaveBar onSave={handleSave} saving={saving} saved={saved} />

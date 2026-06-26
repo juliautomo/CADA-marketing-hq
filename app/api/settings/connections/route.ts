@@ -7,6 +7,10 @@ const KEYS = [
   'instagram_app_secret',
   'instagram_access_token',
   'instagram_business_account_id',
+  'tiktok_client_key',
+  'tiktok_client_secret',
+  'tiktok_access_token',
+  'tiktok_open_id',
 ]
 
 export async function GET() {
