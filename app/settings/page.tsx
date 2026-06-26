@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
   Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff,
@@ -127,12 +128,19 @@ const TABS = [
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<'brand' | 'connections'>('brand')
+  const searchParams = useSearchParams()
+  const [tab, setTab] = useState<'brand' | 'connections'>(
+    searchParams.get('tab') === 'connections' ? 'connections' : 'brand'
+  )
   const [brand, setBrand] = useState<BrandSettings>(BRAND_DEFAULTS)
   const [connections, setConnections] = useState<ConnectionSettings>(CONNECTION_DEFAULTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [oauthStatus, setOauthStatus] = useState<'success' | 'error' | null>(
+    searchParams.get('success') === 'tiktok' ? 'success' :
+    searchParams.get('error')?.startsWith('tiktok') ? 'error' : null
+  )
 
   useEffect(() => {
     Promise.all([
@@ -386,15 +394,44 @@ export default function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-xs text-blue-700 space-y-1">
-                <p className="font-semibold">How to get these credentials:</p>
-                <ol className="list-decimal list-inside space-y-0.5 text-blue-600">
-                  <li>Go to developers.tiktok.com → apply for Content Posting API access</li>
-                  <li>Create an app and get your Client Key + Client Secret</li>
-                  <li>Complete OAuth flow to get Access Token + Open ID</li>
-                  <li>Paste the values below and save</li>
-                </ol>
-                <p className="text-amber-600 font-medium mt-2">⚠ TikTok API approval can take several days — apply early.</p>
+
+              {/* OAuth status banners */}
+              {oauthStatus === 'success' && (
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2 text-sm text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  TikTok connected successfully! Your access token has been saved.
+                </div>
+              )}
+              {oauthStatus === 'error' && (
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                  TikTok connection failed or was denied. Please try again.
+                </div>
+              )}
+
+              {/* Connect button */}
+              {connections.tiktok_access_token ? (
+                <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm text-emerald-700">
+                    <CheckCircle2 className="w-4 h-4" />
+                    TikTok account connected
+                  </div>
+                  <a href="/api/auth/tiktok" className="text-xs text-zinc-500 underline hover:text-zinc-700">
+                    Reconnect
+                  </a>
+                </div>
+              ) : (
+                <a
+                  href="/api/auth/tiktok"
+                  className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-900 text-white text-sm font-semibold py-2.5 hover:bg-zinc-700 transition-colors"
+                >
+                  <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">TT</div>
+                  Connect with TikTok
+                </a>
+              )}
+
+              <div className="border-t border-zinc-100 pt-4 space-y-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Manual credentials (optional)</p>
+                <p className="text-xs text-zinc-400">If OAuth doesn't work, paste credentials directly from developers.tiktok.com</p>
               </div>
 
               <Field
@@ -427,13 +464,6 @@ export default function SettingsPage() {
                 onChange={v => updateConnections('tiktok_open_id', v)}
                 rows={1}
               />
-
-              {connections.tiktok_access_token && (
-                <div className="flex items-center gap-2 text-xs text-emerald-600">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Token saved — ready to connect
-                </div>
-              )}
             </CardContent>
           </Card>
 

@@ -46,6 +46,48 @@ const VIDEO_LENGTHS = [
   { value: 10, label: '10 sec' },
 ]
 
+function TikTokPostButton({ videoUrl, caption }: { videoUrl: string; caption: string }) {
+  const [status, setStatus] = useState<'idle' | 'posting' | 'done' | 'error'>('idle')
+  const [msg, setMsg] = useState('')
+
+  async function post() {
+    setStatus('posting')
+    const res = await fetch('/api/tiktok/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoUrl, caption }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setStatus('done')
+      setMsg('Posted to TikTok (visible only to you until approved)')
+    } else {
+      setStatus('error')
+      setMsg(data.error ?? 'Post failed')
+    }
+  }
+
+  if (status === 'done') return (
+    <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
+      <Check className="w-4 h-4 shrink-0" /> {msg}
+    </div>
+  )
+
+  return (
+    <div className="space-y-1.5">
+      <button
+        onClick={post}
+        disabled={status === 'posting'}
+        className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-900 text-white text-sm font-semibold py-2.5 hover:bg-zinc-700 transition-colors disabled:opacity-60"
+      >
+        <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">TT</div>
+        {status === 'posting' ? 'Posting…' : 'Post to TikTok'}
+      </button>
+      {status === 'error' && <p className="text-xs text-red-500 text-center">{msg}</p>}
+    </div>
+  )
+}
+
 export default function CreatorPage() {
   // ── State ──────────────────────────────────────────────────────────────────
   const [task, setTask]                 = useState<ContentType>('caption')
@@ -584,9 +626,12 @@ export default function CreatorPage() {
                   if (typeof result?.videoUrl !== 'string') return null
                   const url = result.videoUrl
                   return (
-                    <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900">
-                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                      <video src={url} controls className="w-full" />
+                    <div className="space-y-3">
+                      <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900">
+                        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                        <video src={url} controls className="w-full" />
+                      </div>
+                      <TikTokPostButton videoUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} />
                     </div>
                   )
                 })()}
