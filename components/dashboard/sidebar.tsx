@@ -14,6 +14,7 @@ import {
   History,
   Zap,
   Package,
+  Settings,
 } from 'lucide-react'
 
 const nav: { label: string; href: string; icon: React.ElementType; highlight?: boolean }[] = [
@@ -26,6 +27,7 @@ const nav: { label: string; href: string; icon: React.ElementType; highlight?: b
   { label: 'Product Catalog',      href: '/products',            icon: Package },
   { label: 'Automations',          href: '/automations',         icon: Zap },
   { label: 'History',              href: '/history',             icon: History },
+  { label: 'Brand Settings',       href: '/settings',            icon: Settings },
 ]
 
 export function Sidebar() {

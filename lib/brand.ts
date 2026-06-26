@@ -45,7 +45,21 @@ Our aesthetic is sophisticated and understated — think quiet luxury meets mode
 - Price should always be shown in Rp for Indonesian content`,
 }
 
-export function getBrandSystemPrompt(agentRole: string): string {
+export interface BrandOverrides {
+  brand_voice?: string
+  brand_guidelines?: string
+  brand_target_customer?: string
+  brand_campaign_theme?: string
+  brand_caption_examples?: string
+}
+
+export function getBrandSystemPrompt(agentRole: string, overrides: BrandOverrides = {}): string {
+  const voice = overrides.brand_voice || BRAND.voiceAndTone
+  const guidelines = overrides.brand_guidelines || BRAND.contentGuidelines
+  const targetCustomer = overrides.brand_target_customer || 'Indonesian and Singaporean Muslim women aged 20–35'
+  const campaignTheme = overrides.brand_campaign_theme
+  const captionExamples = overrides.brand_caption_examples
+
   return `You are the ${agentRole} for CADA (wear_cada), an Indonesian modest fashion brand.
 
 BRAND OVERVIEW:
@@ -58,11 +72,16 @@ PRICE POINT: ${BRAND.pricePoint}
 MARKETS: ${BRAND.markets.join(', ')}
 SALES CHANNELS: ${BRAND.channels.join(', ')}
 
+TARGET CUSTOMER:
+${targetCustomer}
+
 BRAND VOICE & TONE:
-${BRAND.voiceAndTone}
+${voice}
 
 CONTENT GUIDELINES:
-${BRAND.contentGuidelines}
+${guidelines}
+${campaignTheme ? `\nCURRENT CAMPAIGN THEME:\n${campaignTheme}` : ''}
+${captionExamples ? `\nCAPTION STYLE EXAMPLES (match this voice and style):\n${captionExamples}` : ''}
 
 Always tailor every output specifically for CADA. Reference real product names, correct price points, and appropriate modest fashion aesthetics.`
 }

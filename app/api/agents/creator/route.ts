@@ -6,12 +6,22 @@ import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
 import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandSystemPrompt, type BrandOverrides } from '@/lib/brand'
 import type { CreatorInput } from '@/types'
 
-const SYSTEM_PROMPT = getBrandSystemPrompt('Content Creator') + `
+async function getSystemPrompt(db: ReturnType<typeof createServiceClient>) {
+  const KEYS = ['brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples']
+  const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
+  const overrides: BrandOverrides = {}
+  for (const row of data ?? []) {
+    if (row.value && row.value !== 'null') {
+      (overrides as Record<string, string>)[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
+    }
+  }
+  return getBrandSystemPrompt('Content Creator', overrides) + `
 You are an expert copywriter specialising in modest fashion content for Indonesian and Singaporean Muslim women.
 Write content that is warm, elegant, and aspirational. Always output ONLY the requested content â€” no preamble or meta-commentary.`
+}
 
 const LANG_INSTRUCTION: Record<string, string> = {
   'english':          'Write entirely in English.',
@@ -38,6 +48,8 @@ export async function POST(req: NextRequest) {
     .insert({ agent: 'creator', status: 'running', input: body })
     .select()
     .single()
+
+  const SYSTEM_PROMPT = await getSystemPrompt(db)
 
   try {
     let result: Record<string, unknown> = {}
