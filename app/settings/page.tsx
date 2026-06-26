@@ -408,28 +408,7 @@ function SettingsContent() {
                 </div>
               )}
 
-              {/* Connect button */}
-              {connections.tiktok_access_token ? (
-                <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm text-emerald-700">
-                    <CheckCircle2 className="w-4 h-4" />
-                    TikTok account connected
-                  </div>
-                  <a href="/api/auth/tiktok" className="text-xs text-zinc-500 underline hover:text-zinc-700">
-                    Reconnect
-                  </a>
-                </div>
-              ) : (
-                <a
-                  href="/api/auth/tiktok"
-                  className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-900 text-white text-sm font-semibold py-2.5 hover:bg-zinc-700 transition-colors"
-                >
-                  <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">TT</div>
-                  Connect with TikTok
-                </a>
-              )}
-
-              <div className="border-t border-zinc-100 pt-4 space-y-1">
+              <div className="space-y-1">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Manual credentials (optional)</p>
                 <p className="text-xs text-zinc-400">If OAuth doesn't work, paste credentials directly from developers.tiktok.com</p>
               </div>
@@ -464,6 +443,29 @@ function SettingsContent() {
                 onChange={v => updateConnections('tiktok_open_id', v)}
                 rows={1}
               />
+
+              {/* Connect button — at bottom */}
+              <div className="border-t border-zinc-100 pt-4">
+                {connections.tiktok_access_token ? (
+                  <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm text-emerald-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      TikTok account connected
+                    </div>
+                    <a href="/api/auth/tiktok" className="text-xs text-zinc-500 underline hover:text-zinc-700">
+                      Reconnect
+                    </a>
+                  </div>
+                ) : (
+                  <a
+                    href="/api/auth/tiktok"
+                    className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-900 text-white text-sm font-semibold py-2.5 hover:bg-zinc-700 transition-colors"
+                  >
+                    <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">TT</div>
+                    Connect with TikTok
+                  </a>
+                )}
+              </div>
             </CardContent>
           </Card>
 
