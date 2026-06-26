@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Settings, Save, CheckCircle2, Instagram, Globe,
+  Settings, Save, CheckCircle2, Globe,
   Palette, Users, FileText, Sparkles, Calendar, Link, Eye, EyeOff,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -303,8 +303,8 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
-                  <Instagram className="w-4 h-4 text-white" />
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold">
+                  IG
                 </div>
                 <div>
                   <CardTitle className="text-base">Instagram</CardTitle>
