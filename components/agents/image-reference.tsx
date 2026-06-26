@@ -374,7 +374,7 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
                           className="w-full justify-start gap-2"
                         >
                           <Wand2 className="w-3.5 h-3.5 text-violet-500" />
-                          Generate similar image with DALL-E 3
+                          Generate similar image with GPT Image
                         </Button>
                         <Button
                           onClick={() => {
@@ -396,7 +396,7 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
                   {actionLoading === 'similar' && (
                     <div className="flex items-center gap-2 py-4 justify-center">
                       <Loader2 className="w-4 h-4 text-violet-500 animate-spin" />
-                      <p className="text-xs text-zinc-500">Generating similar image with DALL-E 3…</p>
+                      <p className="text-xs text-zinc-500">Generating similar image with GPT Image…</p>
                     </div>
                   )}
 
@@ -410,7 +410,7 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
                           className="text-xs text-zinc-400 hover:text-zinc-600 flex items-center gap-1"
                         >
                           {copied ? <Check className="w-3 h-3 text-emerald-500" /> : null}
-                          {copied ? 'Prompt copied!' : 'Copy DALL-E prompt'}
+                          {copied ? 'Prompt copied!' : 'Copy GPT Image prompt'}
                         </button>
                       )}
                       <p className="text-xs text-emerald-600">✓ Saved to Content Library</p>

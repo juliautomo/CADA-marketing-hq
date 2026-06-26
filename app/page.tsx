@@ -7,11 +7,11 @@ import type { AgentRun } from '@/types'
 const agents = [
   {
     title: 'Content Creator',
-    description: 'Generate captions, product descriptions, promo emails, DALL-E images, Runway videos, and Canva templates.',
+    description: 'Generate captions, product descriptions, promo emails, GPT Image images, Runway videos, and Canva templates.',
     href: '/agents/creator',
     iconName: 'Sparkles' as const,
     color: 'bg-violet-500',
-    capabilities: ['Captions', 'Emails', 'DALL-E 3', 'Runway Video', 'Canva'],
+    capabilities: ['Captions', 'Emails', 'GPT Image', 'Runway Video', 'Canva'],
   },
   {
     title: 'Trend Analyst',

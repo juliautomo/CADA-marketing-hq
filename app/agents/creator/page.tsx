@@ -24,7 +24,7 @@ const TASKS = [
   { id: 'caption'      as ContentType, label: 'Caption',      icon: Type,     color: 'bg-violet-500', description: 'Social media captions with hashtags' },
   { id: 'description'  as ContentType, label: 'Description',  icon: FileText, color: 'bg-blue-500',   description: 'E-commerce product copy for Shopee' },
   { id: 'email'        as ContentType, label: 'Promo Email',  icon: Mail,     color: 'bg-amber-500',  description: 'Full email with subject line & CTA' },
-  { id: 'image'        as ContentType, label: 'AI Image',     icon: Image,    color: 'bg-emerald-500',description: 'Generate fashion imagery via DALL-E 3' },
+  { id: 'image'        as ContentType, label: 'AI Image',     icon: Image,    color: 'bg-emerald-500',description: 'Generate fashion imagery via GPT Image' },
   { id: 'video'        as ContentType, label: 'Short Video',  icon: Video,    color: 'bg-red-500',    description: 'Generate video clips via Runway ML' },
   { id: 'canva'        as ContentType, label: 'Canva',        icon: Layout,   color: 'bg-pink-500',   description: 'Auto-create a Canva design template' },
 ]
@@ -199,7 +199,7 @@ export default function CreatorPage() {
           </div>
           <p className="text-sm text-zinc-500">Generate captions, images, videos, emails and more</p>
         </div>
-        <Badge variant="info">Claude + DALL-E + Runway</Badge>
+        <Badge variant="info">Claude + GPT Image + Runway</Badge>
       </div>
 
       {/* ── STEP 1: What do you want to create? ── */}
