@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
@@ -127,7 +127,7 @@ const TABS = [
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
-export default function SettingsPage() {
+function SettingsContent() {
   const searchParams = useSearchParams()
   const [tab, setTab] = useState<'brand' | 'connections'>(
     searchParams.get('tab') === 'connections' ? 'connections' : 'brand'
@@ -471,5 +471,13 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-zinc-400 p-8">Loading…</div>}>
+      <SettingsContent />
+    </Suspense>
   )
 }
