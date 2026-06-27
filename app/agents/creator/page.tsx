@@ -88,6 +88,48 @@ function TikTokPostButton({ videoUrl, caption }: { videoUrl: string; caption: st
   )
 }
 
+function InstagramPostButton({ mediaUrl, caption, mediaType = 'IMAGE' }: { mediaUrl: string; caption: string; mediaType?: 'IMAGE' | 'REELS' }) {
+  const [status, setStatus] = useState<'idle' | 'posting' | 'done' | 'error'>('idle')
+  const [msg, setMsg] = useState('')
+
+  async function post() {
+    setStatus('posting')
+    const res = await fetch('/api/instagram/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mediaUrl, caption, mediaType }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setStatus('done')
+      setMsg('Posted to Instagram!')
+    } else {
+      setStatus('error')
+      setMsg(data.error ?? 'Post failed')
+    }
+  }
+
+  if (status === 'done') return (
+    <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
+      <Check className="w-4 h-4 shrink-0" /> {msg}
+    </div>
+  )
+
+  return (
+    <div className="space-y-1.5">
+      <button
+        onClick={post}
+        disabled={status === 'posting'}
+        className="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 text-white text-sm font-semibold py-2.5 hover:opacity-90 transition-opacity disabled:opacity-60"
+      >
+        <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">IG</div>
+        {status === 'posting' ? (mediaType === 'REELS' ? 'Processing…' : 'Posting…') : 'Post to Instagram'}
+      </button>
+      {status === 'error' && <p className="text-xs text-red-500 text-center">{msg}</p>}
+    </div>
+  )
+}
+
 export default function CreatorPage() {
   // ── State ──────────────────────────────────────────────────────────────────
   const [task, setTask]                 = useState<ContentType>('caption')
@@ -612,7 +654,10 @@ export default function CreatorPage() {
                       </button>
                     </div>
                     {task === 'caption' && resultMediaUrl && (
-                      <TikTokPostButton videoUrl={resultMediaUrl} caption={result.text} />
+                      <div className="space-y-2">
+                        <TikTokPostButton videoUrl={resultMediaUrl} caption={result.text} />
+                        <InstagramPostButton mediaUrl={resultMediaUrl} caption={result.text} mediaType="REELS" />
+                      </div>
                     )}
                   </div>
                 )}
@@ -622,9 +667,12 @@ export default function CreatorPage() {
                   if (typeof result?.imageUrl !== 'string') return null
                   const url = result.imageUrl
                   return (
-                    <div className="rounded-xl overflow-hidden border border-zinc-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="Generated" className="w-full" />
+                    <div className="space-y-3">
+                      <div className="rounded-xl overflow-hidden border border-zinc-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="Generated" className="w-full" />
+                      </div>
+                      <InstagramPostButton mediaUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} mediaType="IMAGE" />
                     </div>
                   )
                 })()}
@@ -639,7 +687,10 @@ export default function CreatorPage() {
                         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                         <video src={url} controls className="w-full" />
                       </div>
-                      <TikTokPostButton videoUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} />
+                      <div className="space-y-2">
+                        <TikTokPostButton videoUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} />
+                        <InstagramPostButton mediaUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} mediaType="REELS" />
+                      </div>
                     </div>
                   )
                 })()}
