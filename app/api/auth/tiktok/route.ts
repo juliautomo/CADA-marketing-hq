@@ -6,7 +6,7 @@ export async function GET() {
   if (!clientKey) return NextResponse.json({ error: 'TikTok client key not configured' }, { status: 500 })
 
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`
-  const scope = 'user.info.basic,user.info.stats,video.list,video.publish,video.upload'
+  const scope = 'user.info.basic,video.publish,video.upload'
   const state = Math.random().toString(36).substring(2)
 
   const url = new URL('https://www.tiktok.com/v2/auth/authorize/')
