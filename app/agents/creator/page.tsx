@@ -104,6 +104,7 @@ export default function CreatorPage() {
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
   const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null)
   const [rawMediaUrl, setRawMediaUrl]     = useState<string | null>(null)
+  const [resultMediaUrl, setResultMediaUrl] = useState<string | null>(null)
 
   const [loading, setLoading]   = useState(false)
   const [result, setResult]     = useState<Record<string, unknown> | null>(null)
@@ -153,6 +154,7 @@ export default function CreatorPage() {
     setLoading(true)
     setResult(null)
     setError(null)
+    setResultMediaUrl(rawMediaUrl)
 
     // Build product context from catalog selection
     const productContext = selectedProduct
@@ -220,6 +222,7 @@ export default function CreatorPage() {
     setImageAnalysis(null)
     setVideoAnalysis(null)
     setRawMediaUrl(null)
+    setResultMediaUrl(null)
     setRefImageUrls([])
   }
 
@@ -608,8 +611,8 @@ export default function CreatorPage() {
                         {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
-                    {task === 'caption' && rawMediaUrl && (
-                      <TikTokPostButton videoUrl={rawMediaUrl} caption={result.text} />
+                    {task === 'caption' && resultMediaUrl && (
+                      <TikTokPostButton videoUrl={resultMediaUrl} caption={result.text} />
                     )}
                   </div>
                 )}
