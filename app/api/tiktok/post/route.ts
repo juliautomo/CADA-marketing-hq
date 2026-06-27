@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
   const { data } = await supabase.from('cada_settings')
     .select('key, value')
-    .in('key', ['tiktok_access_token', 'tiktok_open_id'])
+    .in('key', ['tiktok_access_token', 'tiktok_open_id', 'tiktok_post_mode'])
 
   const settings: Record<string, string> = {}
   for (const row of data ?? []) {
@@ -17,6 +17,10 @@ export async function POST(req: NextRequest) {
 
   const accessToken = settings['tiktok_access_token']
   const openId = settings['tiktok_open_id']
+  const postMode = settings['tiktok_post_mode'] ?? 'draft'
+  const endpoint = postMode === 'direct'
+    ? 'https://open.tiktokapis.com/v2/post/publish/video/init/'
+    : 'https://open.tiktokapis.com/v2/post/publish/inbox/video/init/'
 
   if (!accessToken || accessToken === 'null') {
     return NextResponse.json({ error: 'TikTok not connected. Go to Settings → Connections.' }, { status: 401 })
@@ -30,14 +34,24 @@ export async function POST(req: NextRequest) {
   const videoBuffer = await videoRes.arrayBuffer()
   const videoSize = videoBuffer.byteLength
 
-  // Step 1: Initialize upload — posts to user's inbox as draft (avoids UX guideline restrictions)
-  const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/inbox/video/init/', {
+  // Step 1: Initialize upload
+  const initRes = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json; charset=UTF-8',
     },
     body: JSON.stringify({
+      ...(postMode === 'direct' ? {
+        post_info: {
+          title: caption.slice(0, 150),
+          privacy_level: 'SELF_ONLY',
+          disable_duet: false,
+          disable_comment: false,
+          disable_stitch: false,
+          video_cover_timestamp_ms: coverTimestamp,
+        },
+      } : {}),
       source_info: {
         source: 'FILE_UPLOAD',
         video_size: videoSize,

@@ -29,6 +29,7 @@ interface ConnectionSettings {
   tiktok_client_secret: string
   tiktok_access_token: string
   tiktok_open_id: string
+  tiktok_post_mode: 'draft' | 'direct'
 }
 
 const BRAND_DEFAULTS: BrandSettings = {
@@ -48,6 +49,7 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
   tiktok_client_secret: '',
   tiktok_access_token: '',
   tiktok_open_id: '',
+  tiktok_post_mode: 'draft',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -443,6 +445,32 @@ function SettingsContent() {
                 onChange={v => updateConnections('tiktok_open_id', v)}
                 rows={1}
               />
+
+              {/* Post mode toggle */}
+              <div className="border-t border-zinc-100 pt-4 space-y-2">
+                <p className="text-xs font-semibold text-zinc-700">Post Mode</p>
+                <div className="flex gap-2">
+                  {(['draft', 'direct'] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => updateConnections('tiktok_post_mode', mode)}
+                      className={cn(
+                        'flex-1 rounded-xl border py-2.5 text-xs font-medium transition-all',
+                        connections.tiktok_post_mode === mode
+                          ? 'border-zinc-900 bg-zinc-900 text-white'
+                          : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300'
+                      )}
+                    >
+                      {mode === 'draft' ? 'Draft to Inbox' : 'Direct Post'}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-zinc-400">
+                  {connections.tiktok_post_mode === 'draft'
+                    ? 'Video goes to TikTok drafts — you review and publish manually.'
+                    : 'Video posts directly to TikTok. Requires app approval from TikTok.'}
+                </p>
+              </div>
 
               {/* Connect button — at bottom */}
               <div className="border-t border-zinc-100 pt-4">
