@@ -10,6 +10,7 @@ const KEYS = [
   'instagram_user_token',
   'instagram_username',
   'tiktok_client_key',
+  'tiktok_username',
   'tiktok_client_secret',
   'tiktok_access_token',
   'tiktok_open_id',

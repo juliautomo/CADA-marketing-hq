@@ -32,12 +32,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=connections&error=tiktok_token`)
   }
 
+  // Fetch TikTok username
+  let tiktokUsername = ''
+  try {
+    const userRes = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=username,display_name', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
+    })
+    const userData = await userRes.json()
+    tiktokUsername = userData.data?.user?.username ?? userData.data?.user?.display_name ?? ''
+  } catch {}
+
   // Save to DB
   const supabase = createServiceClient()
   await supabase.from('cada_settings').upsert([
     { key: 'tiktok_access_token', value: tokenData.access_token, updated_at: new Date().toISOString() },
     { key: 'tiktok_open_id', value: tokenData.open_id, updated_at: new Date().toISOString() },
     { key: 'tiktok_refresh_token', value: tokenData.refresh_token ?? 'null', updated_at: new Date().toISOString() },
+    { key: 'tiktok_username', value: tiktokUsername || 'null', updated_at: new Date().toISOString() },
   ])
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=connections&success=tiktok`)

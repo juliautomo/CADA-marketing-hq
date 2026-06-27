@@ -32,6 +32,7 @@ interface ConnectionSettings {
   tiktok_access_token: string
   tiktok_open_id: string
   tiktok_post_mode: 'draft' | 'direct'
+  tiktok_username: string
 }
 
 const BRAND_DEFAULTS: BrandSettings = {
@@ -54,6 +55,7 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
   tiktok_access_token: '',
   tiktok_open_id: '',
   tiktok_post_mode: 'draft',
+  tiktok_username: '',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -462,7 +464,7 @@ function SettingsContent() {
                   <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
                     <div className="flex items-center gap-2 text-sm text-emerald-700">
                       <CheckCircle2 className="w-4 h-4" />
-                      TikTok account connected
+                      {connections.tiktok_username ? `@${connections.tiktok_username}` : 'TikTok account connected'}
                     </div>
                     <a href="/api/auth/tiktok" className="text-xs text-zinc-500 underline hover:text-zinc-700">
                       Reconnect
