@@ -46,8 +46,20 @@ export async function GET(req: NextRequest) {
   )
   const pagesData = await pagesRes.json()
 
-  const pages: Array<{ id: string; name: string; access_token: string; instagram_business_account?: { id: string } }> =
+  let pages: Array<{ id: string; name: string; access_token: string; instagram_business_account?: { id: string } }> =
     pagesData.data ?? []
+
+  // If me/accounts is empty (Business Manager page), try fetching the CADA page directly
+  if (pages.length === 0) {
+    const cadaPageId = '61582752606289'
+    const directRes = await fetch(
+      `https://graph.facebook.com/v25.0/${cadaPageId}?fields=id,name,access_token,instagram_business_account&access_token=${longLivedToken}`
+    )
+    const directData = await directRes.json()
+    if (directData.id) {
+      pages = [directData]
+    }
+  }
 
   // Find the page with an Instagram Business Account
   const pageWithIG = pages.find(p => p.instagram_business_account?.id)
