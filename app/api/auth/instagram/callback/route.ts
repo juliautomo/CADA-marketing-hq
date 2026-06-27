@@ -60,11 +60,21 @@ export async function GET(req: NextRequest) {
   ]
 
   if (pageWithIG) {
+    const igId = pageWithIG.instagram_business_account!.id
+
+    // Fetch Instagram username
+    const igRes = await fetch(
+      `https://graph.facebook.com/v25.0/${igId}?fields=username,name&access_token=${pageWithIG.access_token}`
+    )
+    const igData = await igRes.json()
+    const igUsername = igData.username ?? igData.name ?? ''
+
     upsertRows.push(
       { key: 'instagram_page_id', value: pageWithIG.id, updated_at: new Date().toISOString() },
       { key: 'instagram_page_name', value: pageWithIG.name, updated_at: new Date().toISOString() },
       { key: 'instagram_page_token', value: pageWithIG.access_token, updated_at: new Date().toISOString() },
-      { key: 'instagram_business_account_id', value: pageWithIG.instagram_business_account!.id, updated_at: new Date().toISOString() },
+      { key: 'instagram_business_account_id', value: igId, updated_at: new Date().toISOString() },
+      { key: 'instagram_username', value: igUsername, updated_at: new Date().toISOString() },
     )
   }
 
