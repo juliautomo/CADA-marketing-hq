@@ -25,6 +25,7 @@ interface ConnectionSettings {
   instagram_app_secret: string
   instagram_access_token: string
   instagram_business_account_id: string
+  instagram_user_token: string
   instagram_username: string
   tiktok_client_key: string
   tiktok_client_secret: string
@@ -46,6 +47,7 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
   instagram_app_secret: '',
   instagram_access_token: '',
   instagram_business_account_id: '',
+  instagram_user_token: '',
   instagram_username: '',
   tiktok_client_key: '',
   tiktok_client_secret: '',
@@ -352,11 +354,11 @@ function SettingsContent() {
               )}
 
               {/* Connect button */}
-              {connections.instagram_business_account_id ? (
+              {connections.instagram_user_token ? (
                 <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
                   <div className="flex items-center gap-2 text-sm text-emerald-700">
                     <CheckCircle2 className="w-4 h-4" />
-                    {connections.instagram_username ? `@${connections.instagram_username}` : 'Instagram account connected'}
+                    {connections.instagram_username ? `@${connections.instagram_username}` : connections.instagram_business_account_id ? `ID: ${connections.instagram_business_account_id}` : 'Instagram connected'}
                   </div>
                   <a href="/api/auth/instagram" className="text-xs text-zinc-500 underline hover:text-zinc-700">
                     Reconnect

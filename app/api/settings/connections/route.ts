@@ -7,6 +7,8 @@ const KEYS = [
   'instagram_app_secret',
   'instagram_access_token',
   'instagram_business_account_id',
+  'instagram_user_token',
+  'instagram_username',
   'tiktok_client_key',
   'tiktok_client_secret',
   'tiktok_access_token',
