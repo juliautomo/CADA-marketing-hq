@@ -59,7 +59,7 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function Field({
-  label, description, placeholder, value, onChange, rows = 4, secret = false,
+  label, description, placeholder, value, onChange, rows = 4, secret = false, lockable = false,
 }: {
   label: string
   description?: string
@@ -68,29 +68,43 @@ function Field({
   onChange: (v: string) => void
   rows?: number
   secret?: boolean
+  lockable?: boolean
 }) {
   const [show, setShow] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const isLocked = lockable && !!value && !editing
 
-  if (secret) {
+  if (secret || lockable) {
     return (
       <div className="space-y-1.5">
-        <label className="block text-xs font-semibold text-zinc-700">{label}</label>
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-semibold text-zinc-700">{label}</label>
+          {isLocked && (
+            <button type="button" onClick={() => setEditing(true)} className="text-xs text-zinc-400 hover:text-violet-600 underline">Edit</button>
+          )}
+        </div>
         {description && <p className="text-xs text-zinc-400">{description}</p>}
         <div className="relative">
           <input
-            type={show ? 'text' : 'password'}
+            type={secret && !show ? 'password' : 'text'}
             value={value}
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 pr-10 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono"
+            disabled={isLocked}
+            className={cn(
+              'w-full rounded-xl border bg-zinc-50 px-3 py-2.5 text-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono',
+              isLocked ? 'border-zinc-100 text-zinc-400 cursor-not-allowed' : 'border-zinc-200 text-zinc-800 pr-10'
+            )}
           />
-          <button
-            type="button"
-            onClick={() => setShow(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-          >
-            {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+          {secret && !isLocked && (
+            <button
+              type="button"
+              onClick={() => setShow(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+            >
+              {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          )}
         </div>
       </div>
     )
@@ -366,12 +380,13 @@ function SettingsContent() {
                     </a>
                   </div>
                   <Field
-                    label="Business Account ID (required to post)"
+                    label="Business Account ID"
                     description="Find it at business.facebook.com → Settings → Instagram accounts → @wear_cada"
                     placeholder="17841400000000000"
                     value={connections.instagram_business_account_id}
                     onChange={v => updateConnections('instagram_business_account_id', v)}
                     rows={1}
+                    lockable
                   />
                 </div>
               ) : (
@@ -414,41 +429,6 @@ function SettingsContent() {
                 </div>
               )}
 
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Manual credentials (optional)</p>
-                <p className="text-xs text-zinc-400">If OAuth doesn't work, paste credentials directly from developers.tiktok.com</p>
-              </div>
-
-              <Field
-                label="Client Key"
-                placeholder="awxxxxxxxxxxxxxx"
-                value={connections.tiktok_client_key}
-                onChange={v => updateConnections('tiktok_client_key', v)}
-                rows={1}
-              />
-              <Field
-                label="Client Secret"
-                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxx"
-                value={connections.tiktok_client_secret}
-                onChange={v => updateConnections('tiktok_client_secret', v)}
-                rows={1}
-                secret
-              />
-              <Field
-                label="Access Token"
-                placeholder="act.xxxxxxxxxxxxxxxxxx"
-                value={connections.tiktok_access_token}
-                onChange={v => updateConnections('tiktok_access_token', v)}
-                rows={1}
-                secret
-              />
-              <Field
-                label="Open ID"
-                placeholder="Your TikTok user Open ID"
-                value={connections.tiktok_open_id}
-                onChange={v => updateConnections('tiktok_open_id', v)}
-                rows={1}
-              />
 
               {/* Post mode toggle */}
               <div className="border-t border-zinc-100 pt-4 space-y-2">
