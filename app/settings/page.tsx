@@ -355,14 +355,26 @@ function SettingsContent() {
 
               {/* Connect button */}
               {connections.instagram_user_token ? (
-                <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm text-emerald-700">
-                    <CheckCircle2 className="w-4 h-4" />
-                    {connections.instagram_username ? `@${connections.instagram_username}` : connections.instagram_business_account_id ? `ID: ${connections.instagram_business_account_id}` : 'Instagram connected'}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm text-emerald-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {connections.instagram_username ? `@${connections.instagram_username}` : 'Instagram connected'}
+                    </div>
+                    <a href="/api/auth/instagram" className="text-xs text-zinc-500 underline hover:text-zinc-700">
+                      Reconnect
+                    </a>
                   </div>
-                  <a href="/api/auth/instagram" className="text-xs text-zinc-500 underline hover:text-zinc-700">
-                    Reconnect
-                  </a>
+                  {!connections.instagram_business_account_id && (
+                    <Field
+                      label="Business Account ID (required to post)"
+                      description="Go to business.facebook.com → your Instagram account info, or ask your Meta Business Manager admin."
+                      placeholder="17841400000000000"
+                      value={connections.instagram_business_account_id}
+                      onChange={v => updateConnections('instagram_business_account_id', v)}
+                      rows={1}
+                    />
+                  )}
                 </div>
               ) : (
                 <a
