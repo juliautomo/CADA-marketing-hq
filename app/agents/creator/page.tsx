@@ -60,7 +60,7 @@ function TikTokPostButton({ videoUrl, caption }: { videoUrl: string; caption: st
     const data = await res.json()
     if (res.ok) {
       setStatus('done')
-      setMsg('Posted to TikTok (visible only to you until approved)')
+      setMsg('Sent to TikTok inbox as draft — open TikTok app to review and publish')
     } else {
       setStatus('error')
       setMsg(data.error ?? 'Post failed')

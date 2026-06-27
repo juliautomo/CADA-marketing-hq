@@ -30,22 +30,14 @@ export async function POST(req: NextRequest) {
   const videoBuffer = await videoRes.arrayBuffer()
   const videoSize = videoBuffer.byteLength
 
-  // Step 1: Initialize upload with PUSH_BY_FILE (no domain verification needed)
-  const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
+  // Step 1: Initialize upload — posts to user's inbox as draft (avoids UX guideline restrictions)
+  const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/inbox/video/init/', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json; charset=UTF-8',
     },
     body: JSON.stringify({
-      post_info: {
-        title: caption.slice(0, 150),
-        privacy_level: 'SELF_ONLY',
-        disable_duet: false,
-        disable_comment: false,
-        disable_stitch: false,
-        video_cover_timestamp_ms: coverTimestamp,
-      },
       source_info: {
         source: 'FILE_UPLOAD',
         video_size: videoSize,
