@@ -139,9 +139,13 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [oauthStatus, setOauthStatus] = useState<'success' | 'error' | null>(
+  const [tiktokStatus, setTiktokStatus] = useState<'success' | 'error' | null>(
     searchParams.get('success') === 'tiktok' ? 'success' :
     searchParams.get('error')?.startsWith('tiktok') ? 'error' : null
+  )
+  const [instagramStatus, setInstagramStatus] = useState<'success' | 'error' | null>(
+    searchParams.get('success') === 'instagram' ? 'success' :
+    searchParams.get('error')?.startsWith('instagram') ? 'error' : null
   )
 
   useEffect(() => {
@@ -326,58 +330,47 @@ function SettingsContent() {
                 </div>
                 <div>
                   <CardTitle className="text-base">Instagram</CardTitle>
-                  <CardDescription className="mt-0.5">Connect via Meta Graph API to publish posts and read performance data.</CardDescription>
+                  <CardDescription className="mt-0.5">Connect via Meta to publish posts and read performance data.</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-xs text-blue-700 space-y-1">
-                <p className="font-semibold">How to get these credentials:</p>
-                <ol className="list-decimal list-inside space-y-0.5 text-blue-600">
-                  <li>Go to developers.facebook.com → Create App → Business</li>
-                  <li>Add Instagram Graph API product</li>
-                  <li>Link your Facebook Page + Instagram account</li>
-                  <li>Generate a long-lived access token (60 days)</li>
-                  <li>Paste the values below and save</li>
-                </ol>
-              </div>
 
-              <Field
-                label="App ID"
-                placeholder="1234567890"
-                value={connections.instagram_app_id}
-                onChange={v => updateConnections('instagram_app_id', v)}
-                rows={1}
-              />
-              <Field
-                label="App Secret"
-                placeholder="abc123..."
-                value={connections.instagram_app_secret}
-                onChange={v => updateConnections('instagram_app_secret', v)}
-                rows={1}
-                secret
-              />
-              <Field
-                label="Access Token"
-                placeholder="EAABs..."
-                value={connections.instagram_access_token}
-                onChange={v => updateConnections('instagram_access_token', v)}
-                rows={1}
-                secret
-              />
-              <Field
-                label="Business Account ID"
-                placeholder="17841400000000000"
-                value={connections.instagram_business_account_id}
-                onChange={v => updateConnections('instagram_business_account_id', v)}
-                rows={1}
-              />
-
-              {connections.instagram_access_token && (
-                <div className="flex items-center gap-2 text-xs text-emerald-600">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Token saved — ready to connect
+              {/* OAuth status banners */}
+              {instagramStatus === 'success' && (
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2 text-sm text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  Instagram connected! Your page and business account have been saved.
                 </div>
+              )}
+              {instagramStatus === 'error' && (
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                  Instagram connection failed or was denied. Please try again.
+                </div>
+              )}
+
+              {/* Connect button */}
+              {connections.instagram_access_token || connections.instagram_business_account_id ? (
+                <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm text-emerald-700">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Instagram account connected
+                    {connections.instagram_business_account_id && (
+                      <span className="text-xs text-emerald-600 font-mono">· ID: {connections.instagram_business_account_id}</span>
+                    )}
+                  </div>
+                  <a href="/api/auth/instagram" className="text-xs text-zinc-500 underline hover:text-zinc-700">
+                    Reconnect
+                  </a>
+                </div>
+              ) : (
+                <a
+                  href="/api/auth/instagram"
+                  className="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 text-white text-sm font-semibold py-2.5 hover:opacity-90 transition-opacity"
+                >
+                  <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">IG</div>
+                  Connect with Instagram
+                </a>
               )}
             </CardContent>
           </Card>
@@ -398,13 +391,13 @@ function SettingsContent() {
             <CardContent className="space-y-4">
 
               {/* OAuth status banners */}
-              {oauthStatus === 'success' && (
+              {tiktokStatus === 'success' && (
                 <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2 text-sm text-emerald-700">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   TikTok connected successfully! Your access token has been saved.
                 </div>
               )}
-              {oauthStatus === 'error' && (
+              {tiktokStatus === 'error' && (
                 <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
                   TikTok connection failed or was denied. Please try again.
                 </div>
