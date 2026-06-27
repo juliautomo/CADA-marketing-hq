@@ -598,14 +598,19 @@ export default function CreatorPage() {
 
                 {/* Text output */}
                 {typeof result?.text === 'string' && (
-                  <div className="relative">
-                    <pre className="text-sm text-zinc-800 whitespace-pre-wrap font-sans leading-relaxed bg-zinc-50 rounded-xl border border-zinc-100 p-4 pr-12">
-                      {result.text}
-                    </pre>
-                    <button onClick={copyText}
-                      className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-colors">
-                      {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                    </button>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <pre className="text-sm text-zinc-800 whitespace-pre-wrap font-sans leading-relaxed bg-zinc-50 rounded-xl border border-zinc-100 p-4 pr-12">
+                        {result.text}
+                      </pre>
+                      <button onClick={copyText}
+                        className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-colors">
+                        {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {task === 'caption' && rawMediaUrl && (
+                      <TikTokPostButton videoUrl={rawMediaUrl} caption={result.text} />
+                    )}
                   </div>
                 )}
 
