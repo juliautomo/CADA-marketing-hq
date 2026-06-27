@@ -22,7 +22,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'TikTok not connected. Go to Settings → Connections.' }, { status: 401 })
   }
 
-  // Initialize video upload
+  // Fetch video from Supabase storage
+  const videoRes = await fetch(videoUrl)
+  if (!videoRes.ok) {
+    return NextResponse.json({ error: 'Could not fetch video from storage' }, { status: 500 })
+  }
+  const videoBuffer = await videoRes.arrayBuffer()
+  const videoSize = videoBuffer.byteLength
+
+  // Step 1: Initialize upload with PUSH_BY_FILE (no domain verification needed)
   const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
     method: 'POST',
     headers: {
@@ -32,15 +40,17 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       post_info: {
         title: caption,
-        privacy_level: 'SELF_ONLY', // safe default — change to PUBLIC_TO_EVERYONE for real posts
+        privacy_level: 'SELF_ONLY',
         disable_duet: false,
         disable_comment: false,
         disable_stitch: false,
         video_cover_timestamp_ms: coverTimestamp,
       },
       source_info: {
-        source: 'PULL_FROM_URL',
-        video_url: videoUrl,
+        source: 'FILE_UPLOAD',
+        video_size: videoSize,
+        chunk_size: videoSize,
+        total_chunk_count: 1,
       },
     }),
   })
@@ -48,10 +58,27 @@ export async function POST(req: NextRequest) {
   const initData = await initRes.json()
 
   if (initData.error?.code !== 'ok') {
-    return NextResponse.json({ error: initData.error?.message ?? 'TikTok post failed' }, { status: 500 })
+    return NextResponse.json({ error: initData.error?.message ?? 'TikTok init failed' }, { status: 500 })
   }
 
   const publishId = initData.data?.publish_id
+  const uploadUrl = initData.data?.upload_url
+
+  // Step 2: Upload video chunk
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'video/mp4',
+      'Content-Range': `bytes 0-${videoSize - 1}/${videoSize}`,
+      'Content-Length': String(videoSize),
+    },
+    body: videoBuffer,
+  })
+
+  if (!uploadRes.ok) {
+    const uploadErr = await uploadRes.text()
+    return NextResponse.json({ error: `Upload failed: ${uploadErr}` }, { status: 500 })
+  }
 
   // Log to agent runs
   await supabase.from('cada_agent_runs').insert({
