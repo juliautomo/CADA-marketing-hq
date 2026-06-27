@@ -365,16 +365,14 @@ function SettingsContent() {
                       Reconnect
                     </a>
                   </div>
-                  {!connections.instagram_business_account_id && (
-                    <Field
-                      label="Business Account ID (required to post)"
-                      description="Go to business.facebook.com → your Instagram account info, or ask your Meta Business Manager admin."
-                      placeholder="17841400000000000"
-                      value={connections.instagram_business_account_id}
-                      onChange={v => updateConnections('instagram_business_account_id', v)}
-                      rows={1}
-                    />
-                  )}
+                  <Field
+                    label="Business Account ID (required to post)"
+                    description="Find it at business.facebook.com → Settings → Instagram accounts → @wear_cada"
+                    placeholder="17841400000000000"
+                    value={connections.instagram_business_account_id}
+                    onChange={v => updateConnections('instagram_business_account_id', v)}
+                    rows={1}
+                  />
                 </div>
               ) : (
                 <a
