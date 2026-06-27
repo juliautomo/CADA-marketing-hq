@@ -168,10 +168,10 @@ export function MediaReference({
         })
         // Upload video to Supabase so we have a public URL for TikTok posting
         const ext = file.name.split('.').pop()
-        const path = `video-refs/${Date.now()}.${ext}`
-        const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+        const path = `${Date.now()}.${ext}`
+        const { error: uploadError } = await supabase.storage.from('videos').upload(path, file, { upsert: true })
         if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
+          const { data: urlData } = supabase.storage.from('videos').getPublicUrl(path)
           onRawMedia?.(urlData.publicUrl, objectUrl)
         }
         const frames = await extractFrames(videoRef.current!, MAX_FRAMES)
