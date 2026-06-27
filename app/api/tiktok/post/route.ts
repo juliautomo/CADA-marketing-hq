@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     },
     body: JSON.stringify({
       post_info: {
-        title: caption,
+        title: caption.slice(0, 150),
         privacy_level: 'SELF_ONLY',
         disable_duet: false,
         disable_comment: false,
