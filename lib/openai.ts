@@ -9,7 +9,7 @@ function getClient() {
   return _openai
 }
 
-function extractBase64Result(data: OpenAI.Images.Image[]): string {
+function extractBase64Result(data: OpenAI.Images.Image[] | undefined): string {
   const imageData = data?.[0]
   if (!imageData) throw new Error('No image returned from OpenAI')
   if (imageData.url) return imageData.url
