@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage, generateImageWithReference } from '@/lib/openai'
+import { generateImageFlux } from '@/lib/fal'
 import { uploadFileToDrive } from '@/lib/google'
 import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
 import { generateVideoKling } from '@/lib/kling'
@@ -146,12 +147,18 @@ Include:
         const dallePrompt = body.prompt ??
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
         const refImage = body.referenceImageUrl || undefined
-        const imageUrl = refImage
-          ? await generateImageWithReference(dallePrompt, refImage, '1024x1024', imgQuality)
-          : await generateImage(dallePrompt, '1024x1024', imgQuality)
+        const provider = body.imageProvider ?? 'gpt'
+        let imageUrl: string
+        if (provider === 'flux') {
+          imageUrl = await generateImageFlux(dallePrompt, '1:1')
+        } else {
+          imageUrl = refImage
+            ? await generateImageWithReference(dallePrompt, refImage, '1024x1024', imgQuality)
+            : await generateImage(dallePrompt, '1024x1024', imgQuality)
+        }
         const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-image-${Date.now()}.png`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
+          .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt, provider }, tags: ['image', 'cada', provider] })
           .select().single()
         result = { imageUrl, driveUrl, item: data }
         break
@@ -198,9 +205,12 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           const imagePrompt = body.prompt ??
             `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
           const storyRefImage = body.referenceImageUrl || undefined
-          const imageUrl = storyRefImage
-            ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1536', imgQuality)
-            : await generateImage(imagePrompt, '1024x1536', imgQuality)
+          const storyImgProvider = body.imageProvider ?? 'gpt'
+          const imageUrl = storyImgProvider === 'flux'
+            ? await generateImageFlux(imagePrompt, '9:16')
+            : storyRefImage
+              ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1536', imgQuality)
+              : await generateImage(imagePrompt, '1024x1536', imgQuality)
           const storyImgDriveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-story-${Date.now()}.png`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
             .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, drive_url: storyImgDriveUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'] })

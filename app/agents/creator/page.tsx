@@ -175,6 +175,7 @@ export default function CreatorPage() {
   const [captionLength, setCaptionLen]  = useState<CreatorInput['captionLength']>('standard')
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
   const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
+  const [imageProvider, setImageProvider] = useState<'gpt' | 'flux'>('flux')
   const [storyFormat, setStoryFormat] = useState<'image' | 'kling' | 'runway'>('image')
   const [refImageUrls, setRefImageUrls]   = useState<string[]>([])
   const [customPrompt, setCustomPrompt] = useState('')
@@ -255,6 +256,7 @@ export default function CreatorPage() {
       captionLength:  task === 'caption' ? captionLength : undefined,
       videoLength:    ['video', 'story'].includes(task) ? videoLength   : undefined,
       videoProvider:  task === 'video'   ? videoProvider : task === 'story' ? storyFormat : undefined,
+      imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
       referenceImageUrl: rawMediaUrl ?? undefined,
       referenceImageUrls: refImageUrls.length > 0 ? refImageUrls : undefined,
       prompt:         customPrompt || undefined,
@@ -569,6 +571,30 @@ export default function CreatorPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Image provider */}
+            {(task === 'image' || (task === 'story' && storyFormat === 'image')) && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Image provider</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { id: 'flux', label: 'Flux 1.1 Pro', sub: 'Most photorealistic' },
+                    { id: 'gpt',  label: 'GPT Image 1',  sub: 'Best with reference photo' },
+                  ] as const).map((p) => (
+                    <button key={p.id} onClick={() => setImageProvider(p.id)}
+                      className={cn('rounded-xl border p-3 text-left transition-all',
+                        imageProvider === p.id ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300'
+                      )}>
+                      <p className={cn('text-xs font-semibold', imageProvider === p.id ? 'text-white' : 'text-zinc-800')}>{p.label}</p>
+                      <p className={cn('text-xs mt-0.5', imageProvider === p.id ? 'text-white/60' : 'text-zinc-400')}>{p.sub}</p>
+                    </button>
+                  ))}
+                </div>
+                {imageProvider === 'gpt' && (
+                  <p className="text-xs text-zinc-400 mt-1.5">GPT Image 1 quality is set in Brand Settings.</p>
+                )}
               </div>
             )}
 
