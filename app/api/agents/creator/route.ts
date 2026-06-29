@@ -9,6 +9,16 @@ import { createServiceClient } from '@/lib/supabase'
 import { getBrandSystemPrompt, type BrandOverrides } from '@/lib/brand'
 import type { CreatorInput } from '@/types'
 
+async function getSettings(db: ReturnType<typeof createServiceClient>) {
+  const KEYS = ['brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples', 'image_quality']
+  const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
+  const map: Record<string, string> = {}
+  for (const row of data ?? []) {
+    if (row.value && row.value !== 'null') map[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
+  }
+  return map
+}
+
 async function getSystemPrompt(db: ReturnType<typeof createServiceClient>) {
   const KEYS = ['brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples']
   const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
@@ -49,7 +59,8 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  const SYSTEM_PROMPT = await getSystemPrompt(db)
+  const [SYSTEM_PROMPT, settings] = await Promise.all([getSystemPrompt(db), getSettings(db)])
+  const imgQuality = (settings.image_quality ?? 'medium') as 'low' | 'medium' | 'high'
 
   try {
     let result: Record<string, unknown> = {}
@@ -115,8 +126,8 @@ Include:
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
         const refImage = body.referenceImageUrl || undefined
         const imageUrl = refImage
-          ? await generateImageWithReference(dallePrompt, refImage)
-          : await generateImage(dallePrompt)
+          ? await generateImageWithReference(dallePrompt, refImage, '1024x1024', imgQuality)
+          : await generateImage(dallePrompt, '1024x1024', imgQuality)
         const { data } = await db.from('cada_content_items')
           .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
           .select().single()
@@ -165,8 +176,8 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
             `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
           const storyRefImage = body.referenceImageUrl || undefined
           const imageUrl = storyRefImage
-            ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1792')
-            : await generateImage(imagePrompt, '1024x1792')
+            ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1792', imgQuality)
+            : await generateImage(imagePrompt, '1024x1792', imgQuality)
           const { data } = await db.from('cada_content_items')
             .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'] })
             .select().single()

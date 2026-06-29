@@ -17,13 +17,17 @@ function extractBase64Result(data: OpenAI.Images.Image[]): string {
   throw new Error('Unexpected image response format from OpenAI')
 }
 
-export async function generateImage(prompt: string, size: '1024x1024' | '1024x1792' = '1024x1024'): Promise<string> {
+export async function generateImage(
+  prompt: string,
+  size: '1024x1024' | '1024x1792' = '1024x1024',
+  quality: 'low' | 'medium' | 'high' = 'medium',
+): Promise<string> {
   const response = await getClient().images.generate({
     model: 'gpt-image-1',
     prompt,
     n: 1,
     size,
-    quality: 'high',
+    quality,
   })
   return extractBase64Result(response.data)
 }
@@ -32,6 +36,7 @@ export async function generateImageWithReference(
   prompt: string,
   referenceUrl: string,
   size: '1024x1024' | '1024x1792' = '1024x1024',
+  quality: 'low' | 'medium' | 'high' = 'medium',
 ): Promise<string> {
   // Fetch the reference image and convert to a File object
   const res = await fetch(referenceUrl)

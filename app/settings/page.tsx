@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
-  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff,
+  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Link, Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ interface BrandSettings {
   brand_target_customer: string
   brand_campaign_theme: string
   brand_caption_examples: string
+  image_quality: 'low' | 'medium' | 'high'
 }
 
 interface ConnectionSettings {
@@ -41,6 +42,7 @@ const BRAND_DEFAULTS: BrandSettings = {
   brand_target_customer: '',
   brand_campaign_theme: '',
   brand_caption_examples: '',
+  image_quality: 'medium',
 }
 
 const CONNECTION_DEFAULTS: ConnectionSettings = {
@@ -159,6 +161,9 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analyzeMsg, setAnalyzeMsg] = useState('')
   const [tiktokStatus, setTiktokStatus] = useState<'success' | 'error' | null>(
     searchParams.get('success') === 'tiktok' ? 'success' :
     searchParams.get('error')?.startsWith('tiktok') ? 'error' : null
@@ -202,6 +207,27 @@ function SettingsContent() {
     setConnections(prev => ({ ...prev, [key]: value }))
   }
 
+  async function analyzeFromWebsite() {
+    if (!websiteUrl) return
+    setAnalyzing(true)
+    setAnalyzeMsg('')
+    try {
+      const res = await fetch('/api/settings/analyze-brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: websiteUrl }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed')
+      setBrand(prev => ({ ...prev, ...data.brand }))
+      setAnalyzeMsg('Brand context filled in! Review and save.')
+    } catch (e) {
+      setAnalyzeMsg(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
   if (loading) return <div className="text-sm text-zinc-400 p-8">Loading…</div>
 
   return (
@@ -238,6 +264,42 @@ function SettingsContent() {
       {/* ── Brand Tab ── */}
       {tab === 'brand' && (
         <div className="space-y-5">
+
+          {/* Website analyzer */}
+          <Card className="border-violet-100 bg-violet-50/40">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Link className="w-4 h-4 text-violet-500" />
+                <CardTitle className="text-base">Auto-fill from Website</CardTitle>
+              </div>
+              <CardDescription>Paste your website URL and Claude will analyze it to fill in your brand context automatically.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={websiteUrl}
+                  onChange={e => setWebsiteUrl(e.target.value)}
+                  placeholder="https://wearcada.com"
+                  className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <button
+                  onClick={analyzeFromWebsite}
+                  disabled={!websiteUrl || analyzing}
+                  className="flex items-center gap-2 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {analyzing ? 'Analyzing…' : 'Analyze'}
+                </button>
+              </div>
+              {analyzeMsg && (
+                <p className={`text-xs ${analyzeMsg.includes('!') ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {analyzeMsg}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -333,6 +395,44 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-zinc-500" />
+                <CardTitle className="text-base">AI Image Quality</CardTitle>
+              </div>
+              <CardDescription>Higher quality = better images but higher cost per generation.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                {([
+                  { value: 'low',    label: 'Low',    cost: '~$0.01' },
+                  { value: 'medium', label: 'Medium', cost: '~$0.04' },
+                  { value: 'high',   label: 'High',   cost: '~$0.17' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => updateBrand('image_quality', opt.value)}
+                    className={cn(
+                      'flex-1 rounded-xl border py-2.5 text-xs font-medium transition-all',
+                      brand.image_quality === opt.value
+                        ? 'border-zinc-900 bg-zinc-900 text-white'
+                        : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300'
+                    )}
+                  >
+                    <div>{opt.label}</div>
+                    <div className={cn('text-[10px] mt-0.5', brand.image_quality === opt.value ? 'text-zinc-300' : 'text-zinc-400')}>{opt.cost}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-400">
+                {brand.image_quality === 'low' && 'Good for quick drafts and ideation.'}
+                {brand.image_quality === 'medium' && 'Recommended — great quality for social media at a fraction of the cost.'}
+                {brand.image_quality === 'high' && 'Best quality for final posts and campaigns.'}
+              </p>
+            </CardContent>
+          </Card>
+
           <SaveBar onSave={handleSave} saving={saving} saved={saved} />
         </div>
       )}
@@ -373,9 +473,14 @@ function SettingsContent() {
               {connections.instagram_user_token ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                    <div className="flex items-center gap-2 text-sm text-emerald-700">
-                      <CheckCircle2 className="w-4 h-4" />
-                      {connections.instagram_username ? `@${connections.instagram_username}` : 'Instagram connected'}
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-emerald-700">Instagram connected</p>
+                        {connections.instagram_username && (
+                          <p className="text-xs text-emerald-600">@{connections.instagram_username}</p>
+                        )}
+                      </div>
                     </div>
                     <a href="/api/auth/instagram" className="text-xs text-zinc-500 underline hover:text-zinc-700">
                       Reconnect
@@ -462,9 +567,14 @@ function SettingsContent() {
               <div className="border-t border-zinc-100 pt-4">
                 {connections.tiktok_access_token ? (
                   <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                    <div className="flex items-center gap-2 text-sm text-emerald-700">
-                      <CheckCircle2 className="w-4 h-4" />
-                      {connections.tiktok_username ? `@${connections.tiktok_username}` : 'TikTok account connected'}
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-emerald-700">TikTok connected</p>
+                        {connections.tiktok_username && (
+                          <p className="text-xs text-emerald-600">@{connections.tiktok_username}</p>
+                        )}
+                      </div>
                     </div>
                     <a href="/api/auth/tiktok" className="text-xs text-zinc-500 underline hover:text-zinc-700">
                       Reconnect
