@@ -19,11 +19,15 @@ Your job is to take a rough scene idea and rewrite it as a detailed, photorealis
 Output ONLY the improved prompt — no explanation, no preamble, no quotes.`,
     messages: [{
       role: 'user',
-      content: `Rewrite this rough idea into a detailed image prompt for a ${format} of a Muslim woman in hijab wearing CADA modest fashion clothing.
-Include: specific lighting (golden hour / soft studio / natural window light), camera angle, background setting, fabric texture details, mood, and photographic style (editorial, lifestyle, etc).
-Keep it under 120 words.
+      content: `Enhance this image prompt for a ${format} of a Muslim woman in hijab wearing CADA modest fashion clothing.
 
-Rough idea: ${prompt}`,
+RULES:
+- Keep ALL specific details the user mentioned (location, pose, props, body framing, zoom level, clothing details) — do NOT remove or contradict them
+- Only ADD: precise lighting description, camera lens (e.g. 85mm f/1.8), photography style, fabric texture detail, mood/atmosphere
+- Keep it under 130 words
+- Output only the improved prompt, no explanation
+
+Original prompt: ${prompt}`,
     }],
   })
 
