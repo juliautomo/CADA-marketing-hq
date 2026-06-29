@@ -7,6 +7,11 @@
     {
       "path": "/api/scheduled/daily-content",
       "schedule": "0 2 * * *"
-    }
+    },
+    { "path": "/api/scheduled/publish-posts", "schedule": "0 2 * * *" },
+    { "path": "/api/scheduled/publish-posts", "schedule": "0 5 * * *" },
+    { "path": "/api/scheduled/publish-posts", "schedule": "0 8 * * *" },
+    { "path": "/api/scheduled/publish-posts", "schedule": "0 11 * * *" },
+    { "path": "/api/scheduled/publish-posts", "schedule": "0 14 * * *" }
   ]
 }

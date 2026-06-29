@@ -15,6 +15,7 @@ import {
   Zap,
   Package,
   Settings,
+  CalendarClock,
 } from 'lucide-react'
 
 const nav: { label: string; href: string; icon: React.ElementType; highlight?: boolean }[] = [
@@ -26,6 +27,7 @@ const nav: { label: string; href: string; icon: React.ElementType; highlight?: b
   { label: 'Performance Reviewer', href: '/agents/performance',  icon: BarChart3 },
   { label: 'Product Catalog',      href: '/products',            icon: Package },
   { label: 'Automations',          href: '/automations',         icon: Zap },
+  { label: 'Post Scheduler',       href: '/scheduler',           icon: CalendarClock },
   { label: 'History',              href: '/history',             icon: History },
   { label: 'Brand Settings',       href: '/settings',            icon: Settings },
 ]

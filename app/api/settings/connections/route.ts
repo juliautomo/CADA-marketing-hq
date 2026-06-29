@@ -23,6 +23,38 @@ export async function GET() {
   for (const row of data ?? []) {
     result[row.key] = row.value === 'null' ? '' : (typeof row.value === 'string' ? row.value : JSON.stringify(row.value))
   }
+
+  // Auto-fetch Instagram username if missing
+  if (!result.instagram_username && result.instagram_user_token) {
+    try {
+      const token = result.instagram_page_token ?? result.instagram_user_token
+      const igUserId = result.instagram_business_account_id
+      if (igUserId) {
+        const r = await fetch(`https://graph.facebook.com/v25.0/${igUserId}?fields=username&access_token=${token}`)
+        const d = await r.json()
+        if (d.username) {
+          result.instagram_username = d.username
+          await supabase.from('cada_settings').upsert([{ key: 'instagram_username', value: d.username, updated_at: new Date().toISOString() }])
+        }
+      }
+    } catch { /* non-critical */ }
+  }
+
+  // Auto-fetch TikTok username if missing
+  if (!result.tiktok_username && result.tiktok_access_token) {
+    try {
+      const r = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=display_name,username', {
+        headers: { Authorization: `Bearer ${result.tiktok_access_token}` },
+      })
+      const d = await r.json()
+      const username = d.data?.user?.username ?? d.data?.user?.display_name
+      if (username) {
+        result.tiktok_username = username
+        await supabase.from('cada_settings').upsert([{ key: 'tiktok_username', value: username, updated_at: new Date().toISOString() }])
+      }
+    } catch { /* non-critical */ }
+  }
+
   return NextResponse.json(result)
 }
 

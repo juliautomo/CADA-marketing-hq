@@ -4,6 +4,7 @@ export async function generateVideoRunway(
   prompt: string,
   duration: 5 | 10 = 5,
   imageUrl?: string,
+  ratio: '1280:720' | '720:1280' = '1280:720',
 ): Promise<string> {
   const headers = {
     Authorization: `Bearer ${process.env.RUNWAYML_API_KEY}`,
@@ -16,7 +17,7 @@ export async function generateVideoRunway(
   const model    = isImage ? 'gen3a_turbo' : 'gen4.5'
   const body     = isImage
     ? { promptImage: imageUrl, promptText: prompt, model, duration }
-    : { promptText: prompt, model, duration, ratio: '1280:720' }
+    : { promptText: prompt, model, duration, ratio }
 
   const createRes = await fetch(endpoint, {
     method: 'POST',

@@ -107,12 +107,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: publishData.error?.message ?? 'Failed to publish to Instagram' }, { status: 500 })
   }
 
-  await supabase.from('cada_agent_runs').insert({
-    agent: 'instagram_post',
-    status: 'completed',
-    input: { mediaUrl, caption, mediaType },
-    output: { post_id: publishData.id, ig_user_id: igUserId },
-  })
+  await Promise.all([
+    supabase.from('cada_agent_runs').insert({
+      agent: 'instagram_post',
+      status: 'completed',
+      input: { mediaUrl, caption, mediaType },
+      output: { post_id: publishData.id, ig_user_id: igUserId },
+    }),
+    supabase.from('cada_posts').insert({
+      platform: 'instagram',
+      post_id: publishData.id,
+      media_url: mediaUrl,
+      media_type: mediaType,
+      caption,
+      source: 'manual',
+    }),
+  ])
 
   return NextResponse.json({ success: true, post_id: publishData.id })
 }

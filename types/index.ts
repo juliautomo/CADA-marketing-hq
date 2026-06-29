@@ -13,7 +13,7 @@ export interface AgentRun {
   created_at: string
 }
 
-export type ContentType = 'caption' | 'description' | 'email' | 'image' | 'video' | 'canva_template' | 'canva'
+export type ContentType = 'caption' | 'description' | 'email' | 'image' | 'video' | 'canva_template' | 'canva' | 'story'
 
 export interface ContentItem {
   id: string
@@ -145,7 +145,7 @@ export interface CreatorInput {
   language?: 'english' | 'bahasa-indonesia' | 'bahasa-melayu'
   captionLength?: 'short' | 'standard' | 'long'
   videoLength?: 5 | 10
-  videoProvider?: 'runway' | 'kling' | 'runway-ref'
+  videoProvider?: 'runway' | 'kling' | 'runway-ref' | 'image'
   referenceImageUrl?: string
   referenceImageUrls?: string[]
 }

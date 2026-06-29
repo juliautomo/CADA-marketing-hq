@@ -305,7 +305,7 @@ export default function AutomationsPage() {
                   </div>
                 </div>
                 {item.live && item.href && (
-                  <a href={item.href}>
+                  <a href={item.href} target="_blank" rel="noopener noreferrer">
                     <Button size="sm" variant="secondary">Open →</Button>
                   </a>
                 )}

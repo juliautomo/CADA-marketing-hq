@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime } from '@/lib/utils'
 import type { ContentItem, ContentType } from '@/types'
-import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react'
+import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check, BookImage } from 'lucide-react'
 
 const typeConfig: Record<ContentType, { label: string; icon: typeof Image; color: string }> = {
   caption:        { label: 'Caption',     icon: Type,     color: 'bg-violet-50 text-violet-600' },
@@ -16,6 +16,7 @@ const typeConfig: Record<ContentType, { label: string; icon: typeof Image; color
   video:          { label: 'Video',       icon: Video,    color: 'bg-red-50 text-red-600' },
   canva_template: { label: 'Canva',       icon: Layout,   color: 'bg-pink-50 text-pink-600' },
   canva:          { label: 'Canva',       icon: Layout,   color: 'bg-pink-50 text-pink-600' },
+  story:          { label: 'Story',       icon: BookImage,color: 'bg-rose-50 text-rose-600' },
 }
 
 const PAGE_SIZE = 10

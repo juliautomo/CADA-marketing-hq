@@ -87,12 +87,22 @@ export async function POST(req: NextRequest) {
   }
 
   // Log to agent runs
-  await supabase.from('cada_agent_runs').insert({
-    agent: 'tiktok_post',
-    status: 'completed',
-    input: { videoUrl, caption },
-    output: { publish_id: publishId, open_id: openId },
-  })
+  await Promise.all([
+    supabase.from('cada_agent_runs').insert({
+      agent: 'tiktok_post',
+      status: 'completed',
+      input: { videoUrl, caption },
+      output: { publish_id: publishId, open_id: openId },
+    }),
+    supabase.from('cada_posts').insert({
+      platform: 'tiktok',
+      post_id: publishId,
+      media_url: videoUrl,
+      media_type: 'REELS',
+      caption,
+      source: 'manual',
+    }),
+  ])
 
   return NextResponse.json({ success: true, publish_id: publishId })
 }
