@@ -199,8 +199,8 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
             `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
           const storyRefImage = body.referenceImageUrl || undefined
           const imageUrl = storyRefImage
-            ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1792', imgQuality)
-            : await generateImage(imagePrompt, '1024x1792', imgQuality)
+            ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1536', imgQuality)
+            : await generateImage(imagePrompt, '1024x1536', imgQuality)
           const storyImgDriveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-story-${Date.now()}.png`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
             .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, drive_url: storyImgDriveUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'] })

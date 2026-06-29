@@ -19,7 +19,7 @@ function extractBase64Result(data: OpenAI.Images.Image[] | undefined): string {
 
 export async function generateImage(
   prompt: string,
-  size: '1024x1024' | '1024x1792' = '1024x1024',
+  size: '1024x1024' | '1024x1536' = '1024x1024',
   quality: 'low' | 'medium' | 'high' = 'medium',
 ): Promise<string> {
   const response = await getClient().images.generate({
@@ -35,7 +35,7 @@ export async function generateImage(
 export async function generateImageWithReference(
   prompt: string,
   referenceUrl: string,
-  size: '1024x1024' | '1024x1792' = '1024x1024',
+  size: '1024x1024' | '1024x1536' = '1024x1024',
   quality: 'low' | 'medium' | 'high' = 'medium',
 ): Promise<string> {
   // Fetch the reference image and convert to a File object

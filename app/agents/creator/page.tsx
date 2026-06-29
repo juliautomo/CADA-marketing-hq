@@ -503,7 +503,7 @@ export default function CreatorPage() {
                         ? 'e.g. Lady walking in a park with a dog, golden hour lighting, slow motion'
                         : 'e.g. Editorial flat lay on marble surface with fresh flowers, top-down angle'
                     }
-                    rows={2}
+                    rows={5}
                   />
                   {task !== 'video' && (
                     <button
