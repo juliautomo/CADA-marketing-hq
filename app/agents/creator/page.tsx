@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Type, FileText, Mail, Image, Video, Layout,
-  ArrowRight, Copy, Check, ExternalLink, RotateCcw, X, Upload,
+  ArrowRight, Copy, Check, ExternalLink, RotateCcw, X, Upload, BookImage, Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MediaReference } from '@/components/agents/media-reference'
 import { ContentLibrary } from '@/components/agents/content-library'
+import { ScheduleButton } from '@/components/agents/schedule-button'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import type { ContentItem, ContentType, CreatorInput } from '@/types'
@@ -27,6 +28,7 @@ const TASKS = [
   { id: 'image'        as ContentType, label: 'AI Image',     icon: Image,    color: 'bg-emerald-500',description: 'Generate fashion imagery via GPT Image' },
   { id: 'video'        as ContentType, label: 'Short Video',  icon: Video,    color: 'bg-red-500',    description: 'Generate video clips via Runway ML' },
   { id: 'canva'        as ContentType, label: 'Canva',        icon: Layout,   color: 'bg-pink-500',   description: 'Auto-create a Canva design template' },
+  { id: 'story'        as ContentType, label: 'IG Story',     icon: BookImage,color: 'bg-rose-500',   description: 'Generate 9:16 image or video for Instagram Story' },
 ]
 
 const PLATFORMS  = ['Instagram', 'TikTok', 'Pinterest', 'Twitter/X', 'LinkedIn', 'Shopee']
@@ -130,6 +132,39 @@ function InstagramPostButton({ mediaUrl, caption, mediaType = 'IMAGE' }: { media
   )
 }
 
+function InstagramStoryButton({ mediaUrl, caption, mediaType }: { mediaUrl: string; caption: string; mediaType: 'IMAGE' | 'REELS' }) {
+  const [status, setStatus] = useState<'idle' | 'posting' | 'done' | 'error'>('idle')
+  const [msg, setMsg] = useState('')
+
+  async function post() {
+    setStatus('posting')
+    const res = await fetch('/api/instagram/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mediaUrl, caption, mediaType: 'STORIES' }),
+    })
+    const data = await res.json()
+    if (res.ok) { setStatus('done'); setMsg('Posted to Instagram Story!') }
+    else { setStatus('error'); setMsg(data.error ?? 'Post failed') }
+  }
+
+  if (status === 'done') return (
+    <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
+      <Check className="w-4 h-4 shrink-0" /> {msg}
+    </div>
+  )
+  return (
+    <div className="space-y-1.5">
+      <button onClick={post} disabled={status === 'posting'}
+        className="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-sm font-semibold py-2.5 hover:opacity-90 transition-opacity disabled:opacity-60">
+        <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">IG</div>
+        {status === 'posting' ? (mediaType === 'REELS' ? 'Processing…' : 'Posting…') : 'Post as Instagram Story'}
+      </button>
+      {status === 'error' && <p className="text-xs text-red-500 text-center">{msg}</p>}
+    </div>
+  )
+}
+
 export default function CreatorPage() {
   // ── State ──────────────────────────────────────────────────────────────────
   const [task, setTask]                 = useState<ContentType>('caption')
@@ -140,6 +175,7 @@ export default function CreatorPage() {
   const [captionLength, setCaptionLen]  = useState<CreatorInput['captionLength']>('standard')
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
   const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
+  const [storyFormat, setStoryFormat] = useState<'image' | 'kling' | 'runway'>('image')
   const [refImageUrls, setRefImageUrls]   = useState<string[]>([])
   const [customPrompt, setCustomPrompt] = useState('')
   const [captionNotes, setCaptionNotes] = useState('')
@@ -159,7 +195,7 @@ export default function CreatorPage() {
   const [selectedProduct, setSelectedProduct] = useState<import('@/types').Product | null>(null)
 
   const taskDef    = TASKS.find(t => t.id === task)!
-  const needsPrompt = ['image', 'video'].includes(task)
+  const needsPrompt = ['image', 'video', 'story'].includes(task)
 
   // ── Library ────────────────────────────────────────────────────────────────
   const fetchLibrary = useCallback(async () => {
@@ -216,8 +252,8 @@ export default function CreatorPage() {
       tone,
       language,
       captionLength:  task === 'caption' ? captionLength : undefined,
-      videoLength:    task === 'video'   ? videoLength   : undefined,
-      videoProvider:  task === 'video'   ? videoProvider : undefined,
+      videoLength:    ['video', 'story'].includes(task) ? videoLength   : undefined,
+      videoProvider:  task === 'video'   ? videoProvider : task === 'story' ? storyFormat : undefined,
       referenceImageUrl: rawMediaUrl ?? undefined,
       referenceImageUrls: refImageUrls.length > 0 ? refImageUrls : undefined,
       prompt:         customPrompt || undefined,
@@ -266,6 +302,16 @@ export default function CreatorPage() {
     setRawMediaUrl(null)
     setResultMediaUrl(null)
     setRefImageUrls([])
+  }
+
+  async function downloadMedia(url: string, filename: string) {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(a.href)
   }
 
   const canGenerate  = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct || rawMediaUrl)
@@ -567,6 +613,48 @@ export default function CreatorPage() {
               </div>
             )}
 
+            {/* Story format selector */}
+            {task === 'story' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Story format</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { id: 'image',  label: 'Image',        sub: '9:16 portrait photo' },
+                      { id: 'kling',  label: 'Video (Kling)', sub: '9:16 portrait video' },
+                      { id: 'runway', label: 'Video (Runway)', sub: '9:16 portrait video' },
+                    ] as const).map((f) => (
+                      <button key={f.id} onClick={() => setStoryFormat(f.id)}
+                        className={cn('rounded-xl border p-3 text-left transition-all',
+                          storyFormat === f.id ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300'
+                        )}>
+                        <p className={cn('text-xs font-semibold', storyFormat === f.id ? 'text-white' : 'text-zinc-800')}>{f.label}</p>
+                        <p className={cn('text-xs mt-0.5', storyFormat === f.id ? 'text-white/60' : 'text-zinc-400')}>{f.sub}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {storyFormat !== 'image' && (
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">Video length</label>
+                    <div className="flex gap-2">
+                      {VIDEO_LENGTHS.map((l) => (
+                        <button key={l.value} onClick={() => setVideoLength(l.value as 5 | 10)}
+                          className={cn('flex-1 rounded-lg border p-2.5 text-center text-sm font-semibold transition-all',
+                            videoLength === l.value ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-700'
+                          )}>
+                          {l.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-2.5 text-xs text-rose-600">
+                  Stories are 9:16 portrait format and expire after 24 hours.
+                </div>
+              </div>
+            )}
+
             {/* Caption direction notes */}
             {task === 'caption' && (
               <div>
@@ -656,14 +744,63 @@ export default function CreatorPage() {
                     {task === 'caption' && resultMediaUrl && (
                       <div className="space-y-2">
                         <TikTokPostButton videoUrl={resultMediaUrl} caption={result.text} />
+                        <ScheduleButton platform="tiktok" mediaUrl={resultMediaUrl} mediaType="REELS" caption={result.text} />
                         <InstagramPostButton mediaUrl={resultMediaUrl} caption={result.text} mediaType="REELS" />
+                        <ScheduleButton platform="instagram" mediaUrl={resultMediaUrl} mediaType="REELS" caption={result.text} />
                       </div>
                     )}
                   </div>
                 )}
 
+                {/* Story output */}
+                {task === 'story' && ((): React.ReactNode => {
+                  const imgUrl = typeof result?.imageUrl === 'string' ? result.imageUrl : null
+                  const vidUrl = typeof result?.videoUrl === 'string' ? result.videoUrl : null
+                  const caption = typeof result?.caption === 'string' ? result.caption : ''
+                  const media = imgUrl ?? vidUrl
+                  if (!media) return null
+                  return (
+                    <div className="space-y-3">
+                      {/* Portrait preview */}
+                      <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900 mx-auto" style={{ maxWidth: 280 }}>
+                        {imgUrl
+                          ? // eslint-disable-next-line @next/next/no-img-element
+                            <img src={imgUrl} alt="Story" className="w-full" />
+                          : // eslint-disable-next-line jsx-a11y/media-has-caption
+                            <video src={vidUrl!} controls className="w-full" />
+                        }
+                      </div>
+                      {/* Caption overlay preview */}
+                      {caption && (
+                        <div className="rounded-xl bg-zinc-50 border border-zinc-100 p-3">
+                          <p className="text-xs text-zinc-400 mb-1 font-medium">Story text overlay</p>
+                          <p className="text-sm text-zinc-800 font-medium">{caption}</p>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => downloadMedia(media, imgUrl ? 'cada-story.png' : 'cada-story.mp4')}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
+                      >
+                        <Download className="w-4 h-4" /> Download Story
+                      </button>
+                      <InstagramStoryButton
+                        mediaUrl={media}
+                        caption={caption}
+                        mediaType={imgUrl ? 'IMAGE' : 'REELS'}
+                      />
+                      <ScheduleButton
+                        platform="instagram"
+                        mediaUrl={media}
+                        mediaType={imgUrl ? 'IMAGE' : 'REELS'}
+                        caption={caption}
+                        label="Schedule Story"
+                      />
+                    </div>
+                  )
+                })()}
+
                 {/* Image output */}
-                {((): React.ReactNode => {
+                {task !== 'story' && ((): React.ReactNode => {
                   if (typeof result?.imageUrl !== 'string') return null
                   const url = result.imageUrl
                   return (
@@ -672,13 +809,20 @@ export default function CreatorPage() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="Generated" className="w-full" />
                       </div>
+                      <button
+                        onClick={() => downloadMedia(url, 'cada-image.png')}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
+                      >
+                        <Download className="w-4 h-4" /> Download Image
+                      </button>
                       <InstagramPostButton mediaUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} mediaType="IMAGE" />
+                      <ScheduleButton platform="instagram" mediaUrl={url} mediaType="IMAGE" caption={typeof result?.caption === 'string' ? result.caption : ''} />
                     </div>
                   )
                 })()}
 
                 {/* Video output */}
-                {((): React.ReactNode => {
+                {task !== 'story' && ((): React.ReactNode => {
                   if (typeof result?.videoUrl !== 'string') return null
                   const url = result.videoUrl
                   return (
@@ -687,9 +831,17 @@ export default function CreatorPage() {
                         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                         <video src={url} controls className="w-full" />
                       </div>
+                      <button
+                        onClick={() => downloadMedia(url, 'cada-video.mp4')}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
+                      >
+                        <Download className="w-4 h-4" /> Download Video
+                      </button>
                       <div className="space-y-2">
                         <TikTokPostButton videoUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} />
+                        <ScheduleButton platform="tiktok" mediaUrl={url} mediaType="REELS" caption={typeof result?.caption === 'string' ? result.caption : ''} />
                         <InstagramPostButton mediaUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} mediaType="REELS" />
+                        <ScheduleButton platform="instagram" mediaUrl={url} mediaType="REELS" caption={typeof result?.caption === 'string' ? result.caption : ''} />
                       </div>
                     </div>
                   )
