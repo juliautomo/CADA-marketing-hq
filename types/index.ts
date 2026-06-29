@@ -13,7 +13,7 @@ export interface AgentRun {
   created_at: string
 }
 
-export type ContentType = 'caption' | 'description' | 'email' | 'image' | 'video' | 'canva_template' | 'canva' | 'story'
+export type ContentType = 'caption' | 'description' | 'email' | 'image' | 'video' | 'canva_template' | 'canva' | 'story' | 'tryon'
 
 export interface ContentItem {
   id: string

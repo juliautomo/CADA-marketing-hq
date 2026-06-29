@@ -29,6 +29,7 @@ const TASKS = [
   { id: 'video'        as ContentType, label: 'Short Video',  icon: Video,    color: 'bg-red-500',    description: 'Generate video clips via Runway ML' },
   { id: 'canva'        as ContentType, label: 'Canva',        icon: Layout,   color: 'bg-pink-500',   description: 'Auto-create a Canva design template' },
   { id: 'story'        as ContentType, label: 'IG Story',     icon: BookImage,color: 'bg-rose-500',   description: 'Generate 9:16 image or video for Instagram Story' },
+  { id: 'tryon'        as ContentType, label: 'Virtual Try-On', icon: Image,  color: 'bg-teal-500',   description: 'Put your product on a model photo via Fashn.ai' },
 ]
 
 const PLATFORMS  = ['Instagram', 'TikTok', 'Pinterest', 'Twitter/X', 'LinkedIn', 'Shopee']
@@ -198,6 +199,7 @@ export default function CreatorPage() {
 
   const taskDef    = TASKS.find(t => t.id === task)!
   const needsPrompt = ['image', 'video', 'story'].includes(task)
+  const isTryon = task === 'tryon'
 
   // ── Library ────────────────────────────────────────────────────────────────
   const fetchLibrary = useCallback(async () => {
@@ -257,8 +259,8 @@ export default function CreatorPage() {
       videoLength:    ['video', 'story'].includes(task) ? videoLength   : undefined,
       videoProvider:  task === 'video'   ? videoProvider : task === 'story' ? storyFormat : undefined,
       imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
-      referenceImageUrl: rawMediaUrl ?? undefined,
-      referenceImageUrls: refImageUrls.length > 0 ? refImageUrls : undefined,
+      referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
+      referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : refImageUrls.length > 0 ? refImageUrls : undefined,
       prompt:         customPrompt || undefined,
       additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '')) || undefined,
     }
@@ -342,7 +344,9 @@ export default function CreatorPage() {
     window.open(url, '_blank')
   }
 
-  const canGenerate  = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct || rawMediaUrl)
+  const canGenerate  = isTryon
+    ? !!(rawMediaUrl && refImageUrls[0])
+    : !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct || rawMediaUrl)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
   const showCatalog  = products.length > 0
 
@@ -394,8 +398,8 @@ export default function CreatorPage() {
         </div>
       </div>
 
-      {/* ── STEP 2: Reference (optional) — hidden for Runway References which has its own slots ── */}
-      {videoProvider !== 'runway-ref' && (
+      {/* ── STEP 2: Reference (optional) — hidden for Runway References and Try-On which has its own slots ── */}
+      {videoProvider !== 'runway-ref' && !isTryon && (
       <div>
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
           2 — {needsPrompt ? 'Starting frame' : 'Add a reference'} <span className="normal-case font-normal text-zinc-300">(optional)</span>
@@ -570,6 +574,59 @@ export default function CreatorPage() {
                       <p className={cn('text-xs mt-0.5', captionLength === l.value ? 'text-white/60' : 'text-zinc-400')}>{l.sub}</p>
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Virtual Try-On uploads */}
+            {isTryon && (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-teal-50 border border-teal-100 px-3 py-2.5 text-xs text-teal-700">
+                  Upload your product photo + a model photo. Fashn.ai will dress the model in your exact garment.
+                </div>
+                {/* Garment photo */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Garment photo <span className="text-red-400">*</span></label>
+                  <label className={cn(
+                    'relative rounded-xl border-2 border-dashed cursor-pointer flex items-center justify-center h-32 transition-colors overflow-hidden',
+                    rawMediaUrl ? 'border-teal-300' : 'border-zinc-200 hover:border-teal-300'
+                  )}>
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const path = `tryon-garments/${Date.now()}.${file.name.split('.').pop()}`
+                      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+                      if (error) return
+                      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+                      setRawMediaUrl(data.publicUrl)
+                    }} />
+                    {rawMediaUrl
+                      ? <img src={rawMediaUrl} alt="garment" className="w-full h-full object-contain" />
+                      : <div className="flex flex-col items-center gap-1 text-zinc-400"><Upload className="w-5 h-5" /><span className="text-xs">Upload garment photo</span></div>
+                    }
+                  </label>
+                </div>
+                {/* Model photo */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Model photo <span className="text-red-400">*</span></label>
+                  <label className={cn(
+                    'relative rounded-xl border-2 border-dashed cursor-pointer flex items-center justify-center h-32 transition-colors overflow-hidden',
+                    refImageUrls[0] ? 'border-teal-300' : 'border-zinc-200 hover:border-teal-300'
+                  )}>
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const path = `tryon-models/${Date.now()}.${file.name.split('.').pop()}`
+                      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+                      if (error) return
+                      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+                      setRefImageUrls([data.publicUrl])
+                    }} />
+                    {refImageUrls[0]
+                      ? <img src={refImageUrls[0]} alt="model" className="w-full h-full object-contain" />
+                      : <div className="flex flex-col items-center gap-1 text-zinc-400"><Upload className="w-5 h-5" /><span className="text-xs">Upload model photo</span></div>
+                    }
+                  </label>
                 </div>
               </div>
             )}
@@ -862,8 +919,32 @@ export default function CreatorPage() {
                   )
                 })()}
 
+                {/* Try-On output */}
+                {task === 'tryon' && typeof result?.imageUrl === 'string' && (
+                  <div className="space-y-3">
+                    <div className="rounded-xl overflow-hidden border border-zinc-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={result.imageUrl} alt="Try-On result" className="w-full" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => downloadMedia(result.imageUrl as string, 'cada-tryon.jpg')}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors">
+                        <Download className="w-4 h-4" /> Download
+                      </button>
+                      {typeof result?.driveUrl === 'string' && (
+                        <a href={result.driveUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-medium py-2.5 hover:bg-emerald-100 transition-colors">
+                          <ExternalLink className="w-4 h-4" /> Google Drive
+                        </a>
+                      )}
+                    </div>
+                    <InstagramPostButton mediaUrl={result.imageUrl} caption="" mediaType="IMAGE" />
+                    <ScheduleButton platform="instagram" mediaUrl={result.imageUrl} mediaType="IMAGE" caption="" />
+                  </div>
+                )}
+
                 {/* Image output */}
-                {task !== 'story' && ((): React.ReactNode => {
+                {task !== 'story' && task !== 'tryon' && ((): React.ReactNode => {
                   if (typeof result?.imageUrl !== 'string') return null
                   const url = result.imageUrl
                   return (
@@ -893,7 +974,7 @@ export default function CreatorPage() {
                 })()}
 
                 {/* Video output */}
-                {task !== 'story' && ((): React.ReactNode => {
+                {task !== 'story' && task !== 'tryon' && ((): React.ReactNode => {
                   if (typeof result?.videoUrl !== 'string') return null
                   const url = result.videoUrl
                   return (

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage, generateImageWithReference } from '@/lib/openai'
 import { generateImageFlux } from '@/lib/fal'
+import { runVirtualTryOn } from '@/lib/fashn'
 import { uploadFileToDrive } from '@/lib/google'
 import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
 import { generateVideoKling } from '@/lib/kling'
@@ -231,6 +232,19 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
             .select().single()
           result = { videoUrl, caption, driveUrl: storyVidDriveUrl, item: data }
         }
+        break
+      }
+
+      case 'tryon': {
+        const garmentUrl = body.referenceImageUrl
+        const modelUrl = body.referenceImageUrls?.[0]
+        if (!garmentUrl || !modelUrl) throw new Error('Both garment image and model image are required')
+        const imageUrl = await runVirtualTryOn({ modelImageUrl: modelUrl, garmentImageUrl: garmentUrl })
+        const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-tryon-${Date.now()}.jpg`, driveFolderId) : null
+        const { data } = await db.from('cada_content_items')
+          .insert({ type: 'tryon', title: `Try-On: ${body.product ?? 'CADA'}`, image_url: imageUrl, drive_url: driveUrl, metadata: { garmentUrl, modelUrl }, tags: ['tryon', 'cada'] })
+          .select().single()
+        result = { imageUrl, driveUrl, item: data }
         break
       }
 

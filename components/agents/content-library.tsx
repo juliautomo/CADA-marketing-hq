@@ -17,6 +17,7 @@ const typeConfig: Record<ContentType, { label: string; icon: typeof Image; color
   canva_template: { label: 'Canva',       icon: Layout,   color: 'bg-pink-50 text-pink-600' },
   canva:          { label: 'Canva',       icon: Layout,   color: 'bg-pink-50 text-pink-600' },
   story:          { label: 'Story',       icon: BookImage,color: 'bg-rose-50 text-rose-600' },
+  tryon:          { label: 'Try-On',      icon: Image,    color: 'bg-teal-50 text-teal-600' },
 }
 
 const PAGE_SIZE = 10
