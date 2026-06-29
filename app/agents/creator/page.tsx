@@ -305,13 +305,23 @@ export default function CreatorPage() {
   }
 
   async function downloadMedia(url: string, filename: string) {
-    const res = await fetch(url)
-    const blob = await res.blob()
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(a.href)
+    // Base64 data URL — convert directly to blob
+    if (url.startsWith('data:')) {
+      const [header, b64] = url.split(',')
+      const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
+      const bytes = atob(b64)
+      const arr = new Uint8Array(bytes.length)
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+      const blob = new Blob([arr], { type: mime })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(a.href)
+      return
+    }
+    // Remote URL — open in new tab (cross-origin prevents forced download)
+    window.open(url, '_blank')
   }
 
   const canGenerate  = !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct || rawMediaUrl)
