@@ -1,7 +1,7 @@
 ﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
-import { generateImage } from '@/lib/openai'
+import { generateImage, generateImageWithReference } from '@/lib/openai'
 import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
 import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
@@ -113,7 +113,10 @@ Include:
       case 'image': {
         const dallePrompt = body.prompt ??
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
-        const imageUrl = await generateImage(dallePrompt)
+        const refImage = body.referenceImageUrl || undefined
+        const imageUrl = refImage
+          ? await generateImageWithReference(dallePrompt, refImage)
+          : await generateImage(dallePrompt)
         const { data } = await db.from('cada_content_items')
           .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
           .select().single()
@@ -140,6 +143,48 @@ Include:
           .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()
         result = { videoUrl, item: data }
+        break
+      }
+
+      case 'story': {
+        const productDesc = body.product ?? 'modest fashion outfit'
+        const storyType = body.videoProvider === 'image' ? 'image' : 'video'
+
+        // Generate story caption (short, punchy, no hashtags)
+        const caption = await generateText(
+          SYSTEM_PROMPT,
+          `Write a very short Instagram Story text overlay for CADA's product: ${productDesc}.
+Tone: ${body.tone ?? 'elegant and aspirational'}.
+${body.additionalContext ? `Context: ${body.additionalContext}` : ''}
+${LANG_INSTRUCTION[body.language ?? 'english']}
+Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a story overlay — minimal, impactful text only.`
+        )
+
+        if (storyType === 'image') {
+          const imagePrompt = body.prompt ??
+            `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
+          const storyRefImage = body.referenceImageUrl || undefined
+          const imageUrl = storyRefImage
+            ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1792')
+            : await generateImage(imagePrompt, '1024x1792')
+          const { data } = await db.from('cada_content_items')
+            .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'] })
+            .select().single()
+          result = { imageUrl, caption, item: data }
+        } else {
+          const videoPrompt = body.prompt ??
+            `Vertical 9:16 cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Portrait orientation, elegant movement, soft natural lighting, modest fashion aesthetic.`
+          const duration = body.videoLength ?? 5
+          const provider = body.videoProvider === 'runway' ? 'runway' : 'kling'
+          const refImage = body.referenceImageUrl || undefined
+          const videoUrl = provider === 'runway'
+            ? await generateVideoRunway(videoPrompt, duration, refImage, '720:1280')
+            : await generateVideoKling(videoPrompt, duration, refImage)
+          const { data } = await db.from('cada_content_items')
+            .insert({ type: 'story', title: `Story Video: ${productDesc}`, video_url: videoUrl, body: caption, metadata: { prompt: videoPrompt, duration, provider, format: 'story_video' }, tags: ['story', 'instagram', 'cada', provider] })
+            .select().single()
+          result = { videoUrl, caption, item: data }
+        }
         break
       }
 
