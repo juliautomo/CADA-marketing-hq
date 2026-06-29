@@ -34,6 +34,8 @@ interface ConnectionSettings {
   tiktok_open_id: string
   tiktok_post_mode: 'draft' | 'direct'
   tiktok_username: string
+  drive_media_folder_id: string
+  drive_media_upload_enabled: string
 }
 
 const BRAND_DEFAULTS: BrandSettings = {
@@ -58,6 +60,8 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
   tiktok_open_id: '',
   tiktok_post_mode: 'draft',
   tiktok_username: '',
+  drive_media_folder_id: '',
+  drive_media_upload_enabled: 'false',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -590,6 +594,48 @@ function SettingsContent() {
                   </a>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Google Drive */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">G</div>
+                <div>
+                  <CardTitle className="text-base">Google Drive — Media Storage</CardTitle>
+                  <CardDescription className="mt-0.5">Auto-upload generated images and videos to Drive for permanent storage.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                {(['false', 'true'] as const).map(val => (
+                  <button key={val}
+                    onClick={() => updateConnections('drive_media_upload_enabled', val)}
+                    className={cn(
+                      'flex-1 rounded-xl border py-2.5 text-xs font-medium transition-all',
+                      connections.drive_media_upload_enabled === val
+                        ? 'border-zinc-900 bg-zinc-900 text-white'
+                        : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300'
+                    )}>
+                    {val === 'true' ? 'Enabled' : 'Disabled'}
+                  </button>
+                ))}
+              </div>
+              {connections.drive_media_upload_enabled === 'true' && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-zinc-700">Folder ID</label>
+                  <p className="text-xs text-zinc-400">Open your Drive folder → copy the ID from the URL: drive.google.com/drive/folders/<strong>THIS_PART</strong></p>
+                  <input
+                    type="text"
+                    value={connections.drive_media_folder_id}
+                    onChange={e => updateConnections('drive_media_folder_id', e.target.value)}
+                    placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 font-mono focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 

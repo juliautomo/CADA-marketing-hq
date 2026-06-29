@@ -138,6 +138,12 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
                         Open in Canva <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
+                    {item.drive_url && (
+                      <a href={item.drive_url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
+                        Open in Google Drive <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

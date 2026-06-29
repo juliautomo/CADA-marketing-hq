@@ -23,6 +23,7 @@ export interface ContentItem {
   image_url?: string
   video_url?: string
   canva_url?: string
+  drive_url?: string
   metadata: Record<string, unknown>
   tags: string[]
   created_at: string

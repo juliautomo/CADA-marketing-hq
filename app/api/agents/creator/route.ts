@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage, generateImageWithReference } from '@/lib/openai'
+import { uploadFileToDrive } from '@/lib/google'
 import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
 import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
@@ -10,13 +11,31 @@ import { getBrandSystemPrompt, type BrandOverrides } from '@/lib/brand'
 import type { CreatorInput } from '@/types'
 
 async function getSettings(db: ReturnType<typeof createServiceClient>) {
-  const KEYS = ['brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples', 'image_quality']
+  const KEYS = ['brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples', 'image_quality', 'drive_media_folder_id', 'drive_media_upload_enabled']
   const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
   const map: Record<string, string> = {}
   for (const row of data ?? []) {
     if (row.value && row.value !== 'null') map[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
   }
   return map
+}
+
+async function uploadMediaToDrive(mediaUrl: string, fileName: string, folderId?: string): Promise<string | null> {
+  try {
+    let buffer: Buffer
+    let mimeType: string
+    if (mediaUrl.startsWith('data:')) {
+      const [header, b64] = mediaUrl.split(',')
+      mimeType = header.match(/:(.*?);/)?.[1] ?? 'image/png'
+      buffer = Buffer.from(b64, 'base64')
+    } else {
+      const res = await fetch(mediaUrl)
+      if (!res.ok) return null
+      mimeType = res.headers.get('content-type') ?? 'video/mp4'
+      buffer = Buffer.from(await res.arrayBuffer())
+    }
+    return await uploadFileToDrive({ fileName, buffer, mimeType, folderId })
+  } catch { return null }
 }
 
 async function getSystemPrompt(db: ReturnType<typeof createServiceClient>) {
@@ -61,6 +80,8 @@ export async function POST(req: NextRequest) {
 
   const [SYSTEM_PROMPT, settings] = await Promise.all([getSystemPrompt(db), getSettings(db)])
   const imgQuality = (settings.image_quality ?? 'medium') as 'low' | 'medium' | 'high'
+  const driveEnabled = settings.drive_media_upload_enabled === 'true'
+  const driveFolderId = settings.drive_media_folder_id || undefined
 
   try {
     let result: Record<string, unknown> = {}
@@ -128,10 +149,11 @@ Include:
         const imageUrl = refImage
           ? await generateImageWithReference(dallePrompt, refImage, '1024x1024', imgQuality)
           : await generateImage(dallePrompt, '1024x1024', imgQuality)
+        const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-image-${Date.now()}.png`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
+          .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt }, tags: ['image', 'cada'] })
           .select().single()
-        result = { imageUrl, item: data }
+        result = { imageUrl, driveUrl, item: data }
         break
       }
 
@@ -150,10 +172,11 @@ Include:
           provider === 'kling'       ? await generateVideoKling(videoPrompt, duration, refImage) :
           provider === 'runway-ref'  ? await generateVideoRunwayRef(videoPrompt, refUrls.length > 0 ? refUrls : (refImage ? [refImage] : []), duration) :
                                        await generateVideoRunway(videoPrompt, duration, refImage)
+        const videoDriveUrl = driveEnabled ? await uploadMediaToDrive(videoUrl, `cada-video-${Date.now()}.mp4`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
+          .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, drive_url: videoDriveUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
           .select().single()
-        result = { videoUrl, item: data }
+        result = { videoUrl, driveUrl: videoDriveUrl, item: data }
         break
       }
 
@@ -178,10 +201,11 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           const imageUrl = storyRefImage
             ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1792', imgQuality)
             : await generateImage(imagePrompt, '1024x1792', imgQuality)
+          const storyImgDriveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-story-${Date.now()}.png`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
-            .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'] })
+            .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, drive_url: storyImgDriveUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'] })
             .select().single()
-          result = { imageUrl, caption, item: data }
+          result = { imageUrl, caption, driveUrl: storyImgDriveUrl, item: data }
         } else {
           const videoPrompt = body.prompt ??
             `Vertical 9:16 cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Portrait orientation, elegant movement, soft natural lighting, modest fashion aesthetic.`
@@ -191,10 +215,11 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           const videoUrl = provider === 'runway'
             ? await generateVideoRunway(videoPrompt, duration, refImage, '720:1280')
             : await generateVideoKling(videoPrompt, duration, refImage)
+          const storyVidDriveUrl = driveEnabled ? await uploadMediaToDrive(videoUrl, `cada-story-video-${Date.now()}.mp4`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
-            .insert({ type: 'story', title: `Story Video: ${productDesc}`, video_url: videoUrl, body: caption, metadata: { prompt: videoPrompt, duration, provider, format: 'story_video' }, tags: ['story', 'instagram', 'cada', provider] })
+            .insert({ type: 'story', title: `Story Video: ${productDesc}`, video_url: videoUrl, drive_url: storyVidDriveUrl, body: caption, metadata: { prompt: videoPrompt, duration, provider, format: 'story_video' }, tags: ['story', 'instagram', 'cada', provider] })
             .select().single()
-          result = { videoUrl, caption, item: data }
+          result = { videoUrl, caption, driveUrl: storyVidDriveUrl, item: data }
         }
         break
       }

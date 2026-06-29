@@ -14,6 +14,8 @@ const KEYS = [
   'tiktok_client_secret',
   'tiktok_access_token',
   'tiktok_open_id',
+  'drive_media_folder_id',
+  'drive_media_upload_enabled',
 ]
 
 export async function GET() {

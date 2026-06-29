@@ -819,12 +819,20 @@ export default function CreatorPage() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="Generated" className="w-full" />
                       </div>
-                      <button
-                        onClick={() => downloadMedia(url, 'cada-image.png')}
-                        className="flex items-center justify-center gap-2 w-full rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
-                      >
-                        <Download className="w-4 h-4" /> Download Image
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => downloadMedia(url, 'cada-image.png')}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
+                        >
+                          <Download className="w-4 h-4" /> Download
+                        </button>
+                        {typeof result?.driveUrl === 'string' && (
+                          <a href={result.driveUrl} target="_blank" rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-medium py-2.5 hover:bg-emerald-100 transition-colors">
+                            <ExternalLink className="w-4 h-4" /> Google Drive
+                          </a>
+                        )}
+                      </div>
                       <InstagramPostButton mediaUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} mediaType="IMAGE" />
                       <ScheduleButton platform="instagram" mediaUrl={url} mediaType="IMAGE" caption={typeof result?.caption === 'string' ? result.caption : ''} />
                     </div>
@@ -841,12 +849,20 @@ export default function CreatorPage() {
                         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                         <video src={url} controls className="w-full" />
                       </div>
-                      <button
-                        onClick={() => downloadMedia(url, 'cada-video.mp4')}
-                        className="flex items-center justify-center gap-2 w-full rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
-                      >
-                        <Download className="w-4 h-4" /> Download Video
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => downloadMedia(url, 'cada-video.mp4')}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
+                        >
+                          <Download className="w-4 h-4" /> Download
+                        </button>
+                        {typeof result?.driveUrl === 'string' && (
+                          <a href={result.driveUrl} target="_blank" rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-medium py-2.5 hover:bg-emerald-100 transition-colors">
+                            <ExternalLink className="w-4 h-4" /> Google Drive
+                          </a>
+                        )}
+                      </div>
                       <div className="space-y-2">
                         <TikTokPostButton videoUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} />
                         <ScheduleButton platform="tiktok" mediaUrl={url} mediaType="REELS" caption={typeof result?.caption === 'string' ? result.caption : ''} />

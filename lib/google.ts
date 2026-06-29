@@ -76,10 +76,13 @@ export async function uploadFileToDrive(params: {
   fileName: string
   buffer: Buffer
   mimeType: string
+  folderId?: string
 }): Promise<string> {
   const token    = await getAccessToken()
   const boundary = 'cada_file_boundary_abc'
-  const metadata = JSON.stringify({ name: params.fileName, mimeType: params.mimeType })
+  const meta: Record<string, unknown> = { name: params.fileName, mimeType: params.mimeType }
+  if (params.folderId) meta.parents = [params.folderId]
+  const metadata = JSON.stringify(meta)
 
   const header = Buffer.from(
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: ${params.mimeType}\r\n\r\n`,
