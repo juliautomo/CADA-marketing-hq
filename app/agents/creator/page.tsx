@@ -184,6 +184,7 @@ export default function CreatorPage() {
   const [rawMediaUrl, setRawMediaUrl]     = useState<string | null>(null)
   const [resultMediaUrl, setResultMediaUrl] = useState<string | null>(null)
 
+  const [enhancing, setEnhancing] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [result, setResult]     = useState<Record<string, unknown> | null>(null)
   const [error, setError]       = useState<string | null>(null)
@@ -302,6 +303,21 @@ export default function CreatorPage() {
     setRawMediaUrl(null)
     setResultMediaUrl(null)
     setRefImageUrls([])
+  }
+
+  async function enhancePrompt() {
+    if (!customPrompt) return
+    setEnhancing(true)
+    try {
+      const res = await fetch('/api/enhance-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: customPrompt, task }),
+      })
+      const data = await res.json()
+      if (data.enhanced) setCustomPrompt(data.enhanced)
+    } catch { /* keep original */ }
+    finally { setEnhancing(false) }
   }
 
   async function downloadMedia(url: string, filename: string) {
@@ -489,6 +505,17 @@ export default function CreatorPage() {
                     }
                     rows={2}
                   />
+                  {task !== 'video' && (
+                    <button
+                      type="button"
+                      onClick={enhancePrompt}
+                      disabled={!customPrompt || enhancing}
+                      className="flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-800 disabled:opacity-40 transition-colors mt-1"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      {enhancing ? 'Enhancing…' : 'Enhance prompt with AI'}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
