@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime } from '@/lib/utils'
 import type { ContentItem, ContentType } from '@/types'
-import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check, BookImage } from 'lucide-react'
+import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check, BookImage, Download } from 'lucide-react'
 
 const typeConfig: Record<ContentType, { label: string; icon: typeof Image; color: string }> = {
   caption:        { label: 'Caption',     icon: Type,     color: 'bg-violet-50 text-violet-600' },
@@ -31,6 +31,25 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
   const [copied, setCopied]     = useState<string | null>(null)
 
   function toggleExpand(id: string) { setExpanded(prev => prev === id ? null : id) }
+
+  async function downloadMedia(url: string, filename: string) {
+    if (url.startsWith('data:')) {
+      const [header, b64] = url.split(',')
+      const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream'
+      const bytes = atob(b64)
+      const arr = new Uint8Array(bytes.length)
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+      const blob = new Blob([arr], { type: mime })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } else {
+      window.open(url, '_blank')
+    }
+  }
+
   async function copyText(id: string, text: string) {
     await navigator.clipboard.writeText(text)
     setCopied(id)
@@ -86,11 +105,23 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
                 {isOpen && (
                   <div className="px-4 pb-4 bg-zinc-50 border-t border-zinc-100 space-y-3">
                     {item.image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.image_url} alt={item.title} className="w-full max-w-sm rounded-xl mt-3" />
+                      <div className="mt-3 space-y-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.image_url} alt={item.title} className="w-full max-w-sm rounded-xl" />
+                        <button onClick={(e) => { e.stopPropagation(); downloadMedia(item.image_url!, 'cada-image.png') }}
+                          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800">
+                          <Download className="w-3.5 h-3.5" /> Download
+                        </button>
+                      </div>
                     )}
                     {item.video_url && (
-                      <video src={item.video_url} controls className="w-full max-w-sm rounded-xl mt-3 bg-zinc-900" />
+                      <div className="mt-3 space-y-2">
+                        <video src={item.video_url} controls className="w-full max-w-sm rounded-xl bg-zinc-900" />
+                        <button onClick={(e) => { e.stopPropagation(); downloadMedia(item.video_url!, 'cada-video.mp4') }}
+                          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800">
+                          <Download className="w-3.5 h-3.5" /> Download
+                        </button>
+                      </div>
                     )}
                     {item.body && (
                       <div className="relative mt-3">
