@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
-  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Link, Loader2,
+  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Link, Loader2, Image, Upload, X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,17 @@ interface BrandSettings {
   brand_campaign_theme: string
   brand_caption_examples: string
   image_quality: 'low' | 'medium' | 'high'
+}
+
+interface VisualKitSettings {
+  brand_style_prefix: string
+  brand_negative_prompts: string
+  brand_color_description: string
+  brand_shot_style: string
+  brand_style_reference_url: string
+  brand_color_swatch_url: string
+  brand_model_reference_url: string
+  brand_logo_url: string
 }
 
 interface ConnectionSettings {
@@ -47,6 +58,17 @@ const BRAND_DEFAULTS: BrandSettings = {
   image_quality: 'medium',
 }
 
+const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
+  brand_style_prefix: '',
+  brand_negative_prompts: '',
+  brand_color_description: '',
+  brand_shot_style: '',
+  brand_style_reference_url: '',
+  brand_color_swatch_url: '',
+  brand_model_reference_url: '',
+  brand_logo_url: '',
+}
+
 const CONNECTION_DEFAULTS: ConnectionSettings = {
   instagram_app_id: '',
   instagram_app_secret: '',
@@ -65,6 +87,91 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+function ImageUploadField({
+  label, description, settingKey, value, onChange,
+}: {
+  label: string
+  description?: string
+  settingKey: string
+  value: string
+  onChange: (url: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleFile(file: File) {
+    setUploading(true)
+    setError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('key', settingKey)
+      const res = await fetch('/api/settings/brand-kit/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Upload failed')
+      onChange(data.url)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-semibold text-zinc-700">{label}</label>
+      {description && <p className="text-xs text-zinc-400">{description}</p>}
+      <div
+        className={cn(
+          'relative rounded-xl border-2 border-dashed transition-colors',
+          value ? 'border-emerald-200 bg-emerald-50/40' : 'border-zinc-200 bg-zinc-50 hover:border-violet-300 hover:bg-violet-50/30'
+        )}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
+      >
+        {value ? (
+          <div className="flex items-center gap-3 p-3">
+            <img src={value} alt={label} className="w-14 h-14 object-cover rounded-lg border border-zinc-200 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-emerald-700 truncate">Uploaded</p>
+              <p className="text-[10px] text-zinc-400 truncate">{value.split('/').pop()}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="text-zinc-400 hover:text-red-500 transition-colors flex-shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="flex flex-col items-center gap-1.5 w-full py-5 text-zinc-400 hover:text-violet-500 transition-colors"
+          >
+            {uploading
+              ? <Loader2 className="w-5 h-5 animate-spin" />
+              : <Upload className="w-5 h-5" />
+            }
+            <span className="text-xs">{uploading ? 'Uploading…' : 'Click or drop image here'}</span>
+          </button>
+        )}
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+      />
+    </div>
+  )
+}
 
 function Field({
   label, description, placeholder, value, onChange, rows = 4, secret = false, lockable = false,
@@ -150,6 +257,7 @@ function SaveBar({ onSave, saving, saved }: { onSave: () => void; saving: boolea
 
 const TABS = [
   { id: 'brand',       label: 'Brand',       icon: Palette },
+  { id: 'visual-kit',  label: 'Visual Kit',  icon: Image },
   { id: 'connections', label: 'Connections',  icon: Globe },
 ]
 
@@ -157,10 +265,11 @@ const TABS = [
 
 function SettingsContent() {
   const searchParams = useSearchParams()
-  const [tab, setTab] = useState<'brand' | 'connections'>(
+  const [tab, setTab] = useState<'brand' | 'visual-kit' | 'connections'>(
     searchParams.get('tab') === 'connections' ? 'connections' : 'brand'
   )
   const [brand, setBrand] = useState<BrandSettings>(BRAND_DEFAULTS)
+  const [visualKit, setVisualKit] = useState<VisualKitSettings>(VISUAL_KIT_DEFAULTS)
   const [connections, setConnections] = useState<ConnectionSettings>(CONNECTION_DEFAULTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -183,6 +292,7 @@ function SettingsContent() {
       fetch('/api/settings/connections').then(r => r.json()),
     ]).then(([b, c]) => {
       setBrand({ ...BRAND_DEFAULTS, ...b })
+      setVisualKit({ ...VISUAL_KIT_DEFAULTS, ...b })
       setConnections({ ...CONNECTION_DEFAULTS, ...c })
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -191,8 +301,8 @@ function SettingsContent() {
   async function handleSave() {
     setSaving(true)
     setSaved(false)
-    const endpoint = tab === 'brand' ? '/api/settings/brand' : '/api/settings/connections'
-    const body = tab === 'brand' ? brand : connections
+    const endpoint = tab === 'connections' ? '/api/settings/connections' : '/api/settings/brand'
+    const body = tab === 'brand' ? brand : tab === 'visual-kit' ? visualKit : connections
     await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -205,6 +315,10 @@ function SettingsContent() {
 
   function updateBrand(key: keyof BrandSettings, value: string) {
     setBrand(prev => ({ ...prev, [key]: value }))
+  }
+
+  function updateVisualKit(key: keyof VisualKitSettings, value: string) {
+    setVisualKit(prev => ({ ...prev, [key]: value }))
   }
 
   function updateConnections(key: keyof ConnectionSettings, value: string) {
@@ -434,6 +548,113 @@ function SettingsContent() {
                 {brand.image_quality === 'medium' && 'Recommended — great quality for social media at a fraction of the cost.'}
                 {brand.image_quality === 'high' && 'Best quality for final posts and campaigns.'}
               </p>
+            </CardContent>
+          </Card>
+
+          <SaveBar onSave={handleSave} saving={saving} saved={saved} />
+        </div>
+      )}
+
+      {/* ── Visual Kit Tab ── */}
+      {tab === 'visual-kit' && (
+        <div className="space-y-5">
+
+          {/* Info banner */}
+          <Card className="border-violet-100 bg-violet-50/40">
+            <CardContent className="pt-4">
+              <div className="flex gap-3">
+                <Sparkles className="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-violet-900">Brand Visual Kit</p>
+                  <p className="text-xs text-violet-700">Upload reference images and define your visual style. These are automatically injected into every image generation — so every output looks consistently on-brand without you having to describe it each time.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reference images */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4 text-violet-500" />
+                <CardTitle className="text-base">Reference Images</CardTitle>
+              </div>
+              <CardDescription>Upload once — used automatically as visual references in every image generation.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+              <ImageUploadField
+                label="Style Reference"
+                description="Your hero image — defines the overall CADA aesthetic."
+                settingKey="brand_style_reference_url"
+                value={visualKit.brand_style_reference_url}
+                onChange={v => updateVisualKit('brand_style_reference_url', v)}
+              />
+              <ImageUploadField
+                label="Color Swatch"
+                description="A color palette image with your brand colors."
+                settingKey="brand_color_swatch_url"
+                value={visualKit.brand_color_swatch_url}
+                onChange={v => updateVisualKit('brand_color_swatch_url', v)}
+              />
+              <ImageUploadField
+                label="Model Reference"
+                description="Consistent model look — face, hijab style, body type."
+                settingKey="brand_model_reference_url"
+                value={visualKit.brand_model_reference_url}
+                onChange={v => updateVisualKit('brand_model_reference_url', v)}
+              />
+              <ImageUploadField
+                label="Logo"
+                description="Your brand logo (PNG with transparent background preferred)."
+                settingKey="brand_logo_url"
+                value={visualKit.brand_logo_url}
+                onChange={v => updateVisualKit('brand_logo_url', v)}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Prompt fields */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-500" />
+                <CardTitle className="text-base">Style Prompt Settings</CardTitle>
+              </div>
+              <CardDescription>These are prepended to every image prompt automatically.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Field
+                label="Style Prefix"
+                description="Photography style, lighting, and mood — injected at the start of every image prompt."
+                placeholder="e.g. Soft natural daylight, warm editorial lighting, modest fashion photography, clean minimalist background, professional brand photography"
+                value={visualKit.brand_style_prefix}
+                onChange={v => updateVisualKit('brand_style_prefix', v)}
+                rows={3}
+              />
+              <Field
+                label="Color Palette Description"
+                description="Describe your brand colors in words — more effective than hex codes for AI generation."
+                placeholder="e.g. Warm cream, muted terracotta, sage green, soft dusty rose, earth tones — no neon or saturated colors"
+                value={visualKit.brand_color_description}
+                onChange={v => updateVisualKit('brand_color_description', v)}
+                rows={2}
+              />
+              <Field
+                label="Shot Style"
+                description="Camera angle, focal length, framing — keeps every image technically consistent."
+                placeholder="e.g. Eye-level, front-lit, 35mm lens, full-length or three-quarter shot, shallow depth of field, 8k resolution, commercial photography"
+                value={visualKit.brand_shot_style}
+                onChange={v => updateVisualKit('brand_shot_style', v)}
+                rows={2}
+              />
+              <Field
+                label="Negative Prompts"
+                description="What to exclude from every generation — keeps images clean and on-brand."
+                placeholder="e.g. no text, no logos, no revealing clothing, no dark shadows, no blurry background, no cartoon, no illustration, no low quality"
+                value={visualKit.brand_negative_prompts}
+                onChange={v => updateVisualKit('brand_negative_prompts', v)}
+                rows={2}
+              />
             </CardContent>
           </Card>
 

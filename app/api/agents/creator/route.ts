@@ -13,7 +13,12 @@ import { getBrandSystemPrompt, type BrandOverrides } from '@/lib/brand'
 import type { CreatorInput } from '@/types'
 
 async function getSettings(db: ReturnType<typeof createServiceClient>) {
-  const KEYS = ['brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples', 'image_quality', 'drive_media_folder_id', 'drive_media_upload_enabled']
+  const KEYS = [
+    'brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples',
+    'image_quality', 'drive_media_folder_id', 'drive_media_upload_enabled',
+    'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description', 'brand_shot_style',
+    'brand_style_reference_url', 'brand_color_swatch_url', 'brand_model_reference_url', 'brand_logo_url',
+  ]
   const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
   const map: Record<string, string> = {}
   for (const row of data ?? []) {
@@ -145,9 +150,23 @@ Include:
       }
 
       case 'image': {
-        const dallePrompt = body.prompt ??
+        const basePrompt = body.prompt ??
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
-        const refImage = body.referenceImageUrl || undefined
+
+        // Build brand-kit enhanced prompt
+        const stylePrefix = settings.brand_style_prefix || ''
+        const colorDesc = settings.brand_color_description || ''
+        const shotStyle = settings.brand_shot_style || ''
+        const negatives = settings.brand_negative_prompts || ''
+        const promptParts = [stylePrefix, colorDesc, shotStyle, basePrompt].filter(Boolean)
+        const dallePrompt = promptParts.join('. ') + (negatives ? `. Avoid: ${negatives}` : '')
+
+        // Choose reference image: user upload > brand model ref > brand style ref
+        const refImage = body.referenceImageUrl
+          || settings.brand_model_reference_url
+          || settings.brand_style_reference_url
+          || undefined
+
         const provider = body.imageProvider ?? 'gpt'
         let imageUrl: string
         if (provider === 'flux') {
@@ -203,9 +222,11 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
         )
 
         if (storyType === 'image') {
-          const imagePrompt = body.prompt ??
+          const storyBase = body.prompt ??
             `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
-          const storyRefImage = body.referenceImageUrl || undefined
+          const storyParts = [settings.brand_style_prefix, settings.brand_color_description, settings.brand_shot_style, storyBase].filter(Boolean)
+          const imagePrompt = storyParts.join('. ') + (settings.brand_negative_prompts ? `. Avoid: ${settings.brand_negative_prompts}` : '')
+          const storyRefImage = body.referenceImageUrl || settings.brand_model_reference_url || settings.brand_style_reference_url || undefined
           const storyImgProvider = body.imageProvider ?? 'gpt'
           const imageUrl = storyImgProvider === 'flux'
             ? await generateImageFlux(imagePrompt, '9:16')
