@@ -129,7 +129,7 @@ function PhotoAnalyzer({ onResult }: {
 
   async function compressImage(file: File): Promise<Blob> {
     return new Promise((resolve) => {
-      const img = new Image()
+      const img = document.createElement('img') as HTMLImageElement
       const url = URL.createObjectURL(file)
       img.onload = () => {
         const MAX = 800
