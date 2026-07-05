@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CADA Marketing HQ — Feature Flow</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; background: #fff; color: #1a1a1a; }
+
+.wrapper { position: relative; padding: 24px; max-width: 960px; margin: 0 auto; }
+#overlay { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+
+.header { margin-bottom: 14px; }
+.header h1 { font-size: 18px; font-weight: 700; }
+.header p { font-size: 12px; color: #666; margin-top: 3px; }
+
+.legend { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.li { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #555; }
+.ld { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.ll { width: 22px; height: 2px; flex-shrink: 0; }
+.la { width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; flex-shrink: 0; }
+
+.cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 16px; }
+.col { display: flex; flex-direction: column; gap: 7px; }
+.col-hdr { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #e5e5e5; }
+
+.node {
+  border-radius: 7px; padding: 8px 10px;
+  cursor: pointer; border: 1.5px solid transparent;
+  transition: transform .1s, box-shadow .1s;
+  user-select: none;
+}
+.node:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.node.selected   { box-shadow: 0 0 0 2.5px #4f46e5 !important; opacity: 1 !important; }
+.node.hi-out     { box-shadow: 0 0 0 2px #16a34a !important; opacity: 1 !important; }
+.node.hi-in      { box-shadow: 0 0 0 2px #9333ea !important; opacity: 1 !important; }
+.node.dimmed     { opacity: 0.22; }
+.nt { font-weight: 600; font-size: 11px; line-height: 1.3; }
+.ns { font-size: 10px; opacity: 0.6; margin-top: 1px; }
+
+.c-input   { background: #eff6ff; border-color: #bfdbfe; }
+.c-analyze { background: #faf5ff; border-color: #e9d5ff; }
+.c-gen     { background: #f0fdf4; border-color: #bbf7d0; }
+.c-publish { background: #fff7ed; border-color: #fed7aa; }
+.c-plan    { background: #fdf4ff; border-color: #f0abfc; }
+.c-util    { background: #f8fafc; border-color: #cbd5e1; }
+
+.detail { margin-top: 16px; border: 1.5px solid #e5e5e5; border-radius: 8px; padding: 14px; background: #f9f9fb; display: none; }
+.detail.on { display: block; }
+.detail h3 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.detail-row { display: flex; gap: 16px; font-size: 11px; margin-top: 8px; flex-wrap: wrap; }
+.dr { flex: 1; min-width: 140px; }
+.dr strong { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #888; margin-bottom: 4px; }
+.tag { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 10px; margin: 1px 2px 1px 0; }
+.tag-out  { background: #dcfce7; color: #15803d; }
+.tag-in   { background: #f3e8ff; color: #7e22ce; }
+
+.hint { font-size: 10px; color: #bbb; margin-top: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrapper" id="wrapper">
+  <svg id="overlay"><defs>
+    <marker id="ao" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#16a34a"/></marker>
+    <marker id="ai" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#9333ea"/></marker>
+  </defs></svg>
+
+  <div class="header">
+    <h1>CADA Marketing HQ — Feature Flow</h1>
+    <p>Click any feature to see what feeds it and what it feeds into</p>
+  </div>
+
+  <div class="legend">
+    <div class="li"><div class="ld" style="background:#bfdbfe"></div>Input/Upload</div>
+    <div class="li"><div class="ld" style="background:#e9d5ff"></div>Analysis</div>
+    <div class="li"><div class="ld" style="background:#bbf7d0"></div>Generation</div>
+    <div class="li"><div class="ld" style="background:#fed7aa"></div>Publish/Schedule</div>
+    <div class="li"><div class="ld" style="background:#f0abfc"></div>Planning</div>
+    <div class="li"><div class="ld" style="background:#cbd5e1"></div>Utility/Storage</div>
+    <div class="li" style="margin-left:8px"><div class="ll" style="background:#16a34a"></div><div class="la" style="border-left-color:#16a34a"></div>Feeds into</div>
+    <div class="li"><div class="ll" style="background:#9333ea"></div><div class="la" style="border-left-color:#9333ea"></div>Receives from</div>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <div class="col-hdr">① Input & Analyse</div>
+      <div class="node c-input"   data-id="upload-image"><div class="nt">Upload Image</div><div class="ns">Reference photo</div></div>
+      <div class="node c-analyze" data-id="analyze-image"><div class="nt">Image Analyzer</div><div class="ns">Claude Vision</div></div>
+      <div class="node c-input"   data-id="upload-video"><div class="nt">Upload Video</div><div class="ns">5-frame extraction</div></div>
+      <div class="node c-analyze" data-id="analyze-video"><div class="nt">Video Analyzer</div><div class="ns">Claude Vision · frames</div></div>
+      <div class="node c-input"   data-id="products"><div class="nt">Product Catalog</div><div class="ns">Name, price, colors, fabric</div></div>
+      <div class="node c-analyze" data-id="trend"><div class="nt">Trend Analyst</div><div class="ns">Pexels + Claude</div></div>
+      <div class="node c-util"    data-id="brand-settings"><div class="nt">Brand Context</div><div class="ns">Text + Visual Kit · getBrandContext()</div></div>
+      <div class="node c-analyze" data-id="performance"><div class="nt">Performance Reviewer</div><div class="ns">IG metrics + Claude</div></div>
+    </div>
+
+    <div class="col">
+      <div class="col-hdr">② Generate</div>
+      <div class="node c-util" data-id="enhance-prompt"><div class="nt">Prompt Enhancer</div><div class="ns">Claude Haiku</div></div>
+      <div class="node c-gen"  data-id="gen-caption"><div class="nt">Caption Generator</div><div class="ns">Claude Sonnet</div></div>
+      <div class="node c-gen"  data-id="gen-image"><div class="nt">Image Generator</div><div class="ns">Flux · GPT Image 1</div></div>
+      <div class="node c-gen"  data-id="gen-video"><div class="nt">Video Generator</div><div class="ns">Runway · Kling</div></div>
+      <div class="node c-gen"  data-id="gen-story"><div class="nt">IG Story</div><div class="ns">9:16 image or video</div></div>
+      <div class="node c-gen"  data-id="gen-tryon"><div class="nt">Virtual Try-On</div><div class="ns">Fashn.ai</div></div>
+      <div class="node c-gen"  data-id="gen-email"><div class="nt">Email Generator</div><div class="ns">Claude Sonnet</div></div>
+      <div class="node c-plan" data-id="campaign"><div class="nt">Campaign Planner</div><div class="ns">4-week structured plan</div></div>
+      <div class="node c-plan" data-id="full-campaign"><div class="nt">Full Campaign Agent</div><div class="ns">9-step SSE stream</div></div>
+    </div>
+
+    <div class="col">
+      <div class="col-hdr">③ Publish & Store</div>
+      <div class="node c-publish" data-id="post-instagram"><div class="nt">Post to Instagram</div><div class="ns">Meta Graph API</div></div>
+      <div class="node c-publish" data-id="post-tiktok"><div class="nt">Post to TikTok</div><div class="ns">TikTok Open API</div></div>
+      <div class="node c-publish" data-id="scheduler"><div class="nt">Post Scheduler</div><div class="ns">Vercel cron · 5 windows</div></div>
+      <div class="node c-util"    data-id="content-library"><div class="nt">Content Library</div><div class="ns">Supabase · all outputs</div></div>
+      <div class="node c-util"    data-id="drive"><div class="nt">Google Drive</div><div class="ns">Media + PDF briefs</div></div>
+      <div class="node c-util"    data-id="todoist"><div class="nt">Todoist</div><div class="ns">Campaign milestones</div></div>
+      <div class="node c-util"    data-id="calendar"><div class="nt">Google Calendar</div><div class="ns">4-week blocks</div></div>
+    </div>
+  </div>
+
+  <div class="detail" id="detail">
+    <h3 id="d-title"></h3>
+    <p id="d-desc" style="font-size:11px;line-height:1.5;color:#333;margin-bottom:4px"></p>
+    <div class="detail-row">
+      <div class="dr"><strong>→ Feeds into</strong><div id="d-out"></div></div>
+      <div class="dr"><strong>← Receives from</strong><div id="d-in"></div></div>
+    </div>
+  </div>
+  <p class="hint">Click a node to highlight its connections · click again to deselect</p>
+</div>
+
+<script>
+const C = {
+  'upload-image':   { out:['analyze-image'], desc:'Sends image file or URL to Image Analyzer for visual extraction.' },
+  'analyze-image':  { out:['gen-caption','gen-image','gen-story'], desc:'Claude Vision extracts product, colors, silhouette, mood, and caption angle. Output pre-fills caption context. To generate a similar image, select AI Image in the Creator — the analysis is passed as the base prompt, and Visual Kit fields apply automatically.' },
+  'upload-video':   { out:['analyze-video'], desc:'MediaReference component extracts up to 5 frames via HTML canvas and passes them as base64 to Video Analyzer.' },
+  'analyze-video':  { out:['gen-caption','gen-video','gen-story'], desc:'Claude Vision reads the 5 frames as a sequence and returns a description, product details, mood, and ready-to-post captions specifically written for Instagram AND TikTok.' },
+  'products':       { out:['gen-caption','gen-image','gen-video','gen-email','gen-story','gen-tryon'], desc:'User picks a product in Creator page. Name, price, colors, fabric, and season are injected as context into every generation task via the product picker.' },
+  'trend':          { out:['campaign','full-campaign'], desc:'Trending colors, silhouettes, hashtags, and content ideas inform campaign themes and copy. Full Campaign Agent calls Trend Analyst internally as step 2.' },
+  'brand-settings': { out:['gen-caption','gen-image','gen-video','gen-story','gen-email','enhance-prompt','campaign','full-campaign','trend','performance','analyze-image','analyze-video'], desc:'getBrandContext() loads ALL brand settings per-request in one DB query. Brand Tab (voice, tone, guidelines, target customer, campaign theme, caption examples) feeds every agent as a system prompt. Visual Kit (style prefix, color palette, shot style, negative prompts, reference images) is pre-assembled into an image prompt and injected into every image generation. No agent uses hardcoded defaults.' },
+  'enhance-prompt': { out:['gen-image','gen-video','gen-story'], desc:'Claude Haiku rewrites a rough scene idea into a detailed ~130-word prompt: adds lighting, camera angle, and mood while preserving any specifics the user wrote (pose, location, clothing).' },
+  'performance':    { out:['content-library','drive'], desc:'Performance insights and report text are saved to Content Library and exported to Google Drive.' },
+  'gen-caption':    { out:['post-instagram','post-tiktok','scheduler','content-library'], desc:'Claude Sonnet generates platform-aware captions. Can be posted directly, scheduled for one of 5 time windows, or saved to Content Library.' },
+  'gen-image':      { out:['post-instagram','scheduler','content-library','drive'], desc:'Flux 1.1 Pro (~$0.04) or GPT Image 1 ($0.01–$0.17). Output can be posted to Instagram, scheduled, saved to library, and auto-uploaded to Drive.' },
+  'gen-video':      { out:['post-instagram','post-tiktok','scheduler','content-library','drive'], desc:'Runway Gen4.5 or Kling AI. Videos can go to Instagram Reels or TikTok, be scheduled, saved to library, and uploaded to Drive.' },
+  'gen-story':      { out:['post-instagram','scheduler','content-library','drive'], desc:'9:16 portrait image (Flux or GPT at 1024×1536) or video (Runway/Kling). Also generates a caption alongside the visual.' },
+  'gen-tryon':      { out:['content-library','drive'], desc:'Fashn.ai tryon-v1.6 composites the garment onto the model photo. Result saved to library and optionally Drive.' },
+  'gen-email':      { out:['content-library'], desc:'Claude Sonnet writes promo email with subject line, preview text, and CTA. Saved to Content Library for copy/download.' },
+  'campaign':       { out:['todoist','calendar','drive'], desc:'Generates 4-week brief + KPIs, creates a Todoist project with 8 milestone tasks, blocks Google Calendar with 4 week-long events, and exports a PDF brief to Drive.' },
+  'full-campaign':  { out:['content-library','todoist','calendar','drive'], desc:'9-step SSE stream: parse prompt → research trends → write brief → generate 7-day content captions → save to DB → create Todoist project → Calendar events → Drive brief → finalize.' },
+  'scheduler':      { out:['post-instagram','post-tiktok'], desc:'Vercel cron fires at UTC 2/5/8/11/14 (WIB 9am/12pm/3pm/6pm/9pm). Finds pending posts and publishes them to Instagram or TikTok.' },
+  'post-instagram': { out:['content-library'], desc:'Meta Graph API v25.0 — creates media container, waits for Reels processing (up to 60s), then publishes. Logs to cada_posts + cada_agent_runs.' },
+  'post-tiktok':    { out:['content-library'], desc:'TikTok Open API v2 — downloads video from Supabase, initializes upload, sends chunk, returns publish_id (draft in sandbox, direct after app review).' },
+  'content-library':{ out:[], desc:'Terminal — stores every generated and published item. Shown in Creator sidebar (last 50) with download, copy, expand, and Open in Drive actions.' },
+  'drive':          { out:[], desc:'Terminal — receives image/video media, campaign PDF briefs, and performance reports from all flows. Auto-upload is optional and toggled per brand settings.' },
+  'todoist':        { out:[], desc:'Terminal — receives campaign milestone tasks. Falls back to Inbox project if user hits Todoist project limit.' },
+  'calendar':       { out:[], desc:'Terminal — receives 4 week-long campaign events, each linked back to the campaign record in Supabase.' },
+};
+
+const INV = {};
+Object.keys(C).forEach(src => {
+  (C[src].out||[]).forEach(dst => { (INV[dst] = INV[dst]||[]).push(src); });
+});
+
+const NAMES = {
+  'upload-image':'Upload Image','analyze-image':'Image Analyzer','upload-video':'Upload Video',
+  'analyze-video':'Video Analyzer','products':'Product Catalog','trend':'Trend Analyst',
+  'brand-settings':'Brand Context','enhance-prompt':'Prompt Enhancer','performance':'Performance Reviewer',
+  'gen-caption':'Caption Generator','gen-image':'Image Generator','gen-video':'Video Generator',
+  'gen-story':'IG Story','gen-tryon':'Virtual Try-On','gen-email':'Email Generator',
+  'campaign':'Campaign Planner','full-campaign':'Full Campaign Agent',
+  'scheduler':'Post Scheduler','post-instagram':'Post to Instagram','post-tiktok':'Post to TikTok',
+  'content-library':'Content Library','drive':'Google Drive','todoist':'Todoist','calendar':'Google Calendar',
+};
+
+let sel = null;
+const svg = document.getElementById('overlay');
+const wrap = document.getElementById('wrapper');
+
+function node(id){ return document.querySelector(`[data-id="${id}"]`); }
+
+function rc(el){ const w=wrap.getBoundingClientRect(),r=el.getBoundingClientRect(); return {x:r.right-w.left,y:r.top-w.top+r.height/2}; }
+function lc(el){ const w=wrap.getBoundingClientRect(),r=el.getBoundingClientRect(); return {x:r.left-w.left,y:r.top-w.top+r.height/2}; }
+function bc(el){ const w=wrap.getBoundingClientRect(),r=el.getBoundingClientRect(); return {x:r.left-w.left+r.width/2,y:r.bottom-w.top}; }
+function tc(el){ const w=wrap.getBoundingClientRect(),r=el.getBoundingClientRect(); return {x:r.left-w.left+r.width/2,y:r.top-w.top}; }
+function sameCol(a,b){ const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect(); return Math.abs((ra.left+ra.width/2)-(rb.left+rb.width/2))<70; }
+
+function drawLine(x1,y1,x2,y2,color,markerId){
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  const dx=x2-x1;
+  let d;
+  if(Math.abs(dx)<40){
+    const my=(y1+y2)/2;
+    d=`M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+  } else {
+    const cp=Math.max(30,Math.abs(dx)*0.45);
+    d=`M${x1},${y1} C${x1+cp},${y1} ${x2-cp},${y2} ${x2},${y2}`;
+  }
+  p.setAttribute('d',d);
+  p.setAttribute('stroke',color);
+  p.setAttribute('stroke-width','1.8');
+  p.setAttribute('fill','none');
+  p.setAttribute('opacity','0.85');
+  p.setAttribute('marker-end',`url(#${markerId})`);
+  svg.appendChild(p);
+}
+
+function clearLines(){ svg.querySelectorAll('path').forEach(p=>p.remove()); }
+
+function updateSvgSize(){
+  svg.setAttribute('width', wrap.offsetWidth);
+  svg.setAttribute('height', wrap.scrollHeight);
+}
+
+function pick(id){
+  clearLines();
+  const all=document.querySelectorAll('.node');
+
+  if(sel===id){
+    sel=null;
+    all.forEach(n=>n.classList.remove('selected','hi-out','hi-in','dimmed'));
+    document.getElementById('detail').classList.remove('on');
+    return;
+  }
+  sel=id;
+  updateSvgSize();
+
+  const outIds=C[id]?.out||[], inIds=INV[id]||[];
+
+  all.forEach(n=>{ n.classList.remove('selected','hi-out','hi-in','dimmed'); n.classList.add('dimmed'); });
+
+  const se=node(id);
+  if(se){se.classList.remove('dimmed');se.classList.add('selected');}
+  outIds.forEach(oid=>{ const el=node(oid); if(el){el.classList.remove('dimmed');el.classList.add('hi-out');} });
+  inIds.forEach(iid=>{ const el=node(iid); if(el){el.classList.remove('dimmed');el.classList.add('hi-in');} });
+
+  outIds.forEach(oid=>{
+    const de=node(oid); if(!se||!de) return;
+    if(sameCol(se,de)){ const a=bc(se),b=tc(de); drawLine(a.x,a.y,b.x,b.y,'#16a34a','ao'); }
+    else { const a=rc(se),b=lc(de); drawLine(a.x,a.y,b.x,b.y,'#16a34a','ao'); }
+  });
+  inIds.forEach(iid=>{
+    const ie=node(iid); if(!ie||!se) return;
+    if(sameCol(ie,se)){ const a=bc(ie),b=tc(se); drawLine(a.x,a.y,b.x,b.y,'#9333ea','ai'); }
+    else { const a=rc(ie),b=lc(se); drawLine(a.x,a.y,b.x,b.y,'#9333ea','ai'); }
+  });
+
+  document.getElementById('d-title').textContent = NAMES[id]||id;
+  document.getElementById('d-desc').textContent = C[id]?.desc||'';
+  document.getElementById('d-out').innerHTML = outIds.length
+    ? outIds.map(i=>`<span class="tag tag-out">${NAMES[i]||i}</span>`).join('')
+    : '<span style="color:#aaa;font-size:10px">Terminal node</span>';
+  document.getElementById('d-in').innerHTML = inIds.length
+    ? inIds.map(i=>`<span class="tag tag-in">${NAMES[i]||i}</span>`).join('')
+    : '<span style="color:#aaa;font-size:10px">User input</span>';
+  document.getElementById('detail').classList.add('on');
+}
+
+document.querySelectorAll('.node').forEach(n => n.addEventListener('click', () => pick(n.dataset.id)));
+updateSvgSize();
+window.addEventListener('resize', () => { if(sel) updateSvgSize(); });
+</script>
+</body>
+</html>
