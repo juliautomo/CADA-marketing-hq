@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
-  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Link, Loader2, Image, Upload, X,
+  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Link, Loader2, Image, Upload, X, Building2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -449,7 +449,8 @@ function SaveBar({ onSave, saving, saved }: { onSave: () => void; saving: boolea
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'brand',       label: 'Brand',       icon: Palette },
+  { id: 'identity',    label: 'Identity',    icon: Building2 },
+  { id: 'brand',       label: 'Brand Voice', icon: Palette },
   { id: 'visual-kit',  label: 'Visual Kit',  icon: Image },
   { id: 'connections', label: 'Connections',  icon: Globe },
 ]
@@ -458,8 +459,10 @@ const TABS = [
 
 function SettingsContent() {
   const searchParams = useSearchParams()
-  const [tab, setTab] = useState<'brand' | 'visual-kit' | 'connections'>(
-    searchParams.get('tab') === 'connections' ? 'connections' : 'brand'
+  const [tab, setTab] = useState<'identity' | 'brand' | 'visual-kit' | 'connections'>(
+    searchParams.get('tab') === 'connections' ? 'connections' :
+    searchParams.get('tab') === 'visual-kit' ? 'visual-kit' :
+    searchParams.get('tab') === 'brand' ? 'brand' : 'identity'
   )
   const [brand, setBrand] = useState<BrandSettings>(BRAND_DEFAULTS)
   const [visualKit, setVisualKit] = useState<VisualKitSettings>(VISUAL_KIT_DEFAULTS)
@@ -572,74 +575,108 @@ function SettingsContent() {
         ))}
       </div>
 
-      {/* ── Brand Tab ── */}
-      {tab === 'brand' && (
+      {/* ── Identity Tab ── */}
+      {tab === 'identity' && (
         <div className="space-y-5">
 
           {/* Business Identity */}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Settings className="w-4 h-4 text-zinc-500" />
+                <Building2 className="w-4 h-4 text-zinc-500" />
                 <CardTitle className="text-base">Business Identity</CardTitle>
               </div>
-              <CardDescription>Core facts about your brand — name, handle, what you sell, where. Leave blank to use CADA defaults.</CardDescription>
+              <CardDescription>Core facts about your brand — injected into every AI agent as context.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <Field
                   label="Brand Name"
-                  placeholder="e.g. CADA"
+                  placeholder="e.g. Acme Co"
                   value={brand.brand_name}
                   onChange={v => updateBrand('brand_name', v)}
                   rows={1}
                 />
                 <Field
                   label="Handle / Username"
-                  placeholder="e.g. wear_cada"
+                  placeholder="e.g. acmeco"
                   value={brand.brand_handle}
                   onChange={v => updateBrand('brand_handle', v)}
                   rows={1}
                 />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="Industry / Niche"
+                  description="Used in trend research and content generation."
+                  placeholder="e.g. fashion, skincare, F&B"
+                  value={brand.brand_industry}
+                  onChange={v => updateBrand('brand_industry', v)}
+                  rows={1}
+                />
+                <Field
+                  label="Primary Sales Platform"
+                  description="Used in product descriptions and email CTAs."
+                  placeholder="e.g. Shopee, Amazon, own website"
+                  value={brand.brand_ecommerce_platform}
+                  onChange={v => updateBrand('brand_ecommerce_platform', v)}
+                  rows={1}
+                />
+              </div>
               <Field
                 label="Brand Description"
-                placeholder="e.g. An Indonesian modest fashion brand selling elegant, covered womenswear for Muslim women."
+                placeholder="e.g. A Singapore-based skincare brand making clean, affordable products for sensitive skin."
                 value={brand.brand_description}
                 onChange={v => updateBrand('brand_description', v)}
                 rows={3}
               />
-              <Field
-                label="Products"
-                description="One product per line: Name | Price | Notes"
-                placeholder={"Pleated Linen Pants | Rp 350,000 | Wide-leg, high-waist, navy\nDenim Maxi Skirt | Rp 385,000 | Full coverage, A-line, dark wash"}
-                value={brand.brand_products_list}
-                onChange={v => updateBrand('brand_products_list', v)}
-                rows={4}
-              />
-              <div className="grid grid-cols-1 gap-3">
-                <Field
-                  label="Price Point"
-                  placeholder="e.g. affordable-mid (Rp 280,000 – Rp 400,000 / SGD 25–35)"
-                  value={brand.brand_price_point}
-                  onChange={v => updateBrand('brand_price_point', v)}
-                  rows={1}
-                />
+              <div className="grid grid-cols-2 gap-3">
                 <Field
                   label="Markets"
-                  placeholder="e.g. Indonesia, Singapore"
+                  placeholder="e.g. Singapore, Malaysia"
                   value={brand.brand_markets}
                   onChange={v => updateBrand('brand_markets', v)}
                   rows={1}
                 />
                 <Field
                   label="Sales Channels"
-                  placeholder="e.g. Shopee, TikTok Shop, Instagram"
+                  placeholder="e.g. Shopee, Instagram, own website"
                   value={brand.brand_channels}
                   onChange={v => updateBrand('brand_channels', v)}
                   rows={1}
                 />
               </div>
+              <Field
+                label="Price Point"
+                placeholder="e.g. affordable-mid ($15–$45)"
+                value={brand.brand_price_point}
+                onChange={v => updateBrand('brand_price_point', v)}
+                rows={1}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Products */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-500" />
+                <CardTitle className="text-base">Product Summary</CardTitle>
+              </div>
+              <CardDescription>
+                A text summary of your key products for AI agents. For full product management (images, colors, links) use the{' '}
+                <a href="/products" className="text-violet-600 underline">Product Catalog</a>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Field
+                label="Products"
+                description="One product per line: Name | Price | Notes"
+                placeholder={"Classic Linen Shirt | $39 | Relaxed fit, breathable\nHigh-Waist Trousers | $49 | Wide-leg, versatile"}
+                value={brand.brand_products_list}
+                onChange={v => updateBrand('brand_products_list', v)}
+                rows={5}
+              />
             </CardContent>
           </Card>
 
@@ -650,47 +687,71 @@ function SettingsContent() {
                 <Sparkles className="w-4 h-4 text-violet-500" />
                 <CardTitle className="text-base">Content Defaults</CardTitle>
               </div>
-              <CardDescription>Defaults used in every generation. Leave blank to let the AI decide.</CardDescription>
+              <CardDescription>Applied to every generation — captions, images, and videos.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Field
-                label="Subject Description"
-                description="Who appears in your images and videos. Leave blank for product-only shots."
-                placeholder="e.g. Muslim woman wearing hijab  — or leave blank for product/flat-lay shots"
+                label="Subject / Model Description"
+                description="Who appears in your images and videos. Leave blank for product-only or flat-lay shots."
+                placeholder="e.g. woman in her 30s wearing the product — or leave blank"
                 value={brand.brand_subject_description}
                 onChange={v => updateBrand('brand_subject_description', v)}
                 rows={2}
               />
               <Field
                 label="Default Hashtags"
-                description="Added to every caption. Use your brand hashtags here."
-                placeholder="e.g. #CADA #wearcada #modestfashion #hijabfashion #ootdmodest"
+                description="Appended to every caption."
+                placeholder="e.g. #yourbrand #brandhandle #yourniche"
                 value={brand.brand_hashtags}
                 onChange={v => updateBrand('brand_hashtags', v)}
                 rows={2}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="E-commerce Platform"
-                  description="Used in product descriptions and email CTAs."
-                  placeholder="e.g. Shopee"
-                  value={brand.brand_ecommerce_platform}
-                  onChange={v => updateBrand('brand_ecommerce_platform', v)}
-                  rows={1}
-                />
-                <Field
-                  label="Industry / Niche"
-                  description="Used in trend research and analysis."
-                  placeholder="e.g. modest fashion"
-                  value={brand.brand_industry}
-                  onChange={v => updateBrand('brand_industry', v)}
-                  rows={1}
-                />
-              </div>
             </CardContent>
           </Card>
 
-          {/* Website analyzer */}
+          {/* Auto-fill */}
+          <Card className="border-violet-100 bg-violet-50/40">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Link className="w-4 h-4 text-violet-500" />
+                <CardTitle className="text-base">Auto-fill from Website</CardTitle>
+              </div>
+              <CardDescription>Paste your website URL and Claude will analyze it to fill in your brand identity automatically.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={websiteUrl}
+                  onChange={e => setWebsiteUrl(e.target.value)}
+                  placeholder="https://yourbrand.com"
+                  className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <button
+                  onClick={analyzeFromWebsite}
+                  disabled={!websiteUrl || analyzing}
+                  className="flex items-center gap-2 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {analyzing ? 'Analyzing…' : 'Analyze'}
+                </button>
+              </div>
+              {analyzeMsg && (
+                <p className={`text-xs ${analyzeMsg.includes('!') ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {analyzeMsg}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+        </div>
+      )}
+
+      {/* ── Brand Voice Tab ── */}
+      {tab === 'brand' && (
+        <div className="space-y-5">
+
+          {/* Website analyzer (kept here too for convenience) */}
           <Card className="border-violet-100 bg-violet-50/40">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -705,7 +766,7 @@ function SettingsContent() {
                   type="url"
                   value={websiteUrl}
                   onChange={e => setWebsiteUrl(e.target.value)}
-                  placeholder="https://wearcada.com"
+                  placeholder="https://yourbrand.com"
                   className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
                 <button
@@ -736,7 +797,7 @@ function SettingsContent() {
             <CardContent>
               <Field
                 label="Voice & Tone"
-                placeholder="e.g. Warm, elegant, aspirational — never preachy. Mix of English and Bahasa Indonesia is fine. Never use: revealing, sexy. Always use: modest, covered, effortless..."
+                placeholder="e.g. Warm, confident, and aspirational. Speak directly to the customer. Never use: cheap, basic. Always use: quality, effortless, elevated..."
                 value={brand.brand_voice}
                 onChange={v => updateBrand('brand_voice', v)}
                 rows={5}
@@ -755,7 +816,7 @@ function SettingsContent() {
             <CardContent>
               <Field
                 label="Customer Profile"
-                placeholder="e.g. Muslim women aged 20–35 in Indonesia and Singapore. Working professionals who want to look polished while being covered. Values quality and modesty without sacrificing style."
+                placeholder="e.g. Women aged 25–40 in Southeast Asia. Working professionals who value quality and style. Shops online, influenced by Instagram and TikTok."
                 value={brand.brand_target_customer}
                 onChange={v => updateBrand('brand_target_customer', v)}
                 rows={3}
@@ -774,7 +835,7 @@ function SettingsContent() {
             <CardContent>
               <Field
                 label="Guidelines"
-                placeholder="e.g. All clothing must be fully covered. Always show price in Rp. Hashtags: #CADA #wearcada #modestfashion. Instagram = editorial, TikTok = conversational..."
+                placeholder="e.g. Always include price. Instagram = editorial and polished. TikTok = relatable and conversational. Never make unverified health claims..."
                 value={brand.brand_guidelines}
                 onChange={v => updateBrand('brand_guidelines', v)}
                 rows={5}
@@ -812,7 +873,7 @@ function SettingsContent() {
             <CardContent>
               <Field
                 label="Campaign Theme"
-                placeholder="e.g. This week: back-to-office looks. Focus on workwear styling, professional settings, confidence at work..."
+                placeholder="e.g. This month: summer collection launch. Focus on outdoor lifestyle, bright colours, weekend styling..."
                 value={brand.brand_campaign_theme}
                 onChange={v => updateBrand('brand_campaign_theme', v)}
                 rows={3}
@@ -873,7 +934,7 @@ function SettingsContent() {
                 <Sparkles className="w-4 h-4 text-violet-500" />
                 <CardTitle className="text-base">Auto-fill from Your Photos</CardTitle>
               </div>
-              <CardDescription>Upload 5–20 of your best CADA product photos. Claude will analyze them all together and automatically fill in your style settings below.</CardDescription>
+              <CardDescription>Upload 5–20 of your best product photos. Claude will analyze them all together and automatically fill in your style settings below.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <PhotoAnalyzer onResult={(r) => {
@@ -897,7 +958,7 @@ function SettingsContent() {
             <CardContent className="grid grid-cols-2 gap-4">
               <ImageUploadField
                 label="Style Reference"
-                description="Your hero image — defines the overall CADA aesthetic."
+                description="Your hero image — defines the overall brand aesthetic."
                 settingKey="brand_style_reference_url"
                 value={visualKit.brand_style_reference_url}
                 onChange={v => updateVisualKit('brand_style_reference_url', v)}
