@@ -11,10 +11,12 @@ export async function POST(req: NextRequest) {
   const body: PerformanceInput = await req.json()
   const db = createServiceClient()
   const ctx = await getBrandContext()
+  const brandName    = ctx.raw.brand_name || 'CADA'
+  const brandChannels = ctx.raw.brand_channels || 'Shopee, TikTok, Tokopedia, Instagram'
   const SYSTEM_PROMPT = ctx.systemPrompt('Performance Analyst') + `
 
-You are a data-driven marketing analyst specialising in Southeast Asian e-commerce and social commerce.
-Analyse CADA's performance metrics across Shopee, TikTok, Tokopedia, and Instagram.
+You are a data-driven marketing analyst specialising in e-commerce and social commerce.
+Analyse ${brandName}'s performance metrics across ${brandChannels}.
 Provide clear, actionable insights with specific recommendations for improving performance on each platform.`
 
   const { data: run } = await db
@@ -28,20 +30,20 @@ Provide clear, actionable insights with specific recommendations for improving p
 
     const insights = await generateText(
       SYSTEM_PROMPT,
-      `Analyse CADA's marketing performance for report: "${body.title}"
+      `Analyse ${brandName}'s marketing performance for report: “${body.title}”
 Period: ${body.period ?? 'not specified'}
 
 DATA:
 ${metricsData}
 
 Provide a structured analysis with:
-1. **Executive Summary** (2-3 sentences specific to CADA)
-2. **Top 3 Wins** (what worked on Shopee/TikTok/Instagram)
+1. **Executive Summary** (2-3 sentences specific to ${brandName})
+2. **Top 3 Wins** (what worked across our channels)
 3. **Top 3 Areas for Improvement** (specific to our channels)
-4. **Actionable Recommendations** for next period (channel-specific: Shopee, TikTok, Instagram)
-5. **Modest Fashion Market Insights** â€” any broader trends we should act on
+4. **Actionable Recommendations** for next period (channel-specific: ${brandChannels})
+5. **${ctx.raw.brand_industry || 'Fashion'} Market Insights** — any broader trends we should act on
 
-Keep recommendations practical for a small-mid Indonesian fashion brand.`
+Keep recommendations practical for the brand's scale and market.`
     )
 
     const metrics: Record<string, unknown> = {}

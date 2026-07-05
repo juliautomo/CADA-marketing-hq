@@ -19,9 +19,11 @@ export interface VideoAnalysis {
 }
 
 export async function POST(req: NextRequest) {
-  const { systemPrompt } = await getBrandContext()
-  const SYSTEM = systemPrompt('Fashion Video Analyst') + `
-You analyse fashion video frames to extract styling insights and generate social media captions for CADA.
+  const ctx = await getBrandContext()
+  const brandName = ctx.raw.brand_name || 'CADA'
+  const brandIndustry = ctx.raw.brand_industry || 'fashion'
+  const SYSTEM = ctx.systemPrompt('Fashion Video Analyst') + `
+You analyse fashion video frames to extract styling insights and generate social media captions for ${brandName}.
 You will receive multiple frames from a short video — treat them as a sequence to understand what's happening.`
 
   try {
@@ -56,7 +58,7 @@ You will receive multiple frames from a short video — treat them as a sequence
             ...imageBlocks,
             {
               type: 'text',
-              text: `These are ${frames.length} frames extracted from a short fashion video for CADA (Indonesian modest fashion brand).
+              text: `These are ${frames.length} frames extracted from a short ${brandIndustry} video for ${brandName}.
 Platform preference: ${platform ?? 'Instagram & TikTok'}
 Tone: ${tone ?? 'Aspirational'}
 

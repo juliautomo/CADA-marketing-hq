@@ -14,10 +14,13 @@ export async function POST(req: NextRequest) {
   const body: CampaignInput = await req.json()
   const db = createServiceClient()
   const ctx = await getBrandContext()
+  const brandName      = ctx.raw.brand_name || 'CADA'
+  const brandMarkets   = ctx.raw.brand_markets || 'Indonesia & Singapore'
+  const brandEcommerce = ctx.raw.brand_ecommerce_platform || 'Shopee'
   const SYSTEM_PROMPT = ctx.systemPrompt('Campaign Planner') + `
 
-You are an expert marketing campaign strategist for modest fashion brands in Southeast Asia.
-Create detailed, actionable 4-week campaign plans tailored to CADA's channels: Shopee, TikTok, Tokopedia, and Instagram.
+You are an expert marketing campaign strategist specialising in ${ctx.raw.brand_industry || 'fashion'} brands.
+Create detailed, actionable 4-week campaign plans tailored to ${brandName}'s channels.
 Output structured JSON when asked.`
 
   const { data: run } = await db
@@ -32,15 +35,15 @@ Output structured JSON when asked.`
 
     const briefText = await generateText(
       SYSTEM_PROMPT,
-      `Create a detailed 4-week marketing campaign for CADA:
+      `Create a detailed 4-week marketing campaign for ${brandName}:
 
 Campaign: "${body.name}"
 Description: ${body.description}
-Theme: ${body.theme ?? 'modest fashion collection launch'}
+Theme: ${body.theme ?? `${ctx.raw.brand_industry || 'fashion'} collection launch`}
 Budget: ${body.budget ?? 'not specified'}
-Channels: ${(body.channels ?? ['TikTok', 'Instagram', 'Shopee']).join(', ')}
+Channels: ${(body.channels ?? ['TikTok', 'Instagram', brandEcommerce]).join(', ')}
 Start date: ${format(startDate, 'MMMM d, yyyy')}
-Markets: Indonesia & Singapore
+Markets: ${brandMarkets}
 
 IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Start your response with { and end with }.
 

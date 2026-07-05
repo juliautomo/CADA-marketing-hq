@@ -27,11 +27,14 @@ export async function GET(req: NextRequest) {
   }
   const weekOf = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   const ctx = await getBrandContext()
+  const brandName    = ctx.raw.brand_name || 'CADA'
+  const brandMarkets = ctx.raw.brand_markets || 'Indonesia & Singapore'
+  const brandIndustry = ctx.raw.brand_industry || 'modest fashion'
   const SYSTEM_PROMPT = ctx.systemPrompt('Monday Trend Analyst') + `
 
-You are generating the weekly Monday morning trend brief for CADA.
-This brief will be read by the CADA marketing team at the start of each week.
-Be specific, actionable, and tailored to modest fashion in Indonesia & Singapore.
+You are generating the weekly Monday morning trend brief for ${brandName}.
+This brief will be read by the ${brandName} marketing team at the start of each week.
+Be specific, actionable, and tailored to ${brandIndustry} in ${brandMarkets}.
 
 You MUST use this EXACT format:
 
@@ -63,20 +66,20 @@ TRENDING HASHTAGS:
 - [hashtag]|[platform]|[why trending]
 
 FULL ANALYSIS:
-[3 paragraphs: macro trends, what CADA should focus on this week, specific content recommendations for TikTok and Instagram]
+[3 paragraphs: macro trends, what ${brandName} should focus on this week, specific content recommendations for TikTok and Instagram]
 
 THIS WEEK'S ACTION ITEMS:
-- [specific action for CADA this week]
+- [specific action for ${brandName} this week]
 - [specific action]
 - [specific action]`
 
   try {
     const text = await generateText(
       SYSTEM_PROMPT,
-      `Generate the Monday morning trend brief for CADA for the week of ${weekOf}.
-Focus on what's trending right now in Muslim modest fashion across Indonesia and Singapore.
+      `Generate the Monday morning trend brief for ${brandName} for the week of ${weekOf}.
+Focus on what's trending right now in ${brandIndustry} across ${brandMarkets}.
 Highlight any upcoming events, holidays, or seasonal opportunities this week.
-Include 5 specific content ideas CADA can execute this week.`
+Include 5 specific content ideas ${brandName} can execute this week.`
     )
 
     // Parse sections
@@ -130,7 +133,7 @@ Include 5 specific content ideas CADA can execute this week.`
     let driveUrl = ''
     try {
       const driveContent = [
-        `CADA MONDAY TREND BRIEF`,
+        `${brandName.toUpperCase()} MONDAY TREND BRIEF`,
         `Week of ${weekOf}`,
         `Generated: ${new Date().toLocaleString()}`,
         `=========================`,
@@ -139,7 +142,7 @@ Include 5 specific content ideas CADA can execute this week.`
       ].join('\n')
 
       driveUrl = await uploadTextToDrive({
-        fileName: `CADA Monday Brief â€” ${weekOf}.txt`,
+        fileName: `${brandName} Monday Brief — ${weekOf}.txt`,
         content: driveContent,
       })
     } catch {

@@ -32,6 +32,11 @@ export async function POST(req: NextRequest) {
   const { stream, send, close } = createSSE()
   const ctx = await getBrandContext()
   const BASE = ctx.systemPrompt('Full Campaign Agent')
+  const brandName      = ctx.raw.brand_name || 'CADA'
+  const brandHashtags  = ctx.raw.brand_hashtags || '#CADA #wearcada #modestfashion'
+  const brandEcommerce = ctx.raw.brand_ecommerce_platform || 'Shopee'
+  const brandIndustry  = ctx.raw.brand_industry || 'modest fashion'
+  const brandProducts  = ctx.raw.brand_products_list || 'Pleated Linen Pants (Rp 350,000), Butter Yellow Ruffle Sleeve Shirt (Rp 280,000), High Waisted Denim Maxi Skirt (Rp 385,000)'
 
   // Run the agent chain asynchronously while streaming progress
   ;(async () => {
@@ -77,7 +82,7 @@ Return ONLY this JSON (no markdown, no explanation):
           startDate: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
           durationDays: 28,
           channels: ['TikTok', 'Instagram', 'Shopee'],
-          targetAudience: 'Muslim women 20-35 in Indonesia & Singapore',
+          targetAudience: ctx.raw.brand_target_customer || `${brandIndustry} customers`,
           keyMessage: 'Elevate your modest style',
         }
       }
@@ -99,8 +104,8 @@ Return ONLY this JSON (no markdown, no explanation):
 
       const trendText = await generateText(
         BASE + '\nYou are a trend analyst. Be specific and actionable.',
-        `Research the most relevant fashion trends for a CADA campaign themed: "${parsed.theme}".
-Focus on what Muslim women in Indonesia are wearing and engaging with right now.
+        `Research the most relevant ${brandIndustry} trends for a ${brandName} campaign themed: "${parsed.theme}".
+Focus on what the target audience is wearing and engaging with right now.
 
 List:
 - 5 trending colors relevant to this campaign theme
@@ -115,7 +120,7 @@ List:
 
       const briefText = await generateText(
         BASE + '\nYou are a campaign strategist. Write compelling, specific copy.',
-        `Write a complete campaign brief for CADA based on:
+        `Write a complete campaign brief for ${brandName} based on:
 Campaign: "${parsed.name}"
 Theme: "${parsed.theme}"
 Start date: ${parsed.startDate}
@@ -140,20 +145,20 @@ Include:
 
       const contentText = await generateText(
         BASE + '\nYou are a social media copywriter. Write ready-to-post content.',
-        `Generate 7 days of social content for CADA's campaign: "${parsed.name}"
+        `Generate 7 days of social content for ${brandName}'s campaign: “${parsed.name}”
 Theme: ${parsed.theme}
 Starting: ${parsed.startDate}
-Products to feature: Pleated Linen Pants (Rp 350,000), Butter Yellow Ruffle Sleeve Shirt (Rp 280,000), High Waisted Denim Maxi Skirt (Rp 385,000)
+Products to feature: ${brandProducts}
 
 For each day provide:
-DAY [N] â€” [Date] â€” [Platform: TikTok or Instagram]
+DAY [N] — [Date] — [Platform: TikTok or Instagram]
 Caption: [full ready-to-post caption with hashtags]
 Content Type: [Reel/TikTok/Carousel/Static]
 Hook: [opening line for video]
 CTA: [call to action]
 ---
 
-Make each day different. Rotate products. Mix TikTok and Instagram. Include #CADA #wearcada #modestfashion hashtags.`
+Make each day different. Rotate products. Mix TikTok and Instagram. Include ${brandHashtags} hashtags.`
       )
 
       // Parse days into structured array
@@ -234,7 +239,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
       }> = []
 
       try {
-        todoistProjectId = await createProject(`CADA â€” ${parsed.name}`)
+        todoistProjectId = await createProject(`${brandName} — ${parsed.name}`)
 
         const milestones = [
           { title: 'ðŸ“¸ Shoot & prepare all campaign assets', offset: 0, week: 1 },
@@ -253,7 +258,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
             content: m.title,
             projectId: todoistProjectId,
             dueDate,
-            description: `CADA Campaign: ${parsed.name} Â· ${parsed.theme}`,
+            description: `${brandName} Campaign: ${parsed.name} · ${parsed.theme}`,
             priority: m.week === 1 ? 4 : 3,
           })
           if (campaign) {
@@ -302,7 +307,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
       let driveUrl = ''
       try {
         const driveContent = [
-          `CADA CAMPAIGN BRIEF`,
+          `${brandName.toUpperCase()} CAMPAIGN BRIEF`,
           `===================`,
           `Campaign: ${parsed.name}`,
           `Theme: ${parsed.theme}`,
@@ -330,7 +335,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include #CAD
         ].join('\n')
 
         driveUrl = await uploadTextToDrive({
-          fileName: `CADA Campaign â€” ${parsed.name}.txt`,
+          fileName: `${brandName} Campaign — ${parsed.name}.txt`,
           content: driveContent,
         })
         send({ step: 8, status: 'done', label: 'Brief exported to Google Drive', data: { driveUrl } })

@@ -21,10 +21,13 @@ export async function GET(req: NextRequest) {
   const start = Date.now()
   const db = createServiceClient()
   const ctx = await getBrandContext()
+  const brandName    = ctx.raw.brand_name || 'CADA'
+  const brandIndustry = ctx.raw.brand_industry || 'modest fashion'
+  const brandHashtags = ctx.raw.brand_hashtags || '#CADA #wearcada #modestfashion'
   const SYSTEM_PROMPT = ctx.systemPrompt('Daily Content Generator') + `
 
-You generate 3 ready-to-post social media content ideas for CADA every morning.
-Each idea must be specific, ready to execute today, and tailored to what performs on TikTok and Instagram for modest fashion.
+You generate 3 ready-to-post social media content ideas for ${brandName} every morning.
+Each idea must be specific, ready to execute today, and tailored to what performs on TikTok and Instagram for ${brandIndustry}.
 
 Output EXACTLY 3 content ideas in this format (no deviation):
 
@@ -77,11 +80,11 @@ CTA: [cta]
   try {
     const text = await generateText(
       SYSTEM_PROMPT,
-      `Generate 3 content ideas for CADA for today, ${today}.
+      `Generate 3 content ideas for ${brandName} for today, ${today}.
 Featured product today: ${featuredProduct.name} (${featuredProduct.price})
 Also feel free to feature the other products in ideas 2 and 3.
-Make each idea different â€” vary the platform, format, and angle.
-Think about what Indonesian Muslim women engage with most on TikTok and Instagram right now.`
+Make each idea different — vary the platform, format, and angle.
+Include ${brandHashtags} in captions where relevant.`
     )
 
     // Parse the 3 ideas
@@ -131,7 +134,7 @@ Think about what Indonesian Muslim women engage with most on TikTok and Instagra
       // Find or create a "Daily Content Queue" project
       let projectId = process.env.CADA_DAILY_CONTENT_PROJECT_ID ?? ''
       if (!projectId) {
-        projectId = await createProject('CADA â€” Daily Content Queue')
+        projectId = await createProject(`${brandName} — Daily Content Queue`)
       }
 
       for (const idea of ideas) {

@@ -20,6 +20,10 @@ interface BrandSettings {
   brand_price_point: string
   brand_markets: string
   brand_channels: string
+  brand_subject_description: string
+  brand_hashtags: string
+  brand_ecommerce_platform: string
+  brand_industry: string
   brand_voice: string
   brand_guidelines: string
   brand_target_customer: string
@@ -65,6 +69,10 @@ const BRAND_DEFAULTS: BrandSettings = {
   brand_price_point: '',
   brand_markets: '',
   brand_channels: '',
+  brand_subject_description: '',
+  brand_hashtags: '',
+  brand_ecommerce_platform: '',
+  brand_industry: '',
   brand_voice: '',
   brand_guidelines: '',
   brand_target_customer: '',
@@ -629,6 +637,53 @@ function SettingsContent() {
                   placeholder="e.g. Shopee, TikTok Shop, Instagram"
                   value={brand.brand_channels}
                   onChange={v => updateBrand('brand_channels', v)}
+                  rows={1}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Content Defaults */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-500" />
+                <CardTitle className="text-base">Content Defaults</CardTitle>
+              </div>
+              <CardDescription>Defaults used in every generation. Leave blank to let the AI decide.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Field
+                label="Subject Description"
+                description="Who appears in your images and videos. Leave blank for product-only shots."
+                placeholder="e.g. Muslim woman wearing hijab  — or leave blank for product/flat-lay shots"
+                value={brand.brand_subject_description}
+                onChange={v => updateBrand('brand_subject_description', v)}
+                rows={2}
+              />
+              <Field
+                label="Default Hashtags"
+                description="Added to every caption. Use your brand hashtags here."
+                placeholder="e.g. #CADA #wearcada #modestfashion #hijabfashion #ootdmodest"
+                value={brand.brand_hashtags}
+                onChange={v => updateBrand('brand_hashtags', v)}
+                rows={2}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="E-commerce Platform"
+                  description="Used in product descriptions and email CTAs."
+                  placeholder="e.g. Shopee"
+                  value={brand.brand_ecommerce_platform}
+                  onChange={v => updateBrand('brand_ecommerce_platform', v)}
+                  rows={1}
+                />
+                <Field
+                  label="Industry / Niche"
+                  description="Used in trend research and analysis."
+                  placeholder="e.g. modest fashion"
+                  value={brand.brand_industry}
+                  onChange={v => updateBrand('brand_industry', v)}
                   rows={1}
                 />
               </div>

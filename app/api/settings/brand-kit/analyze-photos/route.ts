@@ -1,11 +1,15 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { getBrandContext } from '@/lib/brand'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await getBrandContext()
+    const brandName    = ctx.raw.brand_name || 'CADA'
+    const brandIndustry = ctx.raw.brand_industry || 'modest fashion'
     const formData = await req.formData()
     const files = formData.getAll('photos') as File[]
 
@@ -38,7 +42,7 @@ You analyze brand photo libraries to extract consistent visual DNA that can be u
             ...imageBlocks,
             {
               type: 'text',
-              text: `I've uploaded ${files.length} photos from a modest fashion brand called CADA. Analyze ALL of them together to identify the consistent visual patterns, aesthetic, and style that defines this brand.
+              text: `I've uploaded ${files.length} photos from a ${brandIndustry} brand called ${brandName}. Analyze ALL of them together to identify the consistent visual patterns, aesthetic, and style that defines this brand.
 
 Return ONLY valid JSON with this exact shape (no markdown, no explanation):
 {

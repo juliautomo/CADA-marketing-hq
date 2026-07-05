@@ -57,8 +57,13 @@ export async function POST(req: NextRequest) {
     .single()
 
   const ctx = await getBrandContext()
+  const brandName     = ctx.raw.brand_name || 'CADA'
+  const brandSubject  = ctx.raw.brand_subject_description || ''
+  const brandHashtags = ctx.raw.brand_hashtags || '#CADA #wearcada #modestfashion'
+  const brandEcommerce = ctx.raw.brand_ecommerce_platform || 'Shopee'
+  const brandIndustry  = ctx.raw.brand_industry || 'modest fashion'
   const SYSTEM_PROMPT = ctx.systemPrompt('Content Creator') + `
-You are an expert copywriter specialising in modest fashion content for Indonesian and Singaporean Muslim women.
+You are an expert copywriter specialising in ${brandIndustry} content.
 Write content that is warm, elegant, and aspirational. Always output ONLY the requested content — no preamble or meta-commentary.`
   const imgQuality = ctx.imageQuality
   const driveEnabled = ctx.driveEnabled
@@ -71,13 +76,12 @@ Write content that is warm, elegant, and aspirational. Always output ONLY the re
       case 'caption': {
         const text = await generateText(
           SYSTEM_PROMPT,
-          `Write a ${body.platform ?? 'Instagram'} caption for CADA's product: ${body.product}.
+          `Write a ${body.platform ?? 'Instagram'} caption for ${brandName}'s product: ${body.product}.
 Tone: ${body.tone ?? 'elegant and aspirational'}.
 ${body.additionalContext ? `IMPORTANT — use the following context to shape the caption's setting, mood, and angle. Do NOT write a generic product description; let the visual reference drive the creative direction:\n${body.additionalContext}\n` : ''}
 ${langNote}
 ${lenNote}
-Include relevant hashtags at the end (#CADA #wearcada #modestfashion etc).
-The caption should appeal to Muslim women in Indonesia/Singapore aged 20â€”35.`
+Include relevant hashtags at the end (${brandHashtags}).`
         )
         const { data } = await db.from('cada_content_items')
           .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, tags: [body.platform ?? 'instagram', 'cada'] })
@@ -89,7 +93,7 @@ The caption should appeal to Muslim women in Indonesia/Singapore aged 20â€”
       case 'description': {
         const text = await generateText(
           SYSTEM_PROMPT,
-          `Write a Shopee product description for CADA's product: ${body.product}.
+          `Write a ${brandEcommerce} product description for ${brandName}'s product: ${body.product}.
 Tone: ${body.tone ?? 'warm and persuasive'}.
 ${body.additionalContext ?? ''}
 ${langNote}
@@ -107,14 +111,14 @@ End with sizing/care notes placeholder.`
       case 'email': {
         const text = await generateText(
           SYSTEM_PROMPT,
-          `Write a promotional email for CADA about: ${body.product ?? body.prompt}.
+          `Write a promotional email for ${brandName} about: ${body.product ?? body.prompt}.
 Tone: ${body.tone ?? 'warm and exclusive'}.
 ${body.additionalContext ?? ''}
 ${langNote}
 Include:
 - Subject line (compelling, under 50 chars)
 - Preview text (under 90 chars)
-- Full email body with greeting, product highlight, styling tips, and CTA to Shopee/TikTok shop`
+- Full email body with greeting, product highlight, styling tips, and CTA to ${brandEcommerce}`
         )
         const { data } = await db.from('cada_content_items')
           .insert({ type: 'email', title: `Email: ${body.product ?? body.prompt}`, body: text, tags: ['email', 'cada'] })
@@ -124,8 +128,9 @@ Include:
       }
 
       case 'image': {
+        const subjectPart = brandSubject ? `${brandSubject} wearing ${body.product}` : body.product
         const basePrompt = body.prompt ??
-          `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
+          `High-fashion editorial photo of ${subjectPart} by ${brandName}. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, ${brandIndustry} brand photography style.`
 
         const dallePrompt = [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
 
@@ -152,7 +157,7 @@ Include:
       case 'video': {
         const productDesc = body.product ?? 'modest fashion outfit'
         const videoPrompt = body.prompt ??
-          `Cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, modest fashion aesthetic.`
+          `Cinematic fashion video featuring ${productDesc} by ${brandName}. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, ${brandIndustry} aesthetic.`
         const duration  = body.videoLength ?? 5
         const provider  = body.videoProvider ?? 'kling'
         const refImage  = body.referenceImageUrl || undefined
@@ -179,7 +184,7 @@ Include:
         // Generate story caption (short, punchy, no hashtags)
         const caption = await generateText(
           SYSTEM_PROMPT,
-          `Write a very short Instagram Story text overlay for CADA's product: ${productDesc}.
+          `Write a very short Instagram Story text overlay for ${brandName}'s product: ${productDesc}.
 Tone: ${body.tone ?? 'elegant and aspirational'}.
 ${body.additionalContext ? `Context: ${body.additionalContext}` : ''}
 ${LANG_INSTRUCTION[body.language ?? 'english']}
@@ -187,8 +192,9 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
         )
 
         if (storyType === 'image') {
+          const storySubject = brandSubject ? `${brandSubject} wearing ${productDesc}` : productDesc
           const storyBase = body.prompt ??
-            `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
+            `Vertical 9:16 portrait fashion editorial photo of ${storySubject} by ${brandName}. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
           const imagePrompt = [ctx.imagePrompt, storyBase].filter(Boolean).join('. ')
           const storyRefImage = body.referenceImageUrl || ctx.referenceImageUrl
           const storyImgProvider = body.imageProvider ?? 'gpt'
@@ -204,7 +210,7 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           result = { imageUrl, caption, driveUrl: storyImgDriveUrl, item: data }
         } else {
           const videoPrompt = body.prompt ??
-            `Vertical 9:16 cinematic fashion video featuring ${productDesc} by CADA modest fashion. ${body.additionalContext ?? ''} Portrait orientation, elegant movement, soft natural lighting, modest fashion aesthetic.`
+            `Vertical 9:16 cinematic fashion video featuring ${productDesc} by ${brandName}. ${body.additionalContext ?? ''} Portrait orientation, elegant movement, soft natural lighting, ${brandIndustry} aesthetic.`
           const duration = body.videoLength ?? 5
           const provider = body.videoProvider === 'runway' ? 'runway' : 'kling'
           const refImage = body.referenceImageUrl || undefined
