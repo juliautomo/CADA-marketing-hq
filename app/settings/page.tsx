@@ -127,14 +127,35 @@ function PhotoAnalyzer({ onResult }: {
     setError('')
   }
 
+  async function compressImage(file: File): Promise<Blob> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        const MAX = 800
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        URL.revokeObjectURL(url)
+        canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.8)
+      }
+      img.src = url
+    })
+  }
+
   async function analyze() {
     if (!files.length) return
     setAnalyzing(true)
     setError('')
     setSummary('')
     try {
+      const compressed = await Promise.all(files.map(f => compressImage(f)))
       const fd = new FormData()
-      files.forEach(f => fd.append('photos', f))
+      compressed.forEach((blob, i) => fd.append('photos', blob, `photo-${i}.jpg`))
       const res = await fetch('/api/settings/brand-kit/analyze-photos', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Analysis failed')
