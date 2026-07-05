@@ -261,7 +261,7 @@ export default function CreatorPage() {
       imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
       referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
       referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : refImageUrls.length > 0 ? refImageUrls : undefined,
-      prompt:         customPrompt || undefined,
+      prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
       additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '')) || undefined,
     }
 
@@ -283,7 +283,7 @@ export default function CreatorPage() {
     setResult(null)
     setError(null)
     setSelectedProduct(null)
-    setImageAnalysis(null)
+    if (t !== 'image') setImageAnalysis(null)
     setVideoAnalysis(null)
     setRawMediaUrl(null)
     setCaptionNotes('')
