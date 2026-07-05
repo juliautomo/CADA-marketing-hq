@@ -471,6 +471,8 @@ function SettingsContent() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [websiteUrl, setWebsiteUrl] = useState('')
+  const [pasteText, setPasteText] = useState('')
+  const [importMode, setImportMode] = useState<'url' | 'text'>('url')
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeMsg, setAnalyzeMsg] = useState('')
   const [tiktokStatus, setTiktokStatus] = useState<'success' | 'error' | null>(
@@ -522,14 +524,16 @@ function SettingsContent() {
   }
 
   async function analyzeFromWebsite() {
-    if (!websiteUrl) return
+    const hasUrl = importMode === 'url' && websiteUrl
+    const hasText = importMode === 'text' && pasteText.trim()
+    if (!hasUrl && !hasText) return
     setAnalyzing(true)
     setAnalyzeMsg('')
     try {
       const res = await fetch('/api/settings/analyze-brand', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: websiteUrl }),
+        body: JSON.stringify(importMode === 'url' ? { url: websiteUrl } : { text: pasteText }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed')
@@ -709,33 +713,66 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
-          {/* Auto-fill */}
+          {/* Import brand context */}
           <Card className="border-violet-100 bg-violet-50/40">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Link className="w-4 h-4 text-violet-500" />
-                <CardTitle className="text-base">Auto-fill from Website</CardTitle>
+                <Sparkles className="w-4 h-4 text-violet-500" />
+                <CardTitle className="text-base">Import Brand Context</CardTitle>
               </div>
-              <CardDescription>Paste your website URL and Claude will analyze it to fill in your brand identity automatically.</CardDescription>
+              <CardDescription>Claude will read your content and fill in the fields above automatically.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={websiteUrl}
-                  onChange={e => setWebsiteUrl(e.target.value)}
-                  placeholder="https://yourbrand.com"
-                  className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+              {/* Mode toggle */}
+              <div className="flex gap-1 bg-white border border-zinc-200 rounded-lg p-0.5 w-fit">
                 <button
-                  onClick={analyzeFromWebsite}
-                  disabled={!websiteUrl || analyzing}
-                  className="flex items-center gap-2 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                  {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {analyzing ? 'Analyzing…' : 'Analyze'}
-                </button>
+                  onClick={() => setImportMode('url')}
+                  className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', importMode === 'url' ? 'bg-violet-600 text-white' : 'text-zinc-500 hover:text-zinc-700')}
+                >Website URL</button>
+                <button
+                  onClick={() => setImportMode('text')}
+                  className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', importMode === 'text' ? 'bg-violet-600 text-white' : 'text-zinc-500 hover:text-zinc-700')}
+                >Paste Text</button>
               </div>
+
+              {importMode === 'url' ? (
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={websiteUrl}
+                    onChange={e => setWebsiteUrl(e.target.value)}
+                    placeholder="https://yourbrand.com"
+                    className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                  <button
+                    onClick={analyzeFromWebsite}
+                    disabled={!websiteUrl || analyzing}
+                    className="flex items-center gap-2 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                  >
+                    {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {analyzing ? 'Analyzing…' : 'Analyze'}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <textarea
+                    value={pasteText}
+                    onChange={e => setPasteText(e.target.value)}
+                    rows={5}
+                    placeholder="Paste anything — Instagram bio, pitch deck copy, product descriptions, brand brief, About page text…"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                  />
+                  <button
+                    onClick={analyzeFromWebsite}
+                    disabled={!pasteText.trim() || analyzing}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors"
+                  >
+                    {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {analyzing ? 'Analyzing…' : 'Analyze Text'}
+                  </button>
+                </div>
+              )}
+
               {analyzeMsg && (
                 <p className={`text-xs ${analyzeMsg.includes('!') ? 'text-emerald-600' : 'text-red-500'}`}>
                   {analyzeMsg}
@@ -752,40 +789,6 @@ function SettingsContent() {
         <div className="space-y-5">
 
           {/* Website analyzer (kept here too for convenience) */}
-          <Card className="border-violet-100 bg-violet-50/40">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Link className="w-4 h-4 text-violet-500" />
-                <CardTitle className="text-base">Auto-fill from Website</CardTitle>
-              </div>
-              <CardDescription>Paste your website URL and Claude will analyze it to fill in your brand context automatically.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={websiteUrl}
-                  onChange={e => setWebsiteUrl(e.target.value)}
-                  placeholder="https://yourbrand.com"
-                  className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-                <button
-                  onClick={analyzeFromWebsite}
-                  disabled={!websiteUrl || analyzing}
-                  className="flex items-center gap-2 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                  {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {analyzing ? 'Analyzing…' : 'Analyze'}
-                </button>
-              </div>
-              {analyzeMsg && (
-                <p className={`text-xs ${analyzeMsg.includes('!') ? 'text-emerald-600' : 'text-red-500'}`}>
-                  {analyzeMsg}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
