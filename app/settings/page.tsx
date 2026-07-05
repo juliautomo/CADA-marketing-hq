@@ -221,6 +221,67 @@ function PhotoAnalyzer({ onResult }: {
   )
 }
 
+interface AnalysisRecord {
+  id: string
+  created_at: string
+  thumbnail_url: string | null
+  photo_count: number
+  summary: string
+  style_prefix: string
+  color_description: string
+  brand_colors: string[] | null
+  shot_style: string
+  negative_prompts: string
+}
+
+function AnalysisHistory({ onApply }: {
+  onApply: (r: AnalysisRecord) => void
+}) {
+  const [analyses, setAnalyses] = useState<AnalysisRecord[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/settings/brand-kit/analyses')
+      .then(r => r.json())
+      .then(d => setAnalyses(d.analyses ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <p className="text-xs text-zinc-400">Loading history…</p>
+  if (!analyses.length) return <p className="text-xs text-zinc-400">No analyses yet — run your first one above.</p>
+
+  return (
+    <div className="space-y-3">
+      {analyses.map(a => (
+        <div key={a.id} className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-3">
+          {a.thumbnail_url
+            ? <img src={a.thumbnail_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-zinc-100" />
+            : <div className="w-14 h-14 rounded-lg bg-zinc-100 flex-shrink-0 flex items-center justify-center text-zinc-400 text-xs">{a.photo_count}p</div>
+          }
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <p className="text-xs text-zinc-400">{new Date(a.created_at).toLocaleDateString()} · {a.photo_count} photos</p>
+              <button
+                onClick={() => onApply(a)}
+                className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex-shrink-0"
+              >Apply</button>
+            </div>
+            <p className="text-xs text-zinc-600 leading-relaxed line-clamp-2">{a.summary}</p>
+            {a.brand_colors && (
+              <div className="flex gap-1 mt-1.5">
+                {a.brand_colors.slice(0, 6).map((hex, i) => (
+                  <div key={i} className="w-4 h-4 rounded-full border border-zinc-200" style={{ backgroundColor: hex }} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function ColorPaletteEditor({ value, onChange }: {
   value: string
   onChange: (v: string) => void
@@ -919,6 +980,26 @@ function SettingsContent() {
                 if (r.brand_colors?.length) updateVisualKit('brand_colors', JSON.stringify(r.brand_colors))
                 updateVisualKit('brand_shot_style', r.shot_style)
                 updateVisualKit('brand_negative_prompts', r.negative_prompts)
+              }} />
+            </CardContent>
+          </Card>
+
+          {/* Analysis history */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-zinc-400" />
+                <CardTitle className="text-base">Analysis History</CardTitle>
+              </div>
+              <CardDescription>Past photo analyses — click Apply to restore any result.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AnalysisHistory onApply={(a) => {
+                updateVisualKit('brand_style_prefix', a.style_prefix)
+                updateVisualKit('brand_color_description', a.color_description)
+                if (a.brand_colors?.length) updateVisualKit('brand_colors', JSON.stringify(a.brand_colors))
+                updateVisualKit('brand_shot_style', a.shot_style)
+                updateVisualKit('brand_negative_prompts', a.negative_prompts)
               }} />
             </CardContent>
           </Card>

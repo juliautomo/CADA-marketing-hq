@@ -3,6 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getBrandContext } from '@/lib/brand'
+import { createServiceClient } from '@/lib/supabase'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -69,6 +70,37 @@ For brand_colors: extract 3–6 dominant hex color codes actually observed in th
     if (!jsonMatch) throw new Error('Could not parse analysis result')
 
     const analysis = JSON.parse(jsonMatch[0])
+
+    // Upload first photo as thumbnail then save analysis to history
+    let thumbnailUrl = ''
+    try {
+      const firstFile = files[0]
+      const buffer = await firstFile.arrayBuffer()
+      const db = createServiceClient()
+      const fileName = `brand-kit/analysis-${Date.now()}.jpg`
+      const { data: uploadData } = await db.storage
+        .from('brand-assets')
+        .upload(fileName, Buffer.from(buffer), { contentType: 'image/jpeg', upsert: false })
+      if (uploadData) {
+        const { data: urlData } = db.storage.from('brand-assets').getPublicUrl(fileName)
+        thumbnailUrl = urlData.publicUrl
+      }
+    } catch { /* thumbnail upload optional */ }
+
+    try {
+      const db = createServiceClient()
+      await db.from('cada_brand_kit_analyses').insert({
+        thumbnail_url: thumbnailUrl || null,
+        photo_count: files.length,
+        summary: analysis.summary,
+        style_prefix: analysis.style_prefix,
+        color_description: analysis.color_description,
+        brand_colors: analysis.brand_colors,
+        shot_style: analysis.shot_style,
+        negative_prompts: analysis.negative_prompts,
+      })
+    } catch { /* history save optional */ }
+
     return NextResponse.json({ ok: true, analysis })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Analysis failed'
