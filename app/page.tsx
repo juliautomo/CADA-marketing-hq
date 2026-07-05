@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { AgentCard } from '@/components/dashboard/agent-card'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { RecentRuns } from '@/components/dashboard/recent-runs'
