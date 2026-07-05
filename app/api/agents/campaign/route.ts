@@ -1,7 +1,6 @@
 ﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
-import { createProject, createTask } from '@/lib/todoist'
 import { createCalendarEvent, uploadFileToDrive } from '@/lib/google'
 import { createServiceClient } from '@/lib/supabase'
 import { getBrandContext } from '@/lib/brand'
@@ -86,36 +85,6 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       ]
     }
 
-    // Todoist â€” try to create a project, fall back to Inbox if limit reached
-    let todoistProjectId = ''
-    let todoistError = ''
-    const todoistTaskIds: string[] = []
-    try {
-      try {
-        todoistProjectId = await createProject(`${brandName} — ${body.name}`)
-      } catch (e) {
-        // If project limit reached (403), use Inbox (no project_id needed)
-        const msg = e instanceof Error ? e.message : ''
-        if (msg.includes('403') || msg.includes('Maximum')) {
-          todoistProjectId = 'inbox'  // sentinel â€” tasks go to Inbox
-        } else {
-          throw e
-        }
-      }
-      for (const m of milestones) {
-        const dueDate = format(addDays(startDate, m.day_offset), 'yyyy-MM-dd')
-        const taskId = await createTask({
-          content: `[${body.name}] ${m.title}`,
-          projectId: todoistProjectId === 'inbox' ? '' : todoistProjectId,
-          dueDate,
-          description: `Week ${m.week} | ${brandName} — ${body.name}`,
-          priority: m.week === 3 ? 4 : 3,
-        })
-        todoistTaskIds.push(taskId)
-      }
-      if (!todoistProjectId) todoistProjectId = 'inbox'
-    } catch (e) { todoistError = e instanceof Error ? e.message : 'Unknown Todoist error' }
-
     // Google Calendar
     const calendarEventIds: string[] = []
     try {
@@ -159,7 +128,6 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
         end_date: format(endDate, 'yyyy-MM-dd'),
         status: 'draft',
         google_drive_url: driveUrl || null,
-        todoist_project_id: todoistProjectId || null,
         calendar_event_ids: calendarEventIds,
         brief,
       })
@@ -170,7 +138,6 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       title: m.title,
       due_date: format(addDays(startDate, m.day_offset), 'yyyy-MM-dd'),
       week_number: m.week,
-      todoist_task_id: todoistTaskIds[i] ?? null,
       calendar_event_id: calendarEventIds[m.week - 1] ?? null,
     }))
     await db.from('cada_campaign_milestones').insert(milestoneRows)
@@ -180,8 +147,6 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       success: true,
       campaign,
       briefText,
-      todoistOk: !!todoistProjectId,
-      todoistError,
       calendarOk: calendarEventIds.length > 0,
       driveOk: !!driveUrl,
       driveError,

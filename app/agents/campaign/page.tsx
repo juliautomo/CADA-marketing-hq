@@ -23,7 +23,7 @@ export default function CampaignPage() {
   const [loading, setLoading] = useState(false)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [briefText, setBriefText] = useState<string>('')
-  const [integrations, setIntegrations] = useState<{ todoist: boolean; calendar: boolean; drive: boolean; todoistError?: string; driveError?: string } | null>(null)
+  const [integrations, setIntegrations] = useState<{ calendar: boolean; drive: boolean; driveError?: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   function toggleChannel(ch: string) {
@@ -47,7 +47,7 @@ export default function CampaignPage() {
       if (!data.success) throw new Error(data.error ?? 'Failed')
       setCampaign(data.campaign)
       setBriefText(data.briefText ?? '')
-      setIntegrations({ todoist: data.todoistOk, calendar: data.calendarOk, drive: data.driveOk, todoistError: data.todoistError, driveError: data.driveError })
+      setIntegrations({ calendar: data.calendarOk, drive: data.driveOk, driveError: data.driveError })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -78,9 +78,9 @@ export default function CampaignPage() {
             </div>
             <h1 className="text-2xl font-bold text-zinc-900">Campaign Planner</h1>
           </div>
-          <p className="text-sm text-zinc-500">Build 4-week campaigns with Todoist tasks, Google Calendar, and Drive briefs</p>
+          <p className="text-sm text-zinc-500">Build 4-week campaigns with Google Calendar events and Drive briefs</p>
         </div>
-        <Badge variant="info">Todoist + Google APIs</Badge>
+        <Badge variant="info">Google APIs</Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -158,7 +158,7 @@ export default function CampaignPage() {
                 <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 <div className="text-center">
                   <p className="text-sm text-zinc-700 font-medium">Building your campaign…</p>
-                  <p className="text-xs text-zinc-400 mt-1">Creating Todoist tasks, Calendar events, and Drive brief</p>
+                  <p className="text-xs text-zinc-400 mt-1">Creating Calendar events and Drive brief…</p>
                 </div>
               </CardContent>
             </Card>
@@ -201,18 +201,7 @@ export default function CampaignPage() {
               </Card>
 
               {/* Integrations */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* Todoist */}
-                <Card className={`p-4 flex items-center gap-3 ${integrations?.todoist ? '' : 'opacity-50'}`}>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${integrations?.todoist ? 'bg-red-500' : 'bg-zinc-300'}`}>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-zinc-700">Todoist</p>
-                    <p className="text-xs text-zinc-400 truncate">{integrations?.todoist ? (campaign.todoist_project_id === 'inbox' ? 'Tasks added to Inbox ✓' : 'Tasks created ✓') : integrations?.todoistError ? integrations.todoistError.slice(0, 60) : 'Not connected'}</p>
-                  </div>
-                </Card>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Calendar */}
                 <Card className={`p-4 flex items-center gap-3 ${integrations?.calendar ? '' : 'opacity-50'}`}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${integrations?.calendar ? 'bg-blue-500' : 'bg-zinc-300'}`}>
