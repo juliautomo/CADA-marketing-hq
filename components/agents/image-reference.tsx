@@ -93,7 +93,6 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
     setAnalysing(true)
     setError(null)
     setAnalysis(null)
-    setActionResult(null)
 
     try {
       // Compress if over 4MB
@@ -122,7 +121,6 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
     setAnalysing(true)
     setError(null)
     setAnalysis(null)
-    setActionResult(null)
     setPreview(null)
 
     try {
