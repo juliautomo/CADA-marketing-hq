@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-
-const SYSTEM = getBrandSystemPrompt('Fashion Video Analyst') + `
-You analyse fashion video frames to extract styling insights and generate social media captions for CADA.
-You will receive multiple frames from a short video — treat them as a sequence to understand what's happening.`
 
 export interface VideoAnalysis {
   description: string       // What's happening in the video
@@ -23,6 +19,11 @@ export interface VideoAnalysis {
 }
 
 export async function POST(req: NextRequest) {
+  const { systemPrompt } = await getBrandContext()
+  const SYSTEM = systemPrompt('Fashion Video Analyst') + `
+You analyse fashion video frames to extract styling insights and generate social media captions for CADA.
+You will receive multiple frames from a short video — treat them as a sequence to understand what's happening.`
+
   try {
     const { frames, platform, tone } = await req.json() as {
       frames: string[]          // base64 jpeg frames

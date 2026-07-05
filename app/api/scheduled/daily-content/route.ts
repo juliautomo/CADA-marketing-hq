@@ -7,10 +7,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { createTask, createProject } from '@/lib/todoist'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 import { format, addDays } from 'date-fns'
 
-const SYSTEM_PROMPT = getBrandSystemPrompt('Daily Content Generator') + `
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const start = Date.now()
+  const db = createServiceClient()
+  const ctx = await getBrandContext()
+  const SYSTEM_PROMPT = ctx.systemPrompt('Daily Content Generator') + `
 
 You generate 3 ready-to-post social media content ideas for CADA every morning.
 Each idea must be specific, ready to execute today, and tailored to what performs on TikTok and Instagram for modest fashion.
@@ -41,17 +52,6 @@ Hook: [hook]
 Caption: [caption]
 CTA: [cta]
 ---`
-
-export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const start = Date.now()
-  const db = createServiceClient()
 
   const { data: setting } = await db.from('cada_settings').select('value').eq('key', 'automation_daily_content_enabled').single()
   if (setting && setting.value === false) {

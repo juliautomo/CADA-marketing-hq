@@ -1,4 +1,65 @@
 // CADA Brand Context — injected into all agent system prompts
+import { createServiceClient } from '@/lib/supabase'
+
+export interface BrandContext {
+  systemPrompt: (agentRole: string) => string
+  imagePrompt: string
+  referenceImageUrl: string | undefined
+  imageQuality: 'low' | 'medium' | 'high'
+  driveEnabled: boolean
+  driveFolderId: string | undefined
+  raw: Record<string, string>
+}
+
+export async function getBrandContext(): Promise<BrandContext> {
+  const db = createServiceClient()
+  const KEYS = [
+    'brand_voice', 'brand_guidelines', 'brand_target_customer',
+    'brand_campaign_theme', 'brand_caption_examples',
+    'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
+    'brand_shot_style', 'brand_colors',
+    'brand_style_reference_url', 'brand_color_swatch_url',
+    'brand_model_reference_url', 'brand_logo_url',
+    'image_quality', 'drive_media_upload_enabled', 'drive_media_folder_id',
+  ]
+  const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
+  const raw: Record<string, string> = {}
+  for (const row of data ?? []) {
+    if (row.value && row.value !== 'null') {
+      raw[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
+    }
+  }
+
+  // Build image prompt from Visual Kit fields
+  let colorContext = raw.brand_color_description || ''
+  if (raw.brand_colors) {
+    try {
+      const hexes: string[] = JSON.parse(raw.brand_colors)
+      if (hexes.length) colorContext = `Color palette: ${hexes.join(', ')}${colorContext ? `. ${colorContext}` : ''}`
+    } catch { /* ignore */ }
+  }
+  const imagePromptParts = [
+    raw.brand_style_prefix,
+    colorContext,
+    raw.brand_shot_style,
+  ].filter(Boolean)
+  const imagePromptBase = imagePromptParts.join('. ')
+  const imagePrompt = raw.brand_negative_prompts
+    ? `${imagePromptBase}${imagePromptBase ? '. ' : ''}Avoid: ${raw.brand_negative_prompts}`
+    : imagePromptBase
+
+  const referenceImageUrl = raw.brand_model_reference_url || raw.brand_style_reference_url || undefined
+
+  return {
+    systemPrompt: (agentRole: string) => getBrandSystemPrompt(agentRole, raw),
+    imagePrompt,
+    referenceImageUrl,
+    imageQuality: (raw.image_quality as BrandContext['imageQuality']) || 'medium',
+    driveEnabled: raw.drive_media_upload_enabled === 'true',
+    driveFolderId: raw.drive_media_folder_id || undefined,
+    raw,
+  }
+}
 
 export const BRAND = {
   name: 'CADA',

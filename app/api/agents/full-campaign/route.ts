@@ -4,7 +4,7 @@ import { generateText } from '@/lib/anthropic'
 import { createProject, createTask } from '@/lib/todoist'
 import { createCalendarEvent, uploadTextToDrive } from '@/lib/google'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 import { addDays, format } from 'date-fns'
 
 // â”€â”€â”€ SSE helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -26,12 +26,12 @@ function createSSE() {
 }
 
 // â”€â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const BASE = getBrandSystemPrompt('Full Campaign Agent')
-
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json()
   const db = createServiceClient()
   const { stream, send, close } = createSSE()
+  const ctx = await getBrandContext()
+  const BASE = ctx.systemPrompt('Full Campaign Agent')
 
   // Run the agent chain asynchronously while streaming progress
   ;(async () => {

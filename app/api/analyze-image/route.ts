@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeImage } from '@/lib/anthropic'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 
 // Convert a Google Drive share link to a direct image URL
 function driveToDirectUrl(input: string): string {
@@ -17,10 +17,10 @@ function driveToDirectUrl(input: string): string {
   return input // Return as-is if not a Drive URL
 }
 
-const SYSTEM = getBrandSystemPrompt('Fashion Image Analyst') + `
-You analyse fashion images to extract styling insights and content opportunities for CADA.`
-
 export async function POST(req: NextRequest) {
+  const { systemPrompt } = await getBrandContext()
+  const SYSTEM = systemPrompt('Fashion Image Analyst') + `
+You analyse fashion images to extract styling insights and content opportunities for CADA.`
   const contentType = req.headers.get('content-type') ?? ''
 
   try {

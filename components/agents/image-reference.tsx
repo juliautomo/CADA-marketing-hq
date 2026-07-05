@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Upload, Link, X, Loader2, Sparkles, Image as ImageIcon,
-  Wand2, Lightbulb, Palette, ChevronDown, ChevronUp, Check,
+  Lightbulb, Palette, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,8 +19,6 @@ interface ImageReferenceProps {
 }
 
 type InputMode = 'upload' | 'url'
-type ActionResult = { imageUrl?: string; text?: string; prompt?: string }
-
 export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
   const [mode, setMode] = useState<InputMode>('upload')
   const [driveUrl, setDriveUrl] = useState('')
@@ -29,12 +27,6 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
   const [analysis, setAnalysis] = useState<ImageAnalysis | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(true)
-
-  // Action states
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [actionResult, setActionResult] = useState<ActionResult | null>(null)
-  const [customInstructions, setCustomInstructions] = useState('')
-  const [copied, setCopied] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fileRef = useRef<File | null>(null)
@@ -156,42 +148,14 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
     }
   }, [driveUrl, onAnalysis])
 
-  async function handleSimilarImage() {
-    if (!analysis) return
-    setActionLoading('similar')
-    setActionResult(null)
-    try {
-      const res = await fetch('/api/agents/creator/similar-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ analysis, customInstructions }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      setActionResult({ imageUrl: data.imageUrl, prompt: data.prompt })
-    } catch (e) {
-      const raw = e instanceof Error ? e.message : 'Generation failed'
-      setError(friendlyError(raw))
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
   function clear() {
     setPreview(null)
     setAnalysis(null)
     setError(null)
-    setActionResult(null)
     setDriveUrl('')
     fileRef.current = null
     if (fileInputRef.current) fileInputRef.current.value = ''
     onClear()
-  }
-
-  function copyPrompt(text: string) {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -352,70 +316,19 @@ export function ImageReference({ onAnalysis, onClear }: ImageReferenceProps) {
 
                   {/* Action buttons */}
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-zinc-500">What do you want to do with this image?</p>
-                    <p className="text-xs text-zinc-400 mb-1">
-                      💡 To write a caption or email <strong>based on this image</strong>, select a content type above — the analysis is already applied.
+                    <p className="text-xs text-zinc-400">
+                      💡 Select <strong>AI Image</strong> above to generate a similar image — or any content type to write copy inspired by this photo.
                     </p>
-
-                    {/* Custom instructions for similar image */}
-                    <div>
-                      <Input
-                        value={customInstructions}
-                        onChange={(e) => setCustomInstructions(e.target.value)}
-                        placeholder="Custom instructions for similar image (optional)… e.g. 'use outdoor setting'"
-                        className="text-xs mb-2"
-                      />
-                      <div className="grid grid-cols-1 gap-2">
-                        <Button
-                          onClick={handleSimilarImage}
-                          loading={actionLoading === 'similar'}
-                          variant="secondary"
-                          size="sm"
-                          className="w-full justify-start gap-2"
-                        >
-                          <Wand2 className="w-3.5 h-3.5 text-violet-500" />
-                          Generate similar image with GPT Image
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            // Signal parent to use this analysis as inspiration context
-                            onAnalysis(analysis, preview ?? '')
-                          }}
-                          variant="secondary"
-                          size="sm"
-                          className="w-full justify-start gap-2"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                          Use as style inspiration for all content
-                        </Button>
-                      </div>
-                    </div>
+                    <Button
+                      onClick={() => onAnalysis(analysis, preview ?? '')}
+                      variant="secondary"
+                      size="sm"
+                      className="w-full justify-start gap-2"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                      Use as style inspiration for all content
+                    </Button>
                   </div>
-
-                  {/* Similar image result */}
-                  {actionLoading === 'similar' && (
-                    <div className="flex items-center gap-2 py-4 justify-center">
-                      <Loader2 className="w-4 h-4 text-violet-500 animate-spin" />
-                      <p className="text-xs text-zinc-500">Generating similar image with GPT Image…</p>
-                    </div>
-                  )}
-
-                  {actionResult?.imageUrl && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={actionResult.imageUrl} alt="Generated" className="w-full rounded-xl border border-zinc-200" />
-                      {actionResult.prompt && (
-                        <button
-                          onClick={() => copyPrompt(actionResult.prompt!)}
-                          className="text-xs text-zinc-400 hover:text-zinc-600 flex items-center gap-1"
-                        >
-                          {copied ? <Check className="w-3 h-3 text-emerald-500" /> : null}
-                          {copied ? 'Prompt copied!' : 'Copy GPT Image prompt'}
-                        </button>
-                      )}
-                      <p className="text-xs text-emerald-600">✓ Saved to Content Library</p>
-                    </motion.div>
-                  )}
                 </motion.div>
               )}
             </motion.div>

@@ -7,9 +7,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { uploadTextToDrive } from '@/lib/google'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 
-const SYSTEM_PROMPT = getBrandSystemPrompt('Monday Trend Analyst') + `
+export async function GET(req: NextRequest) {
+  // Verify cron secret to prevent unauthorized triggers
+  const authHeader = req.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const start = Date.now()
+  const db = createServiceClient()
+
+  const { data: setting } = await db.from('cada_settings').select('value').eq('key', 'automation_monday_trend_enabled').single()
+  if (setting && setting.value === false) {
+    return NextResponse.json({ success: true, message: 'Monday Trend Brief is disabled. Enable it in Automations settings.' })
+  }
+  const weekOf = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const ctx = await getBrandContext()
+  const SYSTEM_PROMPT = ctx.systemPrompt('Monday Trend Analyst') + `
 
 You are generating the weekly Monday morning trend brief for CADA.
 This brief will be read by the CADA marketing team at the start of each week.
@@ -51,24 +69,6 @@ THIS WEEK'S ACTION ITEMS:
 - [specific action for CADA this week]
 - [specific action]
 - [specific action]`
-
-export async function GET(req: NextRequest) {
-  // Verify cron secret to prevent unauthorized triggers
-  const authHeader = req.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const start = Date.now()
-  const db = createServiceClient()
-
-  const { data: setting } = await db.from('cada_settings').select('value').eq('key', 'automation_monday_trend_enabled').single()
-  if (setting && setting.value === false) {
-    return NextResponse.json({ success: true, message: 'Monday Trend Brief is disabled. Enable it in Automations settings.' })
-  }
-  const weekOf = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   try {
     const text = await generateText(

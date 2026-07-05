@@ -3,19 +3,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { uploadTextToDrive } from '@/lib/google'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 import type { PerformanceInput } from '@/types'
-
-const SYSTEM_PROMPT = getBrandSystemPrompt('Performance Analyst') + `
-
-You are a data-driven marketing analyst specialising in Southeast Asian e-commerce and social commerce.
-Analyse CADA's performance metrics across Shopee, TikTok, Tokopedia, and Instagram.
-Provide clear, actionable insights with specific recommendations for improving performance on each platform.`
 
 export async function POST(req: NextRequest) {
   const start = Date.now()
   const body: PerformanceInput = await req.json()
   const db = createServiceClient()
+  const ctx = await getBrandContext()
+  const SYSTEM_PROMPT = ctx.systemPrompt('Performance Analyst') + `
+
+You are a data-driven marketing analyst specialising in Southeast Asian e-commerce and social commerce.
+Analyse CADA's performance metrics across Shopee, TikTok, Tokopedia, and Instagram.
+Provide clear, actionable insights with specific recommendations for improving performance on each platform.`
 
   const { data: run } = await db
     .from('cada_agent_runs')

@@ -9,24 +9,8 @@ import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
 import { generateVideoKling } from '@/lib/kling'
 import { createDesignFromTemplate } from '@/lib/canva'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt, type BrandOverrides } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 import type { CreatorInput } from '@/types'
-
-async function getSettings(db: ReturnType<typeof createServiceClient>) {
-  const KEYS = [
-    'brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples',
-    'image_quality', 'drive_media_folder_id', 'drive_media_upload_enabled',
-    'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description', 'brand_shot_style',
-    'brand_style_reference_url', 'brand_color_swatch_url', 'brand_model_reference_url', 'brand_logo_url',
-    'brand_colors',
-  ]
-  const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
-  const map: Record<string, string> = {}
-  for (const row of data ?? []) {
-    if (row.value && row.value !== 'null') map[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
-  }
-  return map
-}
 
 async function uploadMediaToDrive(mediaUrl: string, fileName: string, folderId?: string): Promise<string | null> {
   try {
@@ -44,20 +28,6 @@ async function uploadMediaToDrive(mediaUrl: string, fileName: string, folderId?:
     }
     return await uploadFileToDrive({ fileName, buffer, mimeType, folderId })
   } catch { return null }
-}
-
-async function getSystemPrompt(db: ReturnType<typeof createServiceClient>) {
-  const KEYS = ['brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples']
-  const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
-  const overrides: BrandOverrides = {}
-  for (const row of data ?? []) {
-    if (row.value && row.value !== 'null') {
-      (overrides as Record<string, string>)[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
-    }
-  }
-  return getBrandSystemPrompt('Content Creator', overrides) + `
-You are an expert copywriter specialising in modest fashion content for Indonesian and Singaporean Muslim women.
-Write content that is warm, elegant, and aspirational. Always output ONLY the requested content â€” no preamble or meta-commentary.`
 }
 
 const LANG_INSTRUCTION: Record<string, string> = {
@@ -86,10 +56,13 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  const [SYSTEM_PROMPT, settings] = await Promise.all([getSystemPrompt(db), getSettings(db)])
-  const imgQuality = (settings.image_quality ?? 'medium') as 'low' | 'medium' | 'high'
-  const driveEnabled = settings.drive_media_upload_enabled === 'true'
-  const driveFolderId = settings.drive_media_folder_id || undefined
+  const ctx = await getBrandContext()
+  const SYSTEM_PROMPT = ctx.systemPrompt('Content Creator') + `
+You are an expert copywriter specialising in modest fashion content for Indonesian and Singaporean Muslim women.
+Write content that is warm, elegant, and aspirational. Always output ONLY the requested content — no preamble or meta-commentary.`
+  const imgQuality = ctx.imageQuality
+  const driveEnabled = ctx.driveEnabled
+  const driveFolderId = ctx.driveFolderId
 
   try {
     let result: Record<string, unknown> = {}
@@ -154,28 +127,10 @@ Include:
         const basePrompt = body.prompt ??
           `High-fashion editorial photo of a Muslim woman wearing ${body.product} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, Indonesian fashion brand photography style.`
 
-        // Build brand-kit enhanced prompt
-        const stylePrefix = settings.brand_style_prefix || ''
-        const shotStyle = settings.brand_shot_style || ''
-        const negatives = settings.brand_negative_prompts || ''
+        const dallePrompt = [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
 
-        // Combine color palette hex codes + color description into one color context
-        let colorContext = settings.brand_color_description || ''
-        if (settings.brand_colors) {
-          try {
-            const hexes: string[] = JSON.parse(settings.brand_colors)
-            if (hexes.length) colorContext = `Color palette: ${hexes.join(', ')}${colorContext ? `. ${colorContext}` : ''}`
-          } catch { /* ignore parse errors */ }
-        }
-
-        const promptParts = [stylePrefix, colorContext, shotStyle, basePrompt].filter(Boolean)
-        const dallePrompt = promptParts.join('. ') + (negatives ? `. Avoid: ${negatives}` : '')
-
-        // Choose reference image: user upload > brand model ref > brand style ref
-        const refImage = body.referenceImageUrl
-          || settings.brand_model_reference_url
-          || settings.brand_style_reference_url
-          || undefined
+        // Choose reference image: user upload > brand context ref (model → style)
+        const refImage = body.referenceImageUrl || ctx.referenceImageUrl
 
         const provider = body.imageProvider ?? 'gpt'
         let imageUrl: string
@@ -234,16 +189,8 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
         if (storyType === 'image') {
           const storyBase = body.prompt ??
             `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
-          let storyColorContext = settings.brand_color_description || ''
-          if (settings.brand_colors) {
-            try {
-              const hexes: string[] = JSON.parse(settings.brand_colors)
-              if (hexes.length) storyColorContext = `Color palette: ${hexes.join(', ')}${storyColorContext ? `. ${storyColorContext}` : ''}`
-            } catch { /* ignore */ }
-          }
-          const storyParts = [settings.brand_style_prefix, storyColorContext, settings.brand_shot_style, storyBase].filter(Boolean)
-          const imagePrompt = storyParts.join('. ') + (settings.brand_negative_prompts ? `. Avoid: ${settings.brand_negative_prompts}` : '')
-          const storyRefImage = body.referenceImageUrl || settings.brand_model_reference_url || settings.brand_style_reference_url || undefined
+          const imagePrompt = [ctx.imagePrompt, storyBase].filter(Boolean).join('. ')
+          const storyRefImage = body.referenceImageUrl || ctx.referenceImageUrl
           const storyImgProvider = body.imageProvider ?? 'gpt'
           const imageUrl = storyImgProvider === 'flux'
             ? await generateImageFlux(imagePrompt, '9:16')

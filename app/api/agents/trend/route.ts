@@ -3,15 +3,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { searchFashionImages } from '@/lib/pexels'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 import type { TrendInput } from '@/types'
 
-const SYSTEM_PROMPT = getBrandSystemPrompt('Trend Analyst') + `
+export async function POST(req: NextRequest) {
+  const start = Date.now()
+  const body: TrendInput = await req.json()
+  const db = createServiceClient()
+  const ctx = await getBrandContext()
+  const SYSTEM_PROMPT = ctx.systemPrompt('Trend Analyst') + `
 
 You are a leading fashion trend analyst specialising in modest fashion and Southeast Asian markets.
 Today's date is ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
 
-You MUST respond using EXACTLY this format with these exact section headers â€” no deviations:
+You MUST respond using EXACTLY this format with these exact section headers — no deviations:
 
 TRENDING COLORS:
 - [specific color name]
@@ -56,11 +61,6 @@ TRENDING CONTENT IDEAS:
 
 FULL ANALYSIS:
 [Write 3 detailed paragraphs: (1) macro trend overview for modest fashion, (2) key pieces CADA should focus on, (3) specific TikTok and Instagram Reels content strategy for CADA]`
-
-export async function POST(req: NextRequest) {
-  const start = Date.now()
-  const body: TrendInput = await req.json()
-  const db = createServiceClient()
 
   const { data: run } = await db
     .from('cada_agent_runs')

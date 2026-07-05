@@ -4,21 +4,21 @@ import { generateText } from '@/lib/anthropic'
 import { createProject, createTask } from '@/lib/todoist'
 import { createCalendarEvent, uploadFileToDrive } from '@/lib/google'
 import { createServiceClient } from '@/lib/supabase'
-import { getBrandSystemPrompt } from '@/lib/brand'
+import { getBrandContext } from '@/lib/brand'
 import { generateCampaignBriefPDF } from '@/lib/pdf'
 import type { CampaignInput } from '@/types'
 import { addDays, format } from 'date-fns'
-
-const SYSTEM_PROMPT = getBrandSystemPrompt('Campaign Planner') + `
-
-You are an expert marketing campaign strategist for modest fashion brands in Southeast Asia.
-Create detailed, actionable 4-week campaign plans tailored to CADA's channels: Shopee, TikTok, Tokopedia, and Instagram.
-Output structured JSON when asked.`
 
 export async function POST(req: NextRequest) {
   const start = Date.now()
   const body: CampaignInput = await req.json()
   const db = createServiceClient()
+  const ctx = await getBrandContext()
+  const SYSTEM_PROMPT = ctx.systemPrompt('Campaign Planner') + `
+
+You are an expert marketing campaign strategist for modest fashion brands in Southeast Asia.
+Create detailed, actionable 4-week campaign plans tailored to CADA's channels: Shopee, TikTok, Tokopedia, and Instagram.
+Output structured JSON when asked.`
 
   const { data: run } = await db
     .from('cada_agent_runs')
