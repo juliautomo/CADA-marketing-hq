@@ -14,6 +14,8 @@ export interface BrandContext {
 export async function getBrandContext(): Promise<BrandContext> {
   const db = createServiceClient()
   const KEYS = [
+    'brand_name', 'brand_handle', 'brand_description',
+    'brand_products_list', 'brand_price_point', 'brand_markets', 'brand_channels',
     'brand_voice', 'brand_guidelines', 'brand_target_customer',
     'brand_campaign_theme', 'brand_caption_examples',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
@@ -115,23 +117,34 @@ export interface BrandOverrides {
 }
 
 export function getBrandSystemPrompt(agentRole: string, overrides: BrandOverrides = {}): string {
+  const name = (overrides as Record<string, string>).brand_name || BRAND.name
+  const handle = (overrides as Record<string, string>).brand_handle || BRAND.handle
+  const description = (overrides as Record<string, string>).brand_description || BRAND.description
+  const pricePoint = (overrides as Record<string, string>).brand_price_point || BRAND.pricePoint
+  const markets = (overrides as Record<string, string>).brand_markets || BRAND.markets.join(', ')
+  const channels = (overrides as Record<string, string>).brand_channels || BRAND.channels.join(', ')
+  const productsList = (overrides as Record<string, string>).brand_products_list
+  const products = productsList
+    ? productsList.split('\n').filter(Boolean).map(l => `- ${l.trim()}`).join('\n')
+    : BRAND.products.map(p => `- ${p.name} (${p.price}): ${p.notes}`).join('\n')
+
   const voice = overrides.brand_voice || BRAND.voiceAndTone
   const guidelines = overrides.brand_guidelines || BRAND.contentGuidelines
   const targetCustomer = overrides.brand_target_customer || 'Indonesian and Singaporean Muslim women aged 20–35'
   const campaignTheme = overrides.brand_campaign_theme
   const captionExamples = overrides.brand_caption_examples
 
-  return `You are the ${agentRole} for CADA (wear_cada), an Indonesian modest fashion brand.
+  return `You are the ${agentRole} for ${name} (${handle}).
 
 BRAND OVERVIEW:
-${BRAND.description}
+${description}
 
 PRODUCTS (current range):
-${BRAND.products.map(p => `- ${p.name} (${p.price}): ${p.notes}`).join('\n')}
+${products}
 
-PRICE POINT: ${BRAND.pricePoint}
-MARKETS: ${BRAND.markets.join(', ')}
-SALES CHANNELS: ${BRAND.channels.join(', ')}
+PRICE POINT: ${pricePoint}
+MARKETS: ${markets}
+SALES CHANNELS: ${channels}
 
 TARGET CUSTOMER:
 ${targetCustomer}
@@ -144,5 +157,5 @@ ${guidelines}
 ${campaignTheme ? `\nCURRENT CAMPAIGN THEME:\n${campaignTheme}` : ''}
 ${captionExamples ? `\nCAPTION STYLE EXAMPLES (match this voice and style):\n${captionExamples}` : ''}
 
-Always tailor every output specifically for CADA. Reference real product names, correct price points, and appropriate modest fashion aesthetics.`
+Always tailor every output specifically for ${name}. Reference real product names, correct price points, and appropriate aesthetics.`
 }

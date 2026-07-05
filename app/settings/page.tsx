@@ -13,6 +13,13 @@ import { cn } from '@/lib/utils'
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface BrandSettings {
+  brand_name: string
+  brand_handle: string
+  brand_description: string
+  brand_products_list: string
+  brand_price_point: string
+  brand_markets: string
+  brand_channels: string
   brand_voice: string
   brand_guidelines: string
   brand_target_customer: string
@@ -51,6 +58,13 @@ interface ConnectionSettings {
 }
 
 const BRAND_DEFAULTS: BrandSettings = {
+  brand_name: '',
+  brand_handle: '',
+  brand_description: '',
+  brand_products_list: '',
+  brand_price_point: '',
+  brand_markets: '',
+  brand_channels: '',
   brand_voice: '',
   brand_guidelines: '',
   brand_target_customer: '',
@@ -553,6 +567,73 @@ function SettingsContent() {
       {/* ── Brand Tab ── */}
       {tab === 'brand' && (
         <div className="space-y-5">
+
+          {/* Business Identity */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-zinc-500" />
+                <CardTitle className="text-base">Business Identity</CardTitle>
+              </div>
+              <CardDescription>Core facts about your brand — name, handle, what you sell, where. Leave blank to use CADA defaults.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="Brand Name"
+                  placeholder="e.g. CADA"
+                  value={brand.brand_name}
+                  onChange={v => updateBrand('brand_name', v)}
+                  rows={1}
+                />
+                <Field
+                  label="Handle / Username"
+                  placeholder="e.g. wear_cada"
+                  value={brand.brand_handle}
+                  onChange={v => updateBrand('brand_handle', v)}
+                  rows={1}
+                />
+              </div>
+              <Field
+                label="Brand Description"
+                placeholder="e.g. An Indonesian modest fashion brand selling elegant, covered womenswear for Muslim women."
+                value={brand.brand_description}
+                onChange={v => updateBrand('brand_description', v)}
+                rows={3}
+              />
+              <Field
+                label="Products"
+                description="One product per line: Name | Price | Notes"
+                placeholder={"Pleated Linen Pants | Rp 350,000 | Wide-leg, high-waist, navy\nDenim Maxi Skirt | Rp 385,000 | Full coverage, A-line, dark wash"}
+                value={brand.brand_products_list}
+                onChange={v => updateBrand('brand_products_list', v)}
+                rows={4}
+              />
+              <div className="grid grid-cols-1 gap-3">
+                <Field
+                  label="Price Point"
+                  placeholder="e.g. affordable-mid (Rp 280,000 – Rp 400,000 / SGD 25–35)"
+                  value={brand.brand_price_point}
+                  onChange={v => updateBrand('brand_price_point', v)}
+                  rows={1}
+                />
+                <Field
+                  label="Markets"
+                  placeholder="e.g. Indonesia, Singapore"
+                  value={brand.brand_markets}
+                  onChange={v => updateBrand('brand_markets', v)}
+                  rows={1}
+                />
+                <Field
+                  label="Sales Channels"
+                  placeholder="e.g. Shopee, TikTok Shop, Instagram"
+                  value={brand.brand_channels}
+                  onChange={v => updateBrand('brand_channels', v)}
+                  rows={1}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Website analyzer */}
           <Card className="border-violet-100 bg-violet-50/40">
