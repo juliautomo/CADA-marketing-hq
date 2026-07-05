@@ -4,26 +4,31 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, Plus, Pencil, Trash2, X, Check,
-  ExternalLink, Tag, Layers, Upload,
+  ExternalLink, Tag, Layers, Upload, Settings2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { Product } from '@/types'
 
-const CATEGORIES = ['Tops', 'Bottoms', 'Dresses', 'Abayas', 'Sets', 'Outerwear', 'Accessories']
-const SEASONS    = ['Regular', 'Limited Edition']
-const COLOR_PRESETS = ['Black', 'White', 'Cream', 'Beige', 'Sage', 'Dusty Rose', 'Navy', 'Brown', 'Grey', 'Olive', 'Maroon', 'Lilac']
+const DEFAULT_CATEGORIES = ['General']
+const DEFAULT_TAGS = ['Regular', 'Limited Edition']
+const DEFAULT_LABELS = { fabric: 'Details', colors: 'Variants', season: 'Type' }
 
-const EMPTY: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
-  name: '', category: 'Tops', price: '', colors: [],
-  fabric: '', season: 'Regular', description: '',
+const EMPTY = {
+  name: '', category: '', price: '', colors: [] as string[],
+  fabric: '', season: '', description: '',
   shopee_url: '', tiktok_url: '', image_url: '', active: true,
+}
+
+interface CatalogConfig {
+  categories: string[]
+  tags: string[]
+  labels: { fabric: string; colors: string; season: string }
 }
 
 export default function ProductsPage() {
@@ -34,10 +39,21 @@ export default function ProductsPage() {
   const [form, setForm]             = useState({ ...EMPTY })
   const [saving, setSaving]         = useState(false)
   const [deleting, setDeleting]     = useState<string | null>(null)
-  const [colorInput, setColorInput] = useState('')
+  const [tagInput, setTagInput]     = useState('')
   const [filter, setFilter]         = useState<string>('All')
   const [uploading, setUploading]   = useState(false)
   const fileInputRef                = useRef<HTMLInputElement>(null)
+
+  const [config, setConfig] = useState<CatalogConfig>({
+    categories: DEFAULT_CATEGORIES,
+    tags: DEFAULT_TAGS,
+    labels: DEFAULT_LABELS,
+  })
+  const [showCatalogSettings, setShowCatalogSettings] = useState(false)
+  const [configDraft, setConfigDraft] = useState<CatalogConfig>(config)
+  const [configSaving, setConfigSaving] = useState(false)
+  const [newCat, setNewCat] = useState('')
+  const [newTag, setNewTag] = useState('')
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -49,12 +65,41 @@ export default function ProductsPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchProducts() }, [fetchProducts])
+  useEffect(() => {
+    fetchProducts()
+    fetch('/api/settings/brand')
+      .then(r => r.json())
+      .then(d => {
+        const raw = d.settings ?? {}
+        if (raw.product_catalog_config) {
+          try {
+            const parsed = JSON.parse(raw.product_catalog_config)
+            setConfig(parsed)
+            setConfigDraft(parsed)
+          } catch { /* use defaults */ }
+        }
+      })
+      .catch(() => {})
+  }, [fetchProducts])
+
+  async function saveConfig(next: CatalogConfig) {
+    setConfigSaving(true)
+    try {
+      await fetch('/api/settings/brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_catalog_config: JSON.stringify(next) }),
+      })
+      setConfig(next)
+      setShowCatalogSettings(false)
+    } catch { /* silently fail */ }
+    finally { setConfigSaving(false) }
+  }
 
   function openNew() {
     setEditing(null)
-    setForm({ ...EMPTY })
-    setColorInput('')
+    setForm({ ...EMPTY, category: config.categories[0] ?? '', season: config.tags[0] ?? '' })
+    setTagInput('')
     setShowForm(true)
   }
 
@@ -67,7 +112,7 @@ export default function ProductsPage() {
       shopee_url: p.shopee_url ?? '', tiktok_url: p.tiktok_url ?? '',
       image_url: p.image_url ?? '', active: p.active,
     })
-    setColorInput('')
+    setTagInput('')
     setShowForm(true)
   }
 
@@ -89,14 +134,14 @@ export default function ProductsPage() {
     }
   }
 
-  function addColor(c: string) {
+  function addTag(c: string) {
     const trimmed = c.trim()
     if (!trimmed || form.colors.includes(trimmed)) return
     setForm(f => ({ ...f, colors: [...f.colors, trimmed] }))
-    setColorInput('')
+    setTagInput('')
   }
 
-  function removeColor(c: string) {
+  function removeTag(c: string) {
     setForm(f => ({ ...f, colors: f.colors.filter(x => x !== c) }))
   }
 
@@ -139,7 +184,7 @@ export default function ProductsPage() {
     fetchProducts()
   }
 
-  const categories = ['All', ...CATEGORIES]
+  const allCategories = ['All', ...config.categories]
   const filtered   = filter === 'All' ? products : products.filter(p => p.category === filter)
   const active     = products.filter(p => p.active).length
 
@@ -162,6 +207,11 @@ export default function ProductsPage() {
             <p className="text-sm font-semibold text-zinc-900">{products.length} products</p>
             <p className="text-xs text-zinc-400">{active} active</p>
           </div>
+          <button onClick={() => { setConfigDraft(config); setShowCatalogSettings(true) }}
+            className="p-2 rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 transition-colors"
+            title="Customize catalog">
+            <Settings2 className="w-4 h-4" />
+          </button>
           <Button onClick={openNew} className="flex items-center gap-2">
             <Plus className="w-4 h-4" /> Add Product
           </Button>
@@ -170,7 +220,7 @@ export default function ProductsPage() {
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-2">
-        {categories.map(cat => (
+        {allCategories.map(cat => (
           <button key={cat} onClick={() => setFilter(cat)}
             className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
               filter === cat ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
@@ -206,13 +256,12 @@ export default function ProductsPage() {
                   <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover rounded-t-2xl" />
                 )}
                 <CardContent className="pt-4 pb-4 space-y-3">
-                  {/* Name + category */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-zinc-900 leading-tight">{p.name}</p>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <Badge variant="default">{p.category}</Badge>
-                        <Badge variant={p.season === 'Evergreen' ? 'success' : 'info'}>{p.season}</Badge>
+                        {p.season && <Badge variant="info">{p.season}</Badge>}
                         {!p.active && <Badge variant="error">Inactive</Badge>}
                       </div>
                     </div>
@@ -221,7 +270,6 @@ export default function ProductsPage() {
                     )}
                   </div>
 
-                  {/* Colors */}
                   {p.colors.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {p.colors.map(c => (
@@ -230,19 +278,16 @@ export default function ProductsPage() {
                     </div>
                   )}
 
-                  {/* Fabric */}
                   {p.fabric && (
                     <p className="text-xs text-zinc-500 flex items-center gap-1">
                       <Layers className="w-3 h-3" /> {p.fabric}
                     </p>
                   )}
 
-                  {/* Description */}
                   {p.description && (
                     <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{p.description}</p>
                   )}
 
-                  {/* Actions */}
                   <div className="flex items-center gap-2 pt-1">
                     <button onClick={() => openEdit(p)}
                       className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-900 transition-colors">
@@ -278,6 +323,130 @@ export default function ProductsPage() {
         </div>
       )}
 
+      {/* Catalog Settings modal */}
+      <AnimatePresence>
+        {showCatalogSettings && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 z-40" onClick={() => setShowCatalogSettings(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
+              className="fixed inset-x-4 top-8 bottom-8 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[480px] z-50 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
+                <h2 className="text-base font-semibold text-zinc-900">Customize Catalog</h2>
+                <button onClick={() => setShowCatalogSettings(false)} className="text-zinc-400 hover:text-zinc-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+                {/* Categories */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-2">Categories</label>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {configDraft.categories.map(cat => (
+                      <span key={cat} className="inline-flex items-center gap-1 text-xs bg-zinc-100 px-2.5 py-1 rounded-full text-zinc-700">
+                        {cat}
+                        <button onClick={() => setConfigDraft(d => ({ ...d, categories: d.categories.filter(c => c !== cat) }))}>
+                          <X className="w-2.5 h-2.5 text-zinc-400 hover:text-red-500" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input value={newCat} onChange={e => setNewCat(e.target.value)}
+                      placeholder="Add category…" className="text-xs"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          const t = newCat.trim()
+                          if (t && !configDraft.categories.includes(t)) {
+                            setConfigDraft(d => ({ ...d, categories: [...d.categories, t] }))
+                          }
+                          setNewCat('')
+                        }
+                      }} />
+                    <Button size="sm" variant="secondary" onClick={() => {
+                      const t = newCat.trim()
+                      if (t && !configDraft.categories.includes(t)) {
+                        setConfigDraft(d => ({ ...d, categories: [...d.categories, t] }))
+                      }
+                      setNewCat('')
+                    }}>Add</Button>
+                  </div>
+                </div>
+
+                {/* Types / tags (season field) */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-2">
+                    {configDraft.labels.season} options
+                    <span className="text-zinc-400 font-normal ml-1">(shown as badge on each product)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {configDraft.tags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1 text-xs bg-zinc-100 px-2.5 py-1 rounded-full text-zinc-700">
+                        {tag}
+                        <button onClick={() => setConfigDraft(d => ({ ...d, tags: d.tags.filter(t => t !== tag) }))}>
+                          <X className="w-2.5 h-2.5 text-zinc-400 hover:text-red-500" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input value={newTag} onChange={e => setNewTag(e.target.value)}
+                      placeholder="Add option…" className="text-xs"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          const t = newTag.trim()
+                          if (t && !configDraft.tags.includes(t)) {
+                            setConfigDraft(d => ({ ...d, tags: [...d.tags, t] }))
+                          }
+                          setNewTag('')
+                        }
+                      }} />
+                    <Button size="sm" variant="secondary" onClick={() => {
+                      const t = newTag.trim()
+                      if (t && !configDraft.tags.includes(t)) {
+                        setConfigDraft(d => ({ ...d, tags: [...d.tags, t] }))
+                      }
+                      setNewTag('')
+                    }}>Add</Button>
+                  </div>
+                </div>
+
+                {/* Field labels */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-2">Field labels</label>
+                  <div className="space-y-2">
+                    {(['fabric', 'colors', 'season'] as const).map(field => (
+                      <div key={field} className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-400 w-16 capitalize">{field}</span>
+                        <Input
+                          value={configDraft.labels[field]}
+                          onChange={e => setConfigDraft(d => ({ ...d, labels: { ...d.labels, [field]: e.target.value } }))}
+                          className="text-xs flex-1"
+                          placeholder={DEFAULT_LABELS[field]}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-2">e.g. rename "Fabric" → "Ingredients", "Variants" → "Spice levels"</p>
+                </div>
+
+              </div>
+
+              <div className="px-6 py-4 border-t border-zinc-100 flex gap-3">
+                <Button variant="secondary" onClick={() => setShowCatalogSettings(false)} className="flex-1">Cancel</Button>
+                <Button onClick={() => saveConfig(configDraft)} loading={configSaving} className="flex-1">Save</Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Add/Edit form modal */}
       <AnimatePresence>
         {showForm && (
@@ -288,7 +457,6 @@ export default function ProductsPage() {
               initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
               className="fixed inset-x-4 top-8 bottom-8 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[560px] z-50 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
             >
-              {/* Modal header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
                 <h2 className="text-base font-semibold text-zinc-900">
                   {editing ? 'Edit Product' : 'Add Product'}
@@ -298,75 +466,63 @@ export default function ProductsPage() {
                 </button>
               </div>
 
-              {/* Modal body */}
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
                 {/* Name */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Product Name *</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Name *</label>
                   <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="e.g. Linen Wide-Leg Pants" />
+                    placeholder="e.g. Twigim Rice Bowl" />
                 </div>
 
-                {/* Category + Season */}
+                {/* Category + Type */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-zinc-600 mb-1.5">Category *</label>
                     <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                       className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900">
-                      {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                      {config.categories.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">Season</label>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">{config.labels.season}</label>
                     <select value={form.season} onChange={e => setForm(f => ({ ...f, season: e.target.value }))}
                       className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900">
-                      {SEASONS.map(s => <option key={s}>{s}</option>)}
+                      <option value="">—</option>
+                      {config.tags.map(s => <option key={s}>{s}</option>)}
                     </select>
                   </div>
                 </div>
 
-                {/* Price + Fabric */}
+                {/* Price + Details */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-zinc-600 mb-1.5">Price</label>
                     <Input value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                      placeholder="e.g. RM 189 / IDR 350k" />
+                      placeholder="e.g. 22K / IDR 22.000" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">Fabric</label>
+                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">{config.labels.fabric}</label>
                     <Input value={form.fabric} onChange={e => setForm(f => ({ ...f, fabric: e.target.value }))}
-                      placeholder="e.g. 100% linen" />
+                      placeholder="e.g. oden, crabstick, dumpling" />
                   </div>
                 </div>
 
-                {/* Colors */}
+                {/* Variants/Colors */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Available Colours</label>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {COLOR_PRESETS.map(c => (
-                      <button key={c} onClick={() => addColor(c)}
-                        className={cn('px-2.5 py-1 rounded-full text-xs border transition-colors',
-                          form.colors.includes(c)
-                            ? 'bg-zinc-900 text-white border-zinc-900'
-                            : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
-                        )}>
-                        {form.colors.includes(c) ? <><Check className="w-2.5 h-2.5 inline mr-0.5" />{c}</> : c}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">{config.labels.colors}</label>
                   <div className="flex gap-2">
-                    <Input value={colorInput} onChange={e => setColorInput(e.target.value)}
-                      placeholder="Add custom colour…" className="text-xs"
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor(colorInput) } }} />
-                    <Button size="sm" variant="secondary" onClick={() => addColor(colorInput)}>Add</Button>
+                    <Input value={tagInput} onChange={e => setTagInput(e.target.value)}
+                      placeholder={`Add ${config.labels.colors.toLowerCase()}…`} className="text-xs"
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput) } }} />
+                    <Button size="sm" variant="secondary" onClick={() => addTag(tagInput)}>Add</Button>
                   </div>
                   {form.colors.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {form.colors.map(c => (
                         <span key={c} className="inline-flex items-center gap-1 text-xs bg-violet-50 border border-violet-200 text-violet-700 px-2 py-0.5 rounded-full">
                           {c}
-                          <button onClick={() => removeColor(c)}><X className="w-2.5 h-2.5" /></button>
+                          <button onClick={() => removeTag(c)}><X className="w-2.5 h-2.5" /></button>
                         </span>
                       ))}
                     </div>
@@ -379,7 +535,7 @@ export default function ProductsPage() {
                     Description <span className="text-zinc-400 font-normal">(used by AI agents)</span>
                   </label>
                   <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="Brief product description — fabric feel, who it's for, how to style it…" rows={3} />
+                    placeholder="Brief description — what it is, who it's for, what makes it special…" rows={3} />
                 </div>
 
                 {/* URLs */}
@@ -387,7 +543,7 @@ export default function ProductsPage() {
                   <div>
                     <label className="block text-xs font-medium text-zinc-600 mb-1.5">Shopee URL <span className="text-zinc-400 font-normal">(optional)</span></label>
                     <Input value={form.shopee_url} onChange={e => setForm(f => ({ ...f, shopee_url: e.target.value }))}
-                      placeholder="https://shopee.com.my/…" />
+                      placeholder="https://shopee.com/…" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-zinc-600 mb-1.5">TikTok Shop URL <span className="text-zinc-400 font-normal">(optional)</span></label>
@@ -442,7 +598,6 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Modal footer */}
               <div className="px-6 py-4 border-t border-zinc-100 flex gap-3">
                 <Button variant="secondary" onClick={closeForm} className="flex-1">Cancel</Button>
                 <Button onClick={handleSave} loading={saving} disabled={!form.name || !form.category} className="flex-1">
