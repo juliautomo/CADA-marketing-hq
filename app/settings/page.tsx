@@ -88,6 +88,96 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+function PhotoAnalyzer({ onResult }: {
+  onResult: (r: { style_prefix: string; color_description: string; shot_style: string; negative_prompts: string; summary: string }) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [analyzing, setAnalyzing] = useState(false)
+  const [summary, setSummary] = useState('')
+  const [error, setError] = useState('')
+
+  function handleFiles(selected: FileList | null) {
+    if (!selected) return
+    const arr = Array.from(selected).slice(0, 20)
+    setFiles(arr)
+    setSummary('')
+    setError('')
+  }
+
+  async function analyze() {
+    if (!files.length) return
+    setAnalyzing(true)
+    setError('')
+    setSummary('')
+    try {
+      const fd = new FormData()
+      files.forEach(f => fd.append('photos', f))
+      const res = await fetch('/api/settings/brand-kit/analyze-photos', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Analysis failed')
+      onResult(data.analysis)
+      setSummary(data.analysis.summary)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div
+        className="rounded-xl border-2 border-dashed border-violet-200 bg-white p-4 text-center cursor-pointer hover:border-violet-400 transition-colors"
+        onClick={() => inputRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
+      >
+        <Upload className="w-5 h-5 text-violet-400 mx-auto mb-1.5" />
+        <p className="text-sm font-medium text-violet-700">
+          {files.length > 0 ? `${files.length} photo${files.length > 1 ? 's' : ''} selected` : 'Click or drop 5–20 brand photos'}
+        </p>
+        <p className="text-xs text-zinc-400 mt-0.5">JPG, PNG — up to 20 photos</p>
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
+
+      {files.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {files.slice(0, 8).map((f, i) => (
+            <div key={i} className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden border border-zinc-200">
+              <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+            </div>
+          ))}
+          {files.length > 8 && <div className="w-12 h-12 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center text-xs text-zinc-500 font-medium">+{files.length - 8}</div>}
+        </div>
+      )}
+
+      <button
+        onClick={analyze}
+        disabled={files.length < 1 || analyzing}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors"
+      >
+        {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+        {analyzing ? 'Analyzing your photos…' : 'Analyze & Auto-fill'}
+      </button>
+
+      {summary && (
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-emerald-700 mb-0.5">Style fields filled in!</p>
+              <p className="text-xs text-emerald-700">{summary}</p>
+              <p className="text-xs text-zinc-400 mt-1">Review the fields below and click Save Changes.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  )
+}
+
 function ImageUploadField({
   label, description, settingKey, value, onChange,
 }: {
@@ -559,16 +649,22 @@ function SettingsContent() {
       {tab === 'visual-kit' && (
         <div className="space-y-5">
 
-          {/* Info banner */}
+          {/* Auto-fill from photos */}
           <Card className="border-violet-100 bg-violet-50/40">
-            <CardContent className="pt-4">
-              <div className="flex gap-3">
-                <Sparkles className="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-violet-900">Brand Visual Kit</p>
-                  <p className="text-xs text-violet-700">Upload reference images and define your visual style. These are automatically injected into every image generation — so every output looks consistently on-brand without you having to describe it each time.</p>
-                </div>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-500" />
+                <CardTitle className="text-base">Auto-fill from Your Photos</CardTitle>
               </div>
+              <CardDescription>Upload 5–20 of your best CADA product photos. Claude will analyze them all together and automatically fill in your style settings below.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <PhotoAnalyzer onResult={(r) => {
+                updateVisualKit('brand_style_prefix', r.style_prefix)
+                updateVisualKit('brand_color_description', r.color_description)
+                updateVisualKit('brand_shot_style', r.shot_style)
+                updateVisualKit('brand_negative_prompts', r.negative_prompts)
+              }} />
             </CardContent>
           </Card>
 
