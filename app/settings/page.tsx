@@ -30,6 +30,7 @@ interface VisualKitSettings {
   brand_color_swatch_url: string
   brand_model_reference_url: string
   brand_logo_url: string
+  brand_colors: string // JSON array of hex strings e.g. ["#F5E6D3","#6B0F2B"]
 }
 
 interface ConnectionSettings {
@@ -67,6 +68,7 @@ const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
   brand_color_swatch_url: '',
   brand_model_reference_url: '',
   brand_logo_url: '',
+  brand_colors: '["#F5E6D3","#6B0F2B","#C4A882","#8B7355","#F0EBE3"]',
 }
 
 const CONNECTION_DEFAULTS: ConnectionSettings = {
@@ -174,6 +176,85 @@ function PhotoAnalyzer({ onResult }: {
         </div>
       )}
       {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  )
+}
+
+function ColorPaletteEditor({ value, onChange }: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  const colors: string[] = (() => {
+    try { return JSON.parse(value) } catch { return ['#F5E6D3','#6B0F2B','#C4A882','#8B7355','#F0EBE3'] }
+  })()
+
+  function update(i: number, hex: string) {
+    const next = [...colors]
+    next[i] = hex
+    onChange(JSON.stringify(next))
+  }
+
+  function addColor() {
+    if (colors.length >= 8) return
+    onChange(JSON.stringify([...colors, '#CCCCCC']))
+  }
+
+  function removeColor(i: number) {
+    if (colors.length <= 1) return
+    const next = colors.filter((_, idx) => idx !== i)
+    onChange(JSON.stringify(next))
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-3">
+        {colors.map((hex, i) => (
+          <div key={i} className="flex flex-col items-center gap-1.5 group">
+            <div className="relative">
+              {/* Color swatch — click to open native color picker */}
+              <label className="block w-12 h-12 rounded-xl border-2 border-zinc-200 cursor-pointer shadow-sm hover:scale-105 transition-transform overflow-hidden"
+                style={{ backgroundColor: hex }}>
+                <input
+                  type="color"
+                  value={hex}
+                  onChange={e => update(i, e.target.value)}
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => removeColor(i)}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-zinc-200 text-zinc-500 hover:bg-red-100 hover:text-red-500 items-center justify-center hidden group-hover:flex transition-colors"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+            {/* Hex input */}
+            <input
+              type="text"
+              value={hex}
+              onChange={e => {
+                const v = e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`
+                if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) update(i, v)
+              }}
+              maxLength={7}
+              className="w-12 text-center text-[10px] font-mono border border-zinc-200 rounded-lg px-1 py-0.5 bg-zinc-50 focus:outline-none focus:ring-1 focus:ring-violet-400"
+            />
+          </div>
+        ))}
+
+        {/* Add color button */}
+        {colors.length < 8 && (
+          <button
+            type="button"
+            onClick={addColor}
+            className="w-12 h-12 rounded-xl border-2 border-dashed border-zinc-300 text-zinc-400 hover:border-violet-400 hover:text-violet-500 transition-colors flex items-center justify-center text-lg font-light"
+          >
+            +
+          </button>
+        )}
+      </div>
+      <p className="text-[10px] text-zinc-400">Click a swatch to open color picker · hover to remove · up to 8 colors</p>
     </div>
   )
 }
@@ -709,6 +790,31 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
+          {/* Color palette */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-pink-500" />
+                <CardTitle className="text-base">Brand Color Palette</CardTitle>
+              </div>
+              <CardDescription>Pick your exact brand colors. These are converted to descriptive language and injected into every image prompt.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ColorPaletteEditor
+                value={visualKit.brand_colors}
+                onChange={v => updateVisualKit('brand_colors', v)}
+              />
+              <Field
+                label="Color Description (auto-filled or edit manually)"
+                description="How your colors are described to the AI. Auto-filled from photos or edit yourself."
+                placeholder="e.g. Warm cream, muted terracotta, sage green, soft dusty rose, earth tones — no neon or saturated colors"
+                value={visualKit.brand_color_description}
+                onChange={v => updateVisualKit('brand_color_description', v)}
+                rows={2}
+              />
+            </CardContent>
+          </Card>
+
           {/* Prompt fields */}
           <Card>
             <CardHeader>
@@ -726,14 +832,6 @@ function SettingsContent() {
                 value={visualKit.brand_style_prefix}
                 onChange={v => updateVisualKit('brand_style_prefix', v)}
                 rows={3}
-              />
-              <Field
-                label="Color Palette Description"
-                description="Describe your brand colors in words — more effective than hex codes for AI generation."
-                placeholder="e.g. Warm cream, muted terracotta, sage green, soft dusty rose, earth tones — no neon or saturated colors"
-                value={visualKit.brand_color_description}
-                onChange={v => updateVisualKit('brand_color_description', v)}
-                rows={2}
               />
               <Field
                 label="Shot Style"

@@ -6,6 +6,7 @@ const KEYS = [
   'brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples', 'image_quality',
   'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description', 'brand_shot_style',
   'brand_style_reference_url', 'brand_color_swatch_url', 'brand_model_reference_url', 'brand_logo_url',
+  'brand_colors',
 ]
 
 export async function GET() {

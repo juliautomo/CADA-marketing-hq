@@ -18,6 +18,7 @@ async function getSettings(db: ReturnType<typeof createServiceClient>) {
     'image_quality', 'drive_media_folder_id', 'drive_media_upload_enabled',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description', 'brand_shot_style',
     'brand_style_reference_url', 'brand_color_swatch_url', 'brand_model_reference_url', 'brand_logo_url',
+    'brand_colors',
   ]
   const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
   const map: Record<string, string> = {}
@@ -155,10 +156,19 @@ Include:
 
         // Build brand-kit enhanced prompt
         const stylePrefix = settings.brand_style_prefix || ''
-        const colorDesc = settings.brand_color_description || ''
         const shotStyle = settings.brand_shot_style || ''
         const negatives = settings.brand_negative_prompts || ''
-        const promptParts = [stylePrefix, colorDesc, shotStyle, basePrompt].filter(Boolean)
+
+        // Combine color palette hex codes + color description into one color context
+        let colorContext = settings.brand_color_description || ''
+        if (settings.brand_colors) {
+          try {
+            const hexes: string[] = JSON.parse(settings.brand_colors)
+            if (hexes.length) colorContext = `Color palette: ${hexes.join(', ')}${colorContext ? `. ${colorContext}` : ''}`
+          } catch { /* ignore parse errors */ }
+        }
+
+        const promptParts = [stylePrefix, colorContext, shotStyle, basePrompt].filter(Boolean)
         const dallePrompt = promptParts.join('. ') + (negatives ? `. Avoid: ${negatives}` : '')
 
         // Choose reference image: user upload > brand model ref > brand style ref
@@ -224,7 +234,14 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
         if (storyType === 'image') {
           const storyBase = body.prompt ??
             `Vertical 9:16 portrait fashion editorial photo of a Muslim woman wearing ${productDesc} by CADA modest fashion brand. She is wearing a hijab. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
-          const storyParts = [settings.brand_style_prefix, settings.brand_color_description, settings.brand_shot_style, storyBase].filter(Boolean)
+          let storyColorContext = settings.brand_color_description || ''
+          if (settings.brand_colors) {
+            try {
+              const hexes: string[] = JSON.parse(settings.brand_colors)
+              if (hexes.length) storyColorContext = `Color palette: ${hexes.join(', ')}${storyColorContext ? `. ${storyColorContext}` : ''}`
+            } catch { /* ignore */ }
+          }
+          const storyParts = [settings.brand_style_prefix, storyColorContext, settings.brand_shot_style, storyBase].filter(Boolean)
           const imagePrompt = storyParts.join('. ') + (settings.brand_negative_prompts ? `. Avoid: ${settings.brand_negative_prompts}` : '')
           const storyRefImage = body.referenceImageUrl || settings.brand_model_reference_url || settings.brand_style_reference_url || undefined
           const storyImgProvider = body.imageProvider ?? 'gpt'
