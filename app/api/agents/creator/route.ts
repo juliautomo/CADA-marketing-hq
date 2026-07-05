@@ -146,9 +146,9 @@ Include:
             ? await generateImageWithReference(dallePrompt, refImage, '1024x1024', imgQuality)
             : await generateImage(dallePrompt, '1024x1024', imgQuality)
         }
-        const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-image-${Date.now()}.png`, driveFolderId) : null
+        const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `image-${Date.now()}.png`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'image', title: `Image: ${body.product ?? 'CADA'}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt, provider }, tags: ['image', 'cada', provider] })
+          .insert({ type: 'image', title: `Image: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt, provider }, tags: ['image', provider] })
           .select().single()
         result = { imageUrl, driveUrl, item: data }
         break
@@ -231,9 +231,9 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
         const modelUrl = body.referenceImageUrls?.[0]
         if (!garmentUrl || !modelUrl) throw new Error('Both garment image and model image are required')
         const imageUrl = await runVirtualTryOn({ modelImageUrl: modelUrl, garmentImageUrl: garmentUrl })
-        const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-tryon-${Date.now()}.jpg`, driveFolderId) : null
+        const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `tryon-${Date.now()}.jpg`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'tryon', title: `Try-On: ${body.product ?? 'CADA'}`, image_url: imageUrl, drive_url: driveUrl, metadata: { garmentUrl, modelUrl }, tags: ['tryon', 'cada'] })
+          .insert({ type: 'tryon', title: `Try-On: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { garmentUrl, modelUrl }, tags: ['tryon'] })
           .select().single()
         result = { imageUrl, driveUrl, item: data }
         break
@@ -242,11 +242,11 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
       case 'canva':
       case 'canva_template': {
         const design = await createDesignFromTemplate({
-          title: `CADA â€” ${body.product ?? body.prompt ?? 'Template'}`,
+          title: `${brandName} — ${body.product ?? body.prompt ?? 'Template'}`,
           designType: 'INSTAGRAM_POST',
         })
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'canva_template', title: `Canva: ${body.product ?? 'CADA Template'}`, canva_url: design.editUrl, metadata: design, tags: ['canva', 'cada'] })
+          .insert({ type: 'canva_template', title: `Canva: ${body.product ?? brandName}`, canva_url: design.editUrl, metadata: design, tags: ['canva'] })
           .select().single()
         result = { design, item: data }
         break

@@ -58,8 +58,8 @@ Keep recommendations practical for the brand's scale and market.`
 
     let driveUrl = ''
     try {
-      const reportContent = `CADA PERFORMANCE REPORT\n=======================\n${body.title}\nPeriod: ${body.period ?? 'N/A'}\nGenerated: ${new Date().toLocaleString()}\n\n${insights}\n\n---\nRAW DATA:\n${metricsData}`
-      driveUrl = await uploadTextToDrive({ fileName: `CADA Performance â€” ${body.title}.txt`, content: reportContent })
+      const reportContent = `${brandName.toUpperCase()} PERFORMANCE REPORT\n=======================\n${body.title}\nPeriod: ${body.period ?? 'N/A'}\nGenerated: ${new Date().toLocaleString()}\n\n${insights}\n\n---\nRAW DATA:\n${metricsData}`
+      driveUrl = await uploadTextToDrive({ fileName: `${brandName} Performance — ${body.title}.txt`, content: reportContent })
     } catch { /* Google key not set */ }
 
     const { data: report } = await db.from('cada_performance_reports')
