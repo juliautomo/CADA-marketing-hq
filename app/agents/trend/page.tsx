@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   TrendingUp, ArrowRight, Palette, Layers, Shirt,
@@ -22,9 +22,14 @@ const platformColors = {
 }
 
 export default function TrendPage() {
+  const [brandName, setBrandName] = useState('')
   const [season, setSeason] = useState('Current Season')
   const [market, setMarket] = useState('Indonesia & Singapore')
   const [focus, setFocus] = useState('Muslimwear')
+
+  useEffect(() => {
+    fetch('/api/settings/brand').then(r => r.json()).then(d => { if (d.brand_name) setBrandName(d.brand_name) }).catch(() => {})
+  }, [])
   const [customFocus, setCustomFocus] = useState('')
   const [loading, setLoading] = useState(false)
   const [report, setReport] = useState<TrendReport | null>(null)
@@ -62,9 +67,9 @@ export default function TrendPage() {
             </div>
             <h1 className="text-2xl font-bold text-zinc-900">Trend Analyst</h1>
           </div>
-          <p className="text-sm text-zinc-500">Fashion trend intelligence for CADA — with mood boards, hashtags & creator inspo</p>
+          <p className="text-sm text-zinc-500">Trend intelligence — with mood boards, hashtags & creator inspo</p>
         </div>
-        <Badge variant="success">CADA Intelligence</Badge>
+        <Badge variant="success">{brandName || 'Trend'} Intelligence</Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -128,7 +133,7 @@ export default function TrendPage() {
                   <div className="absolute inset-0 rounded-full border-2 border-emerald-200 animate-ping" />
                   <div className="w-12 h-12 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
                 </div>
-                <p className="text-sm text-zinc-500">Analysing trends for CADA…</p>
+                <p className="text-sm text-zinc-500">Analysing trends{brandName ? ` for ${brandName}` : ''}…</p>
               </CardContent>
             </Card>
           )}
@@ -279,7 +284,7 @@ export default function TrendPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <Play className="w-4 h-4 text-emerald-500" /> Trending Content Ideas for CADA
+                      <Play className="w-4 h-4 text-emerald-500" /> Trending Content Ideas{brandName ? ` for ${brandName}` : ''}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
