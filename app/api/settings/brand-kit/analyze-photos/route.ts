@@ -48,10 +48,13 @@ Return ONLY valid JSON with this exact shape (no markdown, no explanation):
 {
   "style_prefix": "A concise photography style description for AI image generation — cover lighting quality, background style, overall mood and aesthetic. 15-30 words.",
   "color_description": "Describe the dominant color palette in words suitable for AI prompts — name the colors descriptively, not as hex codes. 15-25 words.",
+  "brand_colors": ["#RRGGBB", "#RRGGBB", "#RRGGBB", "#RRGGBB", "#RRGGBB"],
   "shot_style": "Camera angle, framing, focal length feel, and technical photography style. 10-20 words.",
   "negative_prompts": "Comma-separated list of things consistently absent from these photos that should be excluded from AI generation. 10-15 items.",
   "summary": "A 2-sentence human-readable summary of what you observed about this brand's visual identity."
-}`,
+}
+
+For brand_colors: extract 3–6 dominant hex color codes actually observed in the photos (backgrounds, clothing, props). Return real hex values, not placeholders.`,
             },
           ],
         },

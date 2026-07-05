@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
-  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Link, Loader2, Image, Upload, X, Building2,
+  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Loader2, Image, Upload, X, Building2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,6 @@ interface VisualKitSettings {
   brand_color_description: string
   brand_shot_style: string
   brand_style_reference_url: string
-  brand_color_swatch_url: string
   brand_model_reference_url: string
   brand_logo_url: string
   brand_colors: string // JSON array of hex strings e.g. ["#F5E6D3","#6B0F2B"]
@@ -87,7 +86,6 @@ const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
   brand_color_description: '',
   brand_shot_style: '',
   brand_style_reference_url: '',
-  brand_color_swatch_url: '',
   brand_model_reference_url: '',
   brand_logo_url: '',
   brand_colors: '["#F5E6D3","#6B0F2B","#C4A882","#8B7355","#F0EBE3"]',
@@ -113,7 +111,7 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function PhotoAnalyzer({ onResult }: {
-  onResult: (r: { style_prefix: string; color_description: string; shot_style: string; negative_prompts: string; summary: string }) => void
+  onResult: (r: { style_prefix: string; color_description: string; brand_colors?: string[]; shot_style: string; negative_prompts: string; summary: string }) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<File[]>([])
@@ -470,11 +468,6 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [websiteUrl, setWebsiteUrl] = useState('')
-  const [pasteText, setPasteText] = useState('')
-  const [importMode, setImportMode] = useState<'url' | 'text'>('url')
-  const [analyzing, setAnalyzing] = useState(false)
-  const [analyzeMsg, setAnalyzeMsg] = useState('')
   const [tiktokStatus, setTiktokStatus] = useState<'success' | 'error' | null>(
     searchParams.get('success') === 'tiktok' ? 'success' :
     searchParams.get('error')?.startsWith('tiktok') ? 'error' : null
@@ -521,29 +514,6 @@ function SettingsContent() {
 
   function updateConnections(key: keyof ConnectionSettings, value: string) {
     setConnections(prev => ({ ...prev, [key]: value }))
-  }
-
-  async function analyzeFromWebsite() {
-    const hasUrl = importMode === 'url' && websiteUrl
-    const hasText = importMode === 'text' && pasteText.trim()
-    if (!hasUrl && !hasText) return
-    setAnalyzing(true)
-    setAnalyzeMsg('')
-    try {
-      const res = await fetch('/api/settings/analyze-brand', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(importMode === 'url' ? { url: websiteUrl } : { text: pasteText }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed')
-      setBrand(prev => ({ ...prev, ...data.brand }))
-      setAnalyzeMsg('Brand context filled in! Review and save.')
-    } catch (e) {
-      setAnalyzeMsg(e instanceof Error ? e.message : 'Something went wrong')
-    } finally {
-      setAnalyzing(false)
-    }
   }
 
   if (loading) return <div className="text-sm text-zinc-400 p-8">Loading…</div>
@@ -684,102 +654,8 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
-          {/* Content Defaults */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-violet-500" />
-                <CardTitle className="text-base">Content Defaults</CardTitle>
-              </div>
-              <CardDescription>Applied to every generation — captions, images, and videos.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Field
-                label="Subject / Model Description"
-                description="Who appears in your images and videos. Leave blank for product-only or flat-lay shots."
-                placeholder="e.g. woman in her 30s wearing the product — or leave blank"
-                value={brand.brand_subject_description}
-                onChange={v => updateBrand('brand_subject_description', v)}
-                rows={2}
-              />
-              <Field
-                label="Default Hashtags"
-                description="Appended to every caption."
-                placeholder="e.g. #yourbrand #brandhandle #yourniche"
-                value={brand.brand_hashtags}
-                onChange={v => updateBrand('brand_hashtags', v)}
-                rows={2}
-              />
-            </CardContent>
-          </Card>
 
-          {/* Import brand context */}
-          <Card className="border-violet-100 bg-violet-50/40">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-violet-500" />
-                <CardTitle className="text-base">Import Brand Context</CardTitle>
-              </div>
-              <CardDescription>Claude will read your content and fill in the fields above automatically.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Mode toggle */}
-              <div className="flex gap-1 bg-white border border-zinc-200 rounded-lg p-0.5 w-fit">
-                <button
-                  onClick={() => setImportMode('url')}
-                  className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', importMode === 'url' ? 'bg-violet-600 text-white' : 'text-zinc-500 hover:text-zinc-700')}
-                >Website URL</button>
-                <button
-                  onClick={() => setImportMode('text')}
-                  className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', importMode === 'text' ? 'bg-violet-600 text-white' : 'text-zinc-500 hover:text-zinc-700')}
-                >Paste Text</button>
-              </div>
-
-              {importMode === 'url' ? (
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={websiteUrl}
-                    onChange={e => setWebsiteUrl(e.target.value)}
-                    placeholder="https://yourbrand.com"
-                    className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
-                  <button
-                    onClick={analyzeFromWebsite}
-                    disabled={!websiteUrl || analyzing}
-                    className="flex items-center gap-2 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors whitespace-nowrap"
-                  >
-                    {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    {analyzing ? 'Analyzing…' : 'Analyze'}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <textarea
-                    value={pasteText}
-                    onChange={e => setPasteText(e.target.value)}
-                    rows={5}
-                    placeholder="Paste anything — Instagram bio, pitch deck copy, product descriptions, brand brief, About page text…"
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
-                  />
-                  <button
-                    onClick={analyzeFromWebsite}
-                    disabled={!pasteText.trim() || analyzing}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors"
-                  >
-                    {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    {analyzing ? 'Analyzing…' : 'Analyze Text'}
-                  </button>
-                </div>
-              )}
-
-              {analyzeMsg && (
-                <p className={`text-xs ${analyzeMsg.includes('!') ? 'text-emerald-600' : 'text-red-500'}`}>
-                  {analyzeMsg}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <SaveBar onSave={handleSave} saving={saving} saved={saved} />
 
         </div>
       )}
@@ -943,6 +819,7 @@ function SettingsContent() {
               <PhotoAnalyzer onResult={(r) => {
                 updateVisualKit('brand_style_prefix', r.style_prefix)
                 updateVisualKit('brand_color_description', r.color_description)
+                if (r.brand_colors?.length) updateVisualKit('brand_colors', JSON.stringify(r.brand_colors))
                 updateVisualKit('brand_shot_style', r.shot_style)
                 updateVisualKit('brand_negative_prompts', r.negative_prompts)
               }} />
@@ -965,13 +842,6 @@ function SettingsContent() {
                 settingKey="brand_style_reference_url"
                 value={visualKit.brand_style_reference_url}
                 onChange={v => updateVisualKit('brand_style_reference_url', v)}
-              />
-              <ImageUploadField
-                label="Color Swatch"
-                description="A color palette image with your brand colors."
-                settingKey="brand_color_swatch_url"
-                value={visualKit.brand_color_swatch_url}
-                onChange={v => updateVisualKit('brand_color_swatch_url', v)}
               />
               <ImageUploadField
                 label="Model Reference"

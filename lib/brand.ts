@@ -21,7 +21,7 @@ export async function getBrandContext(): Promise<BrandContext> {
     'brand_campaign_theme', 'brand_caption_examples',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
     'brand_shot_style', 'brand_colors',
-    'brand_style_reference_url', 'brand_color_swatch_url',
+    'brand_style_reference_url',
     'brand_model_reference_url', 'brand_logo_url',
     'image_quality', 'drive_media_upload_enabled', 'drive_media_folder_id',
   ]
