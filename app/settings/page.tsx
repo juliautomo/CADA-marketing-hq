@@ -278,19 +278,21 @@ interface AnalysisRecord {
   negative_prompts: string
 }
 
-function AnalysisHistory({ onApply }: {
+function AnalysisHistory({ onApply, refreshKey }: {
   onApply: (r: AnalysisRecord) => void
+  refreshKey?: number
 }) {
   const [analyses, setAnalyses] = useState<AnalysisRecord[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     fetch('/api/settings/brand-kit/analyses')
       .then(r => r.json())
       .then(d => setAnalyses(d.analyses ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [refreshKey])
 
   if (loading) return <p className="text-xs text-zinc-400">Loading history…</p>
   if (!analyses.length) return <p className="text-xs text-zinc-400">No analyses yet — run your first one above.</p>
@@ -592,6 +594,7 @@ function SettingsContent() {
   const [visualKit, setVisualKit] = useState<VisualKitSettings>(VISUAL_KIT_DEFAULTS)
   const [connections, setConnections] = useState<ConnectionSettings>(CONNECTION_DEFAULTS)
   const [loading, setLoading] = useState(true)
+  const [historyKey, setHistoryKey] = useState(0)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [websiteUrl, setWebsiteUrl] = useState('')
@@ -1024,6 +1027,7 @@ function SettingsContent() {
                 if (r.brand_colors?.length) updateVisualKit('brand_colors', JSON.stringify(r.brand_colors))
                 updateVisualKit('brand_shot_style', r.shot_style)
                 updateVisualKit('brand_negative_prompts', r.negative_prompts)
+                setHistoryKey(k => k + 1)
               }} />
             </CardContent>
           </Card>
@@ -1039,7 +1043,7 @@ function SettingsContent() {
               <CardDescription>Past photo analyses — click Apply to restore any result.</CardDescription>
             </CardHeader>
             <CardContent>
-              <AnalysisHistory onApply={(a) => {
+              <AnalysisHistory refreshKey={historyKey} onApply={(a) => {
                 updateVisualKit('brand_style_prefix', a.style_prefix)
                 updateVisualKit('brand_color_description', a.color_description)
                 if (a.brand_colors?.length) updateVisualKit('brand_colors', JSON.stringify(a.brand_colors))
