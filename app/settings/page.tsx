@@ -37,7 +37,6 @@ interface VisualKitSettings {
   brand_negative_prompts: string
   brand_color_description: string
   brand_shot_style: string
-  brand_style_reference_url: string
   brand_model_reference_url: string
   brand_logo_url: string
   brand_colors: string // JSON array of hex strings e.g. ["#F5E6D3","#6B0F2B"]
@@ -85,7 +84,6 @@ const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
   brand_negative_prompts: '',
   brand_color_description: '',
   brand_shot_style: '',
-  brand_style_reference_url: '',
   brand_model_reference_url: '',
   brand_logo_url: '',
   brand_colors: '["#F5E6D3","#6B0F2B","#C4A882","#8B7355","#F0EBE3"]',
@@ -1058,16 +1056,9 @@ function SettingsContent() {
                 <Image className="w-4 h-4 text-violet-500" />
                 <CardTitle className="text-base">Reference Images</CardTitle>
               </div>
-              <CardDescription>Upload once — used automatically as visual references in every image generation.</CardDescription>
+              <CardDescription>Upload once — used automatically as visual references in every image generation. Your brand photo library above is used as the style reference automatically.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <ImageUploadField
-                label="Style Reference"
-                description="Your hero image — defines the overall brand aesthetic."
-                settingKey="brand_style_reference_url"
-                value={visualKit.brand_style_reference_url}
-                onChange={v => updateVisualKit('brand_style_reference_url', v)}
-              />
               <ImageUploadField
                 label="Model Reference"
                 description="Consistent model look — face, hijab style, body type."

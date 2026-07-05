@@ -21,7 +21,6 @@ export async function getBrandContext(): Promise<BrandContext> {
     'brand_campaign_theme', 'brand_caption_examples',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
     'brand_shot_style', 'brand_colors',
-    'brand_style_reference_url',
     'brand_model_reference_url', 'brand_logo_url',
     'image_quality', 'drive_media_upload_enabled', 'drive_media_folder_id',
   ]
@@ -51,7 +50,12 @@ export async function getBrandContext(): Promise<BrandContext> {
     ? `${imagePromptBase}${imagePromptBase ? '. ' : ''}Avoid: ${raw.brand_negative_prompts}`
     : imagePromptBase
 
-  const referenceImageUrl = raw.brand_model_reference_url || raw.brand_style_reference_url || undefined
+  // Use first library photo as style reference, fall back to manual uploads
+  let referenceImageUrl: string | undefined = raw.brand_model_reference_url || undefined
+  try {
+    const { data: libraryPhotos } = await db.from('cada_brand_photos').select('url').order('created_at', { ascending: false }).limit(1)
+    if (libraryPhotos?.[0]?.url) referenceImageUrl = libraryPhotos[0].url
+  } catch { /* fall back to manual reference */ }
 
   return {
     systemPrompt: (agentRole: string) => getBrandSystemPrompt(agentRole, raw),
