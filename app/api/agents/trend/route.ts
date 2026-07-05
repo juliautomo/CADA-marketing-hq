@@ -11,6 +11,9 @@ export async function POST(req: NextRequest) {
   const body: TrendInput = await req.json()
   const db = createServiceClient()
   const ctx = await getBrandContext()
+  const brandName    = ctx.raw.brand_name || 'Your Brand'
+  const brandMarkets = ctx.raw.brand_markets || ''
+  const brandIndustry = ctx.raw.brand_industry || 'fashion'
   const SYSTEM_PROMPT = ctx.systemPrompt('Trend Analyst') + `
 
 You are a leading fashion trend analyst specialising in modest fashion and Southeast Asian markets.
@@ -47,20 +50,20 @@ TRENDING HASHTAGS:
 - [hashtag without #]|[platform]|[description]
 
 TRENDING CREATORS:
-- [creator handle]|[platform: tiktok or instagram]|[follower count approx]|[why relevant to CADA]
+- [creator handle]|[platform: tiktok or instagram]|[follower count approx]|[why relevant to ${brandName}]
 - [creator handle]|[platform]|[follower count]|[why relevant]
 - [creator handle]|[platform]|[follower count]|[why relevant]
 - [creator handle]|[platform]|[follower count]|[why relevant]
 
 TRENDING CONTENT IDEAS:
-- [content format]|[specific idea relevant to CADA]|[why it works]
+- [content format]|[specific idea relevant to ${brandName}]|[why it works]
 - [content format]|[specific idea]|[why it works]
 - [content format]|[specific idea]|[why it works]
 - [content format]|[specific idea]|[why it works]
 - [content format]|[specific idea]|[why it works]
 
 FULL ANALYSIS:
-[Write 3 detailed paragraphs: (1) macro trend overview for modest fashion, (2) key pieces CADA should focus on, (3) specific TikTok and Instagram Reels content strategy for CADA]`
+[Write 3 detailed paragraphs: (1) macro trend overview for ${brandIndustry}, (2) key pieces ${brandName} should focus on, (3) specific TikTok and Instagram Reels content strategy for ${brandName}]`
 
   const { data: run } = await db
     .from('cada_agent_runs')
@@ -69,14 +72,14 @@ FULL ANALYSIS:
     .single()
 
   try {
-    const userMessage = `Analyse fashion trends for CADA:
-- Season: ${body.season ?? 'current season (May/June 2026)'}
-- Market: ${body.market ?? 'Indonesia & Singapore'}
-- Category: ${body.focus ?? 'muslimwear / modest womenswear'}
+    const userMessage = `Analyse ${brandIndustry} trends for ${brandName}:
+- Season: ${body.season ?? 'current season'}
+- Market: ${body.market || brandMarkets || 'global'}
+- Category: ${body.focus || brandIndustry}
 
-Include real TikTok and Instagram creators who post modest fashion content with significant Indonesian/Malaysian/Singaporean audiences.
-Include hashtags that are actually trending in the modest fashion space right now.
-Be specific â€” real creator handles, real hashtags, real content formats that perform well on TikTok Reels.`
+Include real TikTok and Instagram creators relevant to this brand's market and industry.
+Include hashtags that are actually trending in the ${brandIndustry} space right now.
+Be specific — real creator handles, real hashtags, real content formats that perform well on TikTok and Instagram Reels.`
 
     const text = await generateText(SYSTEM_PROMPT, userMessage)
 

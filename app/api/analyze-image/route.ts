@@ -18,9 +18,10 @@ function driveToDirectUrl(input: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { systemPrompt } = await getBrandContext()
-  const SYSTEM = systemPrompt('Fashion Image Analyst') + `
-You analyse fashion images to extract styling insights and content opportunities for CADA.`
+  const ctx = await getBrandContext()
+  const brandName = ctx.raw.brand_name || 'Your Brand'
+  const SYSTEM = ctx.systemPrompt('Fashion Image Analyst') + `
+You analyse images to extract styling insights and content opportunities for ${brandName}.`
   const contentType = req.headers.get('content-type') ?? ''
 
   try {

@@ -34,7 +34,7 @@ Output EXACTLY 3 content ideas in this format (no deviation):
 IDEA 1
 Platform: [TikTok or Instagram]
 Format: [Reel/TikTok/Carousel/Static Post/Story]
-Product: [which CADA product to feature]
+Product: [which ${brandName} product to feature]
 Hook: [opening 3 seconds / first line]
 Caption: [full ready-to-post caption with hashtags]
 CTA: [call to action]
@@ -67,7 +67,7 @@ CTA: [cta]
   const { data: catalogProducts } = await db.from('cada_products').select('name, colors, fabric').eq('active', true)
   const products = (catalogProducts ?? []).length > 0
     ? (catalogProducts ?? []).map((p) => ({ name: p.name, price: '' }))
-    : [{ name: 'CADA modest fashion collection', price: '' }]
+    : [{ name: ctx.raw.brand_products_list?.split('\n')[0]?.trim() || `${brandName} collection`, price: '' }]
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)
   const featuredProduct = products[dayOfYear % products.length]
 

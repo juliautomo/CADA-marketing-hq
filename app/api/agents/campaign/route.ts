@@ -48,7 +48,7 @@ Markets: ${brandMarkets}
 IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Start your response with { and end with }.
 
 {
-  "summary": "2-3 sentence campaign overview tailored to CADA and modest fashion",
+  "summary": "2-3 sentence campaign overview tailored to ${brandName}",
   "objective": "primary campaign objective",
   "kpis": ["kpi1", "kpi2", "kpi3"],
   "weeks": [
@@ -81,7 +81,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
       milestones = [
         { title: 'Content creation & assets', day_offset: 0, week: 1 },
         { title: 'Pre-launch teaser on TikTok & Instagram', day_offset: 7, week: 2 },
-        { title: 'Launch day â€” Shopee + TikTok Live', day_offset: 14, week: 3 },
+        { title: `Launch day — ${brandEcommerce ? brandEcommerce + ' + ' : ''}TikTok Live`, day_offset: 14, week: 3 },
         { title: 'Post-launch engagement & retargeting', day_offset: 21, week: 4 },
       ]
     }
@@ -92,7 +92,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
     const todoistTaskIds: string[] = []
     try {
       try {
-        todoistProjectId = await createProject(`CADA â€” ${body.name}`)
+        todoistProjectId = await createProject(`${brandName} — ${body.name}`)
       } catch (e) {
         // If project limit reached (403), use Inbox (no project_id needed)
         const msg = e instanceof Error ? e.message : ''
@@ -108,7 +108,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
           content: `[${body.name}] ${m.title}`,
           projectId: todoistProjectId === 'inbox' ? '' : todoistProjectId,
           dueDate,
-          description: `Week ${m.week} | CADA â€” ${body.name}`,
+          description: `Week ${m.week} | ${brandName} — ${body.name}`,
           priority: m.week === 3 ? 4 : 3,
         })
         todoistTaskIds.push(taskId)
@@ -121,7 +121,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
     try {
       for (let w = 0; w < 4; w++) {
         const eventId = await createCalendarEvent({
-          summary: `CADA â€” ${body.name} Â· Week ${w + 1}`,
+          summary: `${brandName} — ${body.name} · Week ${w + 1}`,
           description: `Campaign week ${w + 1} of 4`,
           startDate: format(addDays(startDate, w * 7), 'yyyy-MM-dd'),
           endDate: format(addDays(startDate, w * 7 + 6), 'yyyy-MM-dd'),
@@ -145,7 +145,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
         weeks: Array.isArray(brief.weeks) ? brief.weeks as never : undefined,
       })
       driveUrl = await uploadFileToDrive({
-        fileName: `CADA Campaign Brief â€” ${body.name}.pdf`,
+        fileName: `${brandName} Campaign Brief — ${body.name}.pdf`,
         buffer: pdfBuffer,
         mimeType: 'application/pdf',
       })

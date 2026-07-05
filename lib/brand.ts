@@ -127,6 +127,10 @@ export function getBrandSystemPrompt(agentRole: string, overrides: BrandOverride
   const targetCustomer = overrides.brand_target_customer || ''
   const campaignTheme = overrides.brand_campaign_theme
   const captionExamples = overrides.brand_caption_examples
+  const industry = (overrides as Record<string, string>).brand_industry || ''
+  const ecommerce = (overrides as Record<string, string>).brand_ecommerce_platform || ''
+  const hashtags = (overrides as Record<string, string>).brand_hashtags || ''
+  const subjectDescription = (overrides as Record<string, string>).brand_subject_description || ''
 
   const handlePart = handle ? ` (${handle})` : ''
   return `You are the ${agentRole} for ${name}${handlePart}.
@@ -146,6 +150,11 @@ CONTENT GUIDELINES:
 ${guidelines}
 ${campaignTheme ? `\nCURRENT CAMPAIGN THEME:\n${campaignTheme}` : ''}
 ${captionExamples ? `\nCAPTION STYLE EXAMPLES (match this voice and style):\n${captionExamples}` : ''}
+
+${industry ? `INDUSTRY: ${industry}` : ''}
+${ecommerce ? `PRIMARY SALES PLATFORM: ${ecommerce}` : ''}
+${subjectDescription ? `SUBJECT / MODEL: ${subjectDescription} (use this in image and video descriptions)` : ''}
+${hashtags ? `DEFAULT HASHTAGS: ${hashtags}` : ''}
 
 Always tailor every output specifically for ${name}. Reference real product names, correct price points, and appropriate aesthetics.`
 }
