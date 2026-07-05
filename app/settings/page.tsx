@@ -278,6 +278,45 @@ interface AnalysisRecord {
   negative_prompts: string
 }
 
+function AnalysisCard({ a, onApply }: { a: AnalysisRecord; onApply: (r: AnalysisRecord) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white p-3">
+      <div className="flex items-start gap-3">
+        {a.thumbnail_url
+          ? <img src={a.thumbnail_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-zinc-100" />
+          : <div className="w-14 h-14 rounded-lg bg-zinc-100 flex-shrink-0 flex items-center justify-center text-zinc-400 text-xs">{a.photo_count}p</div>
+        }
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <p className="text-xs text-zinc-400">{new Date(a.created_at).toLocaleDateString()} · {a.photo_count} photos</p>
+            <button onClick={() => onApply(a)} className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex-shrink-0">Apply</button>
+          </div>
+          <p className="text-xs text-zinc-600 leading-relaxed">{a.summary}</p>
+          {a.brand_colors && (
+            <div className="flex gap-1 mt-1.5">
+              {a.brand_colors.slice(0, 6).map((hex, i) => (
+                <div key={i} className="w-4 h-4 rounded-full border border-zinc-200" style={{ backgroundColor: hex }} />
+              ))}
+            </div>
+          )}
+          <button onClick={() => setExpanded(v => !v)} className="mt-1.5 text-xs text-zinc-400 hover:text-zinc-600 underline">
+            {expanded ? 'Hide details' : 'Show full analysis'}
+          </button>
+        </div>
+      </div>
+      {expanded && (
+        <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3 text-xs text-zinc-600">
+          {a.style_prefix && <div><span className="font-medium text-zinc-400 uppercase tracking-wide text-[10px]">Style</span><p className="mt-0.5">{a.style_prefix}</p></div>}
+          {a.color_description && <div><span className="font-medium text-zinc-400 uppercase tracking-wide text-[10px]">Color description</span><p className="mt-0.5">{a.color_description}</p></div>}
+          {a.shot_style && <div><span className="font-medium text-zinc-400 uppercase tracking-wide text-[10px]">Shot style</span><p className="mt-0.5">{a.shot_style}</p></div>}
+          {a.negative_prompts && <div><span className="font-medium text-zinc-400 uppercase tracking-wide text-[10px]">Avoid</span><p className="mt-0.5">{a.negative_prompts}</p></div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AnalysisHistory({ onApply, refreshKey }: {
   onApply: (r: AnalysisRecord) => void
   refreshKey?: number
@@ -299,31 +338,7 @@ function AnalysisHistory({ onApply, refreshKey }: {
 
   return (
     <div className="space-y-3">
-      {analyses.map(a => (
-        <div key={a.id} className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-3">
-          {a.thumbnail_url
-            ? <img src={a.thumbnail_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-zinc-100" />
-            : <div className="w-14 h-14 rounded-lg bg-zinc-100 flex-shrink-0 flex items-center justify-center text-zinc-400 text-xs">{a.photo_count}p</div>
-          }
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-xs text-zinc-400">{new Date(a.created_at).toLocaleDateString()} · {a.photo_count} photos</p>
-              <button
-                onClick={() => onApply(a)}
-                className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex-shrink-0"
-              >Apply</button>
-            </div>
-            <p className="text-xs text-zinc-600 leading-relaxed line-clamp-2">{a.summary}</p>
-            {a.brand_colors && (
-              <div className="flex gap-1 mt-1.5">
-                {a.brand_colors.slice(0, 6).map((hex, i) => (
-                  <div key={i} className="w-4 h-4 rounded-full border border-zinc-200" style={{ backgroundColor: hex }} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
+      {analyses.map(a => <AnalysisCard key={a.id} a={a} onApply={onApply} />)}
     </div>
   )
 }
