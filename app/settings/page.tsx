@@ -612,9 +612,9 @@ function SettingsContent() {
   const [historyKey, setHistoryKey] = useState(0)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [websiteUrl, setWebsiteUrl] = useState('')
-  const [pasteText, setPasteText] = useState('')
-  const [importMode, setImportMode] = useState<'url' | 'text'>('text')
+  const [websiteUrl, setWebsiteUrl] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('bv_websiteUrl') ?? '' : '')
+  const [pasteText, setPasteText] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('bv_pasteText') ?? '' : '')
+  const [importMode, setImportMode] = useState<'url' | 'text'>(() => (typeof window !== 'undefined' ? localStorage.getItem('bv_importMode') ?? 'text' : 'text') as 'url' | 'text')
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeMsg, setAnalyzeMsg] = useState('')
   const [tiktokStatus, setTiktokStatus] = useState<'success' | 'error' | null>(
@@ -848,11 +848,11 @@ function SettingsContent() {
             <CardContent className="space-y-3">
               <div className="flex gap-1 bg-white border border-zinc-200 rounded-lg p-0.5 w-fit">
                 <button
-                  onClick={() => setImportMode('text')}
+                  onClick={() => { setImportMode('text'); localStorage.setItem('bv_importMode', 'text') }}
                   className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', importMode === 'text' ? 'bg-violet-600 text-white' : 'text-zinc-500 hover:text-zinc-700')}
                 >Paste text</button>
                 <button
-                  onClick={() => setImportMode('url')}
+                  onClick={() => { setImportMode('url'); localStorage.setItem('bv_importMode', 'url') }}
                   className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', importMode === 'url' ? 'bg-violet-600 text-white' : 'text-zinc-500 hover:text-zinc-700')}
                 >Website URL</button>
               </div>
@@ -861,7 +861,7 @@ function SettingsContent() {
                 <div className="space-y-2">
                   <textarea
                     value={pasteText}
-                    onChange={e => setPasteText(e.target.value)}
+                    onChange={e => { setPasteText(e.target.value); localStorage.setItem('bv_pasteText', e.target.value) }}
                     rows={5}
                     placeholder="Paste anything — Instagram bio, existing captions, About page copy, brand brief, pitch deck text…"
                     className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
@@ -880,7 +880,7 @@ function SettingsContent() {
                   <input
                     type="url"
                     value={websiteUrl}
-                    onChange={e => setWebsiteUrl(e.target.value)}
+                    onChange={e => { setWebsiteUrl(e.target.value); localStorage.setItem('bv_websiteUrl', e.target.value) }}
                     placeholder="https://yourbrand.com"
                     className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
