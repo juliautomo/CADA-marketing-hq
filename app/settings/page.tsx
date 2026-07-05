@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
-  Palette, Users, FileText, Sparkles, Calendar, Eye, EyeOff, Loader2, Image, Upload, X, Building2,
+  Palette, Users, FileText, Sparkles, Eye, EyeOff, Loader2, Image, Upload, X, Building2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -835,24 +835,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-amber-500" />
-                <CardTitle className="text-base">Current Campaign Theme <span className="text-zinc-400 font-normal text-sm">(optional)</span></CardTitle>
-              </div>
-              <CardDescription>A temporary focus for this week or month. Clears when the campaign ends.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Field
-                label="Campaign Theme"
-                placeholder="e.g. This month: summer collection launch. Focus on outdoor lifestyle, bright colours, weekend styling..."
-                value={brand.brand_campaign_theme}
-                onChange={v => updateBrand('brand_campaign_theme', v)}
-                rows={3}
-              />
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>
