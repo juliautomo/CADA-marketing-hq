@@ -110,22 +110,22 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function PhotoAnalyzer({ onResult }: {
+interface BrandPhoto { id: string; url: string; filename: string; created_at: string }
+
+function PhotoLibrary({ onResult }: {
   onResult: (r: { style_prefix: string; color_description: string; brand_colors?: string[]; shot_style: string; negative_prompts: string; summary: string }) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [files, setFiles] = useState<File[]>([])
+  const [photos, setPhotos] = useState<BrandPhoto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [summary, setSummary] = useState('')
   const [error, setError] = useState('')
 
-  function handleFiles(selected: FileList | null) {
-    if (!selected) return
-    const arr = Array.from(selected).slice(0, 20)
-    setFiles(arr)
-    setSummary('')
-    setError('')
-  }
+  useEffect(() => {
+    fetch('/api/settings/brand-kit/photos').then(r => r.json()).then(d => setPhotos(d.photos ?? [])).catch(() => {}).finally(() => setLoading(false))
+  }, [])
 
   async function compressImage(file: File): Promise<Blob> {
     return new Promise((resolve) => {
@@ -137,8 +137,7 @@ function PhotoAnalyzer({ onResult }: {
         const w = Math.round(img.width * scale)
         const h = Math.round(img.height * scale)
         const canvas = document.createElement('canvas')
-        canvas.width = w
-        canvas.height = h
+        canvas.width = w; canvas.height = h
         canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
         URL.revokeObjectURL(url)
         canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.8)
@@ -147,16 +146,42 @@ function PhotoAnalyzer({ onResult }: {
     })
   }
 
-  async function analyze() {
+  async function handleAdd(selected: FileList | null) {
+    if (!selected) return
+    const remaining = 20 - photos.length
+    const files = Array.from(selected).slice(0, remaining)
     if (!files.length) return
+    setUploading(true)
+    setError('')
+    try {
+      for (const file of files) {
+        const blob = await compressImage(file)
+        const fd = new FormData()
+        fd.append('photo', blob, file.name)
+        const res = await fetch('/api/settings/brand-kit/photos', { method: 'POST', body: fd })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? 'Upload failed')
+        setPhotos(prev => [data.photo, ...prev])
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function handleRemove(id: string) {
+    await fetch(`/api/settings/brand-kit/photos?id=${id}`, { method: 'DELETE' })
+    setPhotos(prev => prev.filter(p => p.id !== id))
+  }
+
+  async function analyze() {
+    if (!photos.length) return
     setAnalyzing(true)
     setError('')
     setSummary('')
     try {
-      const compressed = await Promise.all(files.map(f => compressImage(f)))
-      const fd = new FormData()
-      compressed.forEach((blob, i) => fd.append('photos', blob, `photo-${i}.jpg`))
-      const res = await fetch('/api/settings/brand-kit/analyze-photos', { method: 'POST', body: fd })
+      const res = await fetch('/api/settings/brand-kit/analyze-photos', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Analysis failed')
       onResult(data.analysis)
@@ -168,51 +193,72 @@ function PhotoAnalyzer({ onResult }: {
     }
   }
 
+  if (loading) return <p className="text-xs text-zinc-400">Loading library…</p>
+
   return (
     <div className="space-y-3">
-      <div
-        className="rounded-xl border-2 border-dashed border-violet-200 bg-white p-4 text-center cursor-pointer hover:border-violet-400 transition-colors"
-        onClick={() => inputRef.current?.click()}
-        onDragOver={e => e.preventDefault()}
-        onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
-      >
-        <Upload className="w-5 h-5 text-violet-400 mx-auto mb-1.5" />
-        <p className="text-sm font-medium text-violet-700">
-          {files.length > 0 ? `${files.length} photo${files.length > 1 ? 's' : ''} selected` : 'Click or drop 5–20 brand photos'}
-        </p>
-        <p className="text-xs text-zinc-400 mt-0.5">JPG, PNG — up to 20 photos</p>
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
-
-      {files.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
-          {files.slice(0, 8).map((f, i) => (
-            <div key={i} className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden border border-zinc-200">
-              <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+      {/* Photo grid */}
+      {photos.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {photos.map(p => (
+            <div key={p.id} className="relative group w-16 h-16 rounded-xl overflow-hidden border border-zinc-200">
+              <img src={p.url} alt="" className="w-full h-full object-cover" />
+              <button
+                onClick={() => handleRemove(p.id)}
+                className="absolute inset-0 bg-black/50 items-center justify-center hidden group-hover:flex transition-all"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
             </div>
           ))}
-          {files.length > 8 && <div className="w-12 h-12 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center text-xs text-zinc-500 font-medium">+{files.length - 8}</div>}
+          {photos.length < 20 && (
+            <button
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+              className="w-16 h-16 rounded-xl border-2 border-dashed border-zinc-300 hover:border-violet-400 text-zinc-400 hover:text-violet-500 flex flex-col items-center justify-center transition-colors"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              <span className="text-[9px] mt-0.5">{uploading ? '…' : 'Add'}</span>
+            </button>
+          )}
         </div>
       )}
 
-      <button
-        onClick={analyze}
-        disabled={files.length < 1 || analyzing}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors"
-      >
-        {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        {analyzing ? 'Analyzing your photos…' : 'Analyze & Auto-fill'}
-      </button>
+      {/* Empty state */}
+      {photos.length === 0 && (
+        <div
+          className="rounded-xl border-2 border-dashed border-violet-200 bg-white p-6 text-center cursor-pointer hover:border-violet-400 transition-colors"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); handleAdd(e.dataTransfer.files) }}
+        >
+          <Upload className="w-5 h-5 text-violet-400 mx-auto mb-1.5" />
+          <p className="text-sm font-medium text-violet-700">Add up to 20 brand photos</p>
+          <p className="text-xs text-zinc-400 mt-0.5">JPG, PNG — stored permanently in your library</p>
+        </div>
+      )}
+
+      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleAdd(e.target.files)} />
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-zinc-400">{photos.length}/20 photos</p>
+        <button
+          onClick={analyze}
+          disabled={photos.length === 0 || analyzing}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors"
+        >
+          {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          {analyzing ? 'Analyzing…' : 'Analyze & Auto-fill'}
+        </button>
+      </div>
 
       {summary && (
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
-          <div className="flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-xs font-semibold text-emerald-700 mb-0.5">Style fields filled in!</p>
-              <p className="text-xs text-emerald-700">{summary}</p>
-              <p className="text-xs text-zinc-400 mt-1">Review the fields below and click Save Changes.</p>
-            </div>
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-emerald-700 mb-0.5">Style fields filled in!</p>
+            <p className="text-xs text-emerald-700">{summary}</p>
+            <p className="text-xs text-zinc-400 mt-1">Review the fields below and click Save Changes.</p>
           </div>
         </div>
       )}
@@ -969,12 +1015,12 @@ function SettingsContent() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-violet-500" />
-                <CardTitle className="text-base">Auto-fill from Your Photos</CardTitle>
+                <CardTitle className="text-base">Brand Photo Library</CardTitle>
               </div>
-              <CardDescription>Upload 5–20 of your best product photos. Claude will analyze them all together and automatically fill in your style settings below.</CardDescription>
+              <CardDescription>Your permanent photo library — up to 20 photos. Add, remove, or update anytime. Click Analyze to extract your visual style.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <PhotoAnalyzer onResult={(r) => {
+              <PhotoLibrary onResult={(r) => {
                 updateVisualKit('brand_style_prefix', r.style_prefix)
                 updateVisualKit('brand_color_description', r.color_description)
                 if (r.brand_colors?.length) updateVisualKit('brand_colors', JSON.stringify(r.brand_colors))
@@ -985,6 +1031,7 @@ function SettingsContent() {
           </Card>
 
           {/* Analysis history */}
+
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">

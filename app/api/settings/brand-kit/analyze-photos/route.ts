@@ -1,50 +1,58 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 export const maxDuration = 60
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getBrandContext } from '@/lib/brand'
 import { createServiceClient } from '@/lib/supabase'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
+    const db = createServiceClient()
     const ctx = await getBrandContext()
-    const brandName    = ctx.raw.brand_name || 'Your Brand'
+    const brandName = ctx.raw.brand_name || 'Your Brand'
     const brandIndustry = ctx.raw.brand_industry || ''
-    const formData = await req.formData()
-    const files = formData.getAll('photos') as File[]
 
-    if (!files.length) return NextResponse.json({ error: 'No photos provided' }, { status: 400 })
-    if (files.length > 20) return NextResponse.json({ error: 'Maximum 20 photos' }, { status: 400 })
+    // Fetch photos from library
+    const { data: photos, error } = await db
+      .from('cada_brand_photos')
+      .select('url')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    if (!photos || photos.length === 0) return NextResponse.json({ error: 'No photos in library. Add some photos first.' }, { status: 400 })
 
-    // Convert all files to base64 image blocks for Claude Vision
-    const imageBlocks: Anthropic.ImageBlockParam[] = await Promise.all(
-      files.map(async (file) => {
-        const buffer = await file.arrayBuffer()
-        const b64 = Buffer.from(buffer).toString('base64')
-        const mediaType = (file.type || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp'
-        return {
-          type: 'image' as const,
-          source: { type: 'base64' as const, media_type: mediaType, data: b64 },
-        }
-      })
-    )
+    // Download and convert to base64
+    const imageBlocks: Anthropic.ImageBlockParam[] = (
+      await Promise.all(
+        photos.map(async (p) => {
+          try {
+            const res = await fetch(p.url)
+            const buffer = await res.arrayBuffer()
+            const b64 = Buffer.from(buffer).toString('base64')
+            return {
+              type: 'image' as const,
+              source: { type: 'base64' as const, media_type: 'image/jpeg' as const, data: b64 },
+            }
+          } catch { return null }
+        })
+      )
+    ).filter(Boolean) as Anthropic.ImageBlockParam[]
 
-    // Send all images to Claude at once for holistic brand analysis
+    if (!imageBlocks.length) throw new Error('Could not load photos from library')
+
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 1500,
-      system: `You are a professional brand consultant and AI image generation expert specializing in modest fashion photography.
+      system: `You are a professional brand consultant and AI image generation expert.
 You analyze brand photo libraries to extract consistent visual DNA that can be used as generation prompts for AI image tools like Flux and DALL-E.`,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            ...imageBlocks,
-            {
-              type: 'text',
-              text: `I've uploaded ${files.length} photos from a ${brandIndustry} brand called ${brandName}. Analyze ALL of them together to identify the consistent visual patterns, aesthetic, and style that defines this brand.
+      messages: [{
+        role: 'user',
+        content: [
+          ...imageBlocks,
+          {
+            type: 'text',
+            text: `I've uploaded ${imageBlocks.length} photos from a ${brandIndustry} brand called ${brandName}. Analyze ALL of them together to identify the consistent visual patterns, aesthetic, and style that defines this brand.
 
 Return ONLY valid JSON with this exact shape (no markdown, no explanation):
 {
@@ -56,11 +64,10 @@ Return ONLY valid JSON with this exact shape (no markdown, no explanation):
   "summary": "A 2-sentence human-readable summary of what you observed about this brand's visual identity."
 }
 
-For brand_colors: extract 3–6 dominant hex color codes actually observed in the photos (backgrounds, clothing, props). Return real hex values, not placeholders.`,
-            },
-          ],
-        },
-      ],
+For brand_colors: extract 3–6 dominant hex color codes actually observed in the photos. Return real hex values, not placeholders.`,
+          },
+        ],
+      }],
     })
 
     const text = message.content.find(b => b.type === 'text')
@@ -71,27 +78,11 @@ For brand_colors: extract 3–6 dominant hex color codes actually observed in th
 
     const analysis = JSON.parse(jsonMatch[0])
 
-    // Upload first photo as thumbnail then save analysis to history
-    let thumbnailUrl = ''
+    // Save to history
     try {
-      const firstFile = files[0]
-      const buffer = await firstFile.arrayBuffer()
-      const db = createServiceClient()
-      const fileName = `brand-kit/analysis-${Date.now()}.jpg`
-      const { data: uploadData } = await db.storage
-        .from('brand-assets')
-        .upload(fileName, Buffer.from(buffer), { contentType: 'image/jpeg', upsert: false })
-      if (uploadData) {
-        const { data: urlData } = db.storage.from('brand-assets').getPublicUrl(fileName)
-        thumbnailUrl = urlData.publicUrl
-      }
-    } catch { /* thumbnail upload optional */ }
-
-    try {
-      const db = createServiceClient()
       await db.from('cada_brand_kit_analyses').insert({
-        thumbnail_url: thumbnailUrl || null,
-        photo_count: files.length,
+        thumbnail_url: photos[0]?.url ?? null,
+        photo_count: imageBlocks.length,
         summary: analysis.summary,
         style_prefix: analysis.style_prefix,
         color_description: analysis.color_description,
@@ -99,7 +90,7 @@ For brand_colors: extract 3–6 dominant hex color codes actually observed in th
         shot_style: analysis.shot_style,
         negative_prompts: analysis.negative_prompts,
       })
-    } catch { /* history save optional */ }
+    } catch { /* history optional */ }
 
     return NextResponse.json({ ok: true, analysis })
   } catch (e) {
