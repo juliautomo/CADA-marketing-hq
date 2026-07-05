@@ -14,9 +14,9 @@ export async function POST(req: NextRequest) {
   const body: CampaignInput = await req.json()
   const db = createServiceClient()
   const ctx = await getBrandContext()
-  const brandName      = ctx.raw.brand_name || 'CADA'
-  const brandMarkets   = ctx.raw.brand_markets || 'Indonesia & Singapore'
-  const brandEcommerce = ctx.raw.brand_ecommerce_platform || 'Shopee'
+  const brandName      = ctx.raw.brand_name || 'Your Brand'
+  const brandMarkets   = ctx.raw.brand_markets || ''
+  const brandEcommerce = ctx.raw.brand_ecommerce_platform || ''
   const SYSTEM_PROMPT = ctx.systemPrompt('Campaign Planner') + `
 
 You are an expert marketing campaign strategist specialising in ${ctx.raw.brand_industry || 'fashion'} brands.

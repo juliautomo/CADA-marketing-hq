@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getBrandContext } from '@/lib/brand'
@@ -8,8 +8,8 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 export async function POST(req: NextRequest) {
   try {
     const ctx = await getBrandContext()
-    const brandName    = ctx.raw.brand_name || 'CADA'
-    const brandIndustry = ctx.raw.brand_industry || 'modest fashion'
+    const brandName    = ctx.raw.brand_name || 'Your Brand'
+    const brandIndustry = ctx.raw.brand_industry || ''
     const formData = await req.formData()
     const files = formData.getAll('photos') as File[]
 

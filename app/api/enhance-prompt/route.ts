@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getBrandContext } from '@/lib/brand'
@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
   if (!prompt) return NextResponse.json({ error: 'No prompt provided' }, { status: 400 })
 
   const ctx = await getBrandContext()
-  const brandName    = ctx.raw.brand_name || 'CADA'
+  const brandName    = ctx.raw.brand_name || 'Your Brand'
   const brandSubject = ctx.raw.brand_subject_description || ''
-  const brandIndustry = ctx.raw.brand_industry || 'modest fashion'
+  const brandIndustry = ctx.raw.brand_industry || ''
 
   const isStory = task === 'story'
   const format = isStory ? 'vertical 9:16 portrait Instagram Story' : 'square editorial fashion photo'

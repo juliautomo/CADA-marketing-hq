@@ -32,11 +32,11 @@ export async function POST(req: NextRequest) {
   const { stream, send, close } = createSSE()
   const ctx = await getBrandContext()
   const BASE = ctx.systemPrompt('Full Campaign Agent')
-  const brandName      = ctx.raw.brand_name || 'CADA'
-  const brandHashtags  = ctx.raw.brand_hashtags || '#CADA #wearcada #modestfashion'
-  const brandEcommerce = ctx.raw.brand_ecommerce_platform || 'Shopee'
-  const brandIndustry  = ctx.raw.brand_industry || 'modest fashion'
-  const brandProducts  = ctx.raw.brand_products_list || 'Pleated Linen Pants (Rp 350,000), Butter Yellow Ruffle Sleeve Shirt (Rp 280,000), High Waisted Denim Maxi Skirt (Rp 385,000)'
+  const brandName      = ctx.raw.brand_name || 'Your Brand'
+  const brandHashtags  = ctx.raw.brand_hashtags || ''
+  const brandEcommerce = ctx.raw.brand_ecommerce_platform || ''
+  const brandIndustry  = ctx.raw.brand_industry || ''
+  const brandProducts  = ctx.raw.brand_products_list || ''
 
   // Run the agent chain asynchronously while streaming progress
   ;(async () => {
@@ -83,7 +83,7 @@ Return ONLY this JSON (no markdown, no explanation):
           durationDays: 28,
           channels: ['TikTok', 'Instagram', 'Shopee'],
           targetAudience: ctx.raw.brand_target_customer || `${brandIndustry} customers`,
-          keyMessage: 'Elevate your modest style',
+          keyMessage: 'Discover something new',
         }
       }
 
@@ -109,7 +109,7 @@ Focus on what the target audience is wearing and engaging with right now.
 
 List:
 - 5 trending colors relevant to this campaign theme
-- 4 trending content styles on TikTok/Instagram for modest fashion
+- 4 trending content styles on TikTok/Instagram for ${brandIndustry}
 - 3 specific content hooks that are performing well right now`
       )
 
@@ -133,7 +133,7 @@ Include:
 2. Campaign Concept (2 paragraphs)
 3. Target Audience Profile
 4. Key Visual Direction (colors, mood, styling)
-5. Channel Strategy (what goes on TikTok vs Instagram vs Shopee)
+5. Channel Strategy (what goes on each channel)
 6. KPIs (3 measurable goals)
 7. Week-by-week breakdown (4 weeks)`
       )
@@ -176,7 +176,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
           caption: captionMatch?.[1]?.trim() ?? block.trim().slice(0, 300),
           contentType: typeMatch?.[1]?.trim() ?? 'Reel',
           hook: hookMatch?.[1]?.trim() ?? '',
-          cta: ctaMatch?.[1]?.trim() ?? 'Shop now at our Shopee store!',
+          cta: ctaMatch?.[1]?.trim() ?? `Shop now at our ${brandEcommerce} store!`,
         }
       })
 

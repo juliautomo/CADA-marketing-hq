@@ -64,49 +64,40 @@ export async function getBrandContext(): Promise<BrandContext> {
   }
 }
 
+// Generic fallback — used only when Settings → Brand tab has not been filled in yet.
+// These are intentionally neutral so a new client never sees CADA content.
 export const BRAND = {
-  name: 'CADA',
-  handle: 'wear_cada',
-  tagline: 'Modest fashion for the modern Muslim woman',
-  description: `CADA (wear_cada) is an Indonesian modest fashion brand selling Muslim-friendly womenswear.
-We design elegant, covered clothing that is fashionable, comfortable, and appropriate for Muslim women.
-Our aesthetic is sophisticated and understated — think quiet luxury meets modest everyday dressing.`,
+  name: 'Your Brand',
+  handle: 'yourbrand',
+  tagline: '',
+  description: 'A brand committed to quality products and exceptional customer experience.',
 
-  markets: ['Indonesia', 'Singapore'],
-  channels: ['Shopee', 'TikTok Shop', 'Tokopedia', 'Instagram', 'TikTok'],
-  pricePoint: 'affordable-mid (Rp 280,000 – Rp 400,000 / SGD 25–35)',
-  currency: 'IDR (Rp) for Indonesia, SGD for Singapore',
+  markets: [] as string[],
+  channels: ['Instagram', 'TikTok'] as string[],
+  pricePoint: '',
+  currency: '',
 
-  products: [
-    { name: 'Pleated Linen Pants', price: 'Rp 350,000', notes: 'Wide-leg, high-waist, navy' },
-    { name: 'Butter Yellow Ruffle Sleeve Button-Up Shirt', price: 'Rp 280,000', notes: 'Loose fit, feminine, modest' },
-    { name: 'High Waisted Denim Maxi Skirt', price: 'Rp 385,000', notes: 'Full coverage, A-line, dark wash' },
-  ],
+  products: [] as { name: string; price: string; notes: string }[],
 
-  brandColor: '#6B0F2B', // Deep burgundy/maroon
-  aesthetics: ['quiet luxury', 'modest chic', 'clean minimal', 'sophisticated everyday'],
+  brandColor: '#000000',
+  aesthetics: [] as string[],
 
   voiceAndTone: `
-- Warm, elegant, and aspirational — never preachy or overly religious
-- Indonesian and Singaporean Muslim women aged 20–35
-- Speaks to women who want to look polished and on-trend while being covered
-- Mix of English and occasional Bahasa Indonesia phrases is appropriate (e.g. "Yuk, tampil cantik!")
-- Never use words: revealing, sexy, bare, skin-baring
-- Always use: modest, covered, elegant, effortless, feminine, everyday luxury`,
+- Warm, friendly, and professional
+- Speak directly to the target customer
+- Focus on benefits, not just features
+- Write in a clear, confident tone`,
 
   social: {
-    instagram: 'https://www.instagram.com/wear_cada',
-    tiktok: 'https://www.tiktok.com/@wear_cada',
-    shopee: 'https://shopee.co.id/wearcada',
+    instagram: '',
+    tiktok: '',
+    shopee: '',
   },
 
   contentGuidelines: `
-- All clothing must be fully covered (wrists, ankles, neckline)
-- Models should wear hijab in any visual references
-- Captions can mix English + Bahasa Indonesia
-- Hashtags: #CADA #wearcada #modestfashion #hijabfashion #ootdmodest #fashionmuslim #bajumuslim
-- Platform tone: Instagram = elegant & editorial; TikTok = relatable & conversational
-- Price should always be shown in Rp for Indonesian content`,
+- Match the brand voice in every piece of content
+- Keep captions clear and on-brand
+- Always include a call to action`,
 }
 
 export interface BrandOverrides {
@@ -127,28 +118,26 @@ export function getBrandSystemPrompt(agentRole: string, overrides: BrandOverride
   const productsList = (overrides as Record<string, string>).brand_products_list
   const products = productsList
     ? productsList.split('\n').filter(Boolean).map(l => `- ${l.trim()}`).join('\n')
-    : BRAND.products.map(p => `- ${p.name} (${p.price}): ${p.notes}`).join('\n')
+    : BRAND.products.length > 0
+      ? BRAND.products.map(p => `- ${p.name} (${p.price}): ${p.notes}`).join('\n')
+      : ''
 
   const voice = overrides.brand_voice || BRAND.voiceAndTone
   const guidelines = overrides.brand_guidelines || BRAND.contentGuidelines
-  const targetCustomer = overrides.brand_target_customer || 'Indonesian and Singaporean Muslim women aged 20–35'
+  const targetCustomer = overrides.brand_target_customer || ''
   const campaignTheme = overrides.brand_campaign_theme
   const captionExamples = overrides.brand_caption_examples
 
-  return `You are the ${agentRole} for ${name} (${handle}).
+  const handlePart = handle ? ` (${handle})` : ''
+  return `You are the ${agentRole} for ${name}${handlePart}.
 
 BRAND OVERVIEW:
 ${description}
-
-PRODUCTS (current range):
-${products}
-
-PRICE POINT: ${pricePoint}
-MARKETS: ${markets}
-SALES CHANNELS: ${channels}
-
-TARGET CUSTOMER:
-${targetCustomer}
+${products ? `\nPRODUCTS (current range):\n${products}` : ''}
+${pricePoint ? `\nPRICE POINT: ${pricePoint}` : ''}
+${markets ? `\nMARKETS: ${markets}` : ''}
+${channels ? `\nSALES CHANNELS: ${channels}` : ''}
+${targetCustomer ? `\nTARGET CUSTOMER:\n${targetCustomer}` : ''}
 
 BRAND VOICE & TONE:
 ${voice}

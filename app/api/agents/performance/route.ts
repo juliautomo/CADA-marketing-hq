@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
   const body: PerformanceInput = await req.json()
   const db = createServiceClient()
   const ctx = await getBrandContext()
-  const brandName    = ctx.raw.brand_name || 'CADA'
-  const brandChannels = ctx.raw.brand_channels || 'Shopee, TikTok, Tokopedia, Instagram'
+  const brandName    = ctx.raw.brand_name || 'Your Brand'
+  const brandChannels = ctx.raw.brand_channels || ''
   const SYSTEM_PROMPT = ctx.systemPrompt('Performance Analyst') + `
 
 You are a data-driven marketing analyst specialising in e-commerce and social commerce.

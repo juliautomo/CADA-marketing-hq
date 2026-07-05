@@ -27,9 +27,9 @@ export async function GET(req: NextRequest) {
   }
   const weekOf = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   const ctx = await getBrandContext()
-  const brandName    = ctx.raw.brand_name || 'CADA'
-  const brandMarkets = ctx.raw.brand_markets || 'Indonesia & Singapore'
-  const brandIndustry = ctx.raw.brand_industry || 'modest fashion'
+  const brandName    = ctx.raw.brand_name || 'Your Brand'
+  const brandMarkets = ctx.raw.brand_markets || ''
+  const brandIndustry = ctx.raw.brand_industry || ''
   const SYSTEM_PROMPT = ctx.systemPrompt('Monday Trend Analyst') + `
 
 You are generating the weekly Monday morning trend brief for ${brandName}.

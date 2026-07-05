@@ -57,11 +57,11 @@ export async function POST(req: NextRequest) {
     .single()
 
   const ctx = await getBrandContext()
-  const brandName     = ctx.raw.brand_name || 'CADA'
+  const brandName     = ctx.raw.brand_name || 'Your Brand'
   const brandSubject  = ctx.raw.brand_subject_description || ''
-  const brandHashtags = ctx.raw.brand_hashtags || '#CADA #wearcada #modestfashion'
-  const brandEcommerce = ctx.raw.brand_ecommerce_platform || 'Shopee'
-  const brandIndustry  = ctx.raw.brand_industry || 'modest fashion'
+  const brandHashtags = ctx.raw.brand_hashtags || ''
+  const brandEcommerce = ctx.raw.brand_ecommerce_platform || ''
+  const brandIndustry  = ctx.raw.brand_industry || ''
   const SYSTEM_PROMPT = ctx.systemPrompt('Content Creator') + `
 You are an expert copywriter specialising in ${brandIndustry} content.
 Write content that is warm, elegant, and aspirational. Always output ONLY the requested content — no preamble or meta-commentary.`
@@ -155,7 +155,7 @@ Include:
       }
 
       case 'video': {
-        const productDesc = body.product ?? 'modest fashion outfit'
+        const productDesc = body.product ?? `${brandIndustry} product`
         const videoPrompt = body.prompt ??
           `Cinematic fashion video featuring ${productDesc} by ${brandName}. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, ${brandIndustry} aesthetic.`
         const duration  = body.videoLength ?? 5
@@ -178,7 +178,7 @@ Include:
       }
 
       case 'story': {
-        const productDesc = body.product ?? 'modest fashion outfit'
+        const productDesc = body.product ?? `${brandIndustry} product`
         const storyType = body.videoProvider === 'image' ? 'image' : 'video'
 
         // Generate story caption (short, punchy, no hashtags)

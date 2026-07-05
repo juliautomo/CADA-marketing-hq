@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getBrandContext } from '@/lib/brand'
 
@@ -20,7 +20,7 @@ export interface VideoAnalysis {
 
 export async function POST(req: NextRequest) {
   const ctx = await getBrandContext()
-  const brandName = ctx.raw.brand_name || 'CADA'
+  const brandName = ctx.raw.brand_name || 'Your Brand'
   const brandIndustry = ctx.raw.brand_industry || 'fashion'
   const SYSTEM = ctx.systemPrompt('Fashion Video Analyst') + `
 You analyse fashion video frames to extract styling insights and generate social media captions for ${brandName}.

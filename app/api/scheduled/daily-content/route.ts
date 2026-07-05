@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
   const start = Date.now()
   const db = createServiceClient()
   const ctx = await getBrandContext()
-  const brandName    = ctx.raw.brand_name || 'CADA'
-  const brandIndustry = ctx.raw.brand_industry || 'modest fashion'
-  const brandHashtags = ctx.raw.brand_hashtags || '#CADA #wearcada #modestfashion'
+  const brandName    = ctx.raw.brand_name || 'Your Brand'
+  const brandIndustry = ctx.raw.brand_industry || ''
+  const brandHashtags = ctx.raw.brand_hashtags || ''
   const SYSTEM_PROMPT = ctx.systemPrompt('Daily Content Generator') + `
 
 You generate 3 ready-to-post social media content ideas for ${brandName} every morning.
