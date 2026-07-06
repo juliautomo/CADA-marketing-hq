@@ -70,7 +70,8 @@ export async function generateImageWithReferences(
 
   const response = await getClient().images.edit({
     model: 'gpt-image-1',
-    image: files as Parameters<typeof getClient().images.edit>[0]['image'],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    image: files as any,
     prompt,
     n: 1,
     size,
