@@ -1223,7 +1223,7 @@ function SettingsContent() {
                   </div>
                   <Field
                     label="Business Account ID"
-                    description="Find it at business.facebook.com → Settings → Instagram accounts → @wear_cada"
+                    description={`Find it at business.facebook.com → Settings → Instagram accounts${connections.instagram_username ? ` → @${connections.instagram_username}` : ''}`}
                     placeholder="17841400000000000"
                     value={connections.instagram_business_account_id}
                     onChange={v => updateConnections('instagram_business_account_id', v)}
