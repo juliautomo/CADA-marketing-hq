@@ -197,6 +197,9 @@ export default function CreatorPage() {
   const [products, setProducts]       = useState<import('@/types').Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<import('@/types').Product | null>(null)
 
+  const [generatedCaption, setGeneratedCaption] = useState('')
+  const [captionGenerating, setCaptionGenerating] = useState(false)
+
   const taskDef    = TASKS.find(t => t.id === task)!
   const needsPrompt = ['image', 'video', 'story'].includes(task)
   const isTryon = task === 'tryon'
@@ -236,6 +239,7 @@ export default function CreatorPage() {
     setLoading(true)
     setResult(null)
     setError(null)
+    setGeneratedCaption('')
     setResultMediaUrl(rawMediaUrl)
 
     // Build product context from catalog selection
@@ -967,8 +971,30 @@ export default function CreatorPage() {
                           </a>
                         )}
                       </div>
-                      <InstagramPostButton mediaUrl={url} caption={typeof result?.caption === 'string' ? result.caption : ''} mediaType="IMAGE" />
-                      <ScheduleButton platform="instagram" mediaUrl={url} mediaType="IMAGE" caption={typeof result?.caption === 'string' ? result.caption : ''} />
+                      {/* Generate Caption from image */}
+                      {generatedCaption ? (
+                        <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-violet-700">Generated Caption</span>
+                            <button
+                              onClick={() => { setCaptionGenerating(true); setGeneratedCaption(''); fetch('/api/agents/caption-from-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl: url, language, captionLength }) }).then(r => r.json()).then(d => setGeneratedCaption(d.caption ?? '')).finally(() => setCaptionGenerating(false)) }}
+                              className="text-[10px] text-violet-500 underline hover:text-violet-700"
+                            >Regenerate</button>
+                          </div>
+                          <p className="text-xs text-zinc-700 whitespace-pre-wrap">{generatedCaption}</p>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setCaptionGenerating(true); fetch('/api/agents/caption-from-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl: url, language, captionLength }) }).then(r => r.json()).then(d => setGeneratedCaption(d.caption ?? '')).finally(() => setCaptionGenerating(false)) }}
+                          disabled={captionGenerating}
+                          className="flex items-center justify-center gap-2 w-full rounded-xl border border-violet-200 bg-violet-50 text-violet-700 text-sm font-medium py-2.5 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {captionGenerating ? 'Generating caption…' : 'Generate Caption'}
+                        </button>
+                      )}
+                      <InstagramPostButton mediaUrl={url} caption={generatedCaption || (typeof result?.caption === 'string' ? result.caption : '')} mediaType="IMAGE" />
+                      <ScheduleButton platform="instagram" mediaUrl={url} mediaType="IMAGE" caption={generatedCaption || (typeof result?.caption === 'string' ? result.caption : '')} />
                     </div>
                   )
                 })()}

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
+import { ScheduleButton } from '@/components/agents/schedule-button'
 import type { TrendReport, Campaign, PerformanceReport, ContentItem } from '@/types'
 
 type Tab = 'all' | 'content' | 'trends' | 'campaigns' | 'reports'
@@ -246,6 +247,15 @@ function ContentRow({ item }: { item: ContentItem }) {
           <a href={item.canva_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
             Canva <ExternalLink className="w-3 h-3" />
           </a>
+        )}
+        {(item.image_url || item.video_url) && (
+          <ScheduleButton
+            platform="instagram"
+            mediaUrl={(item.image_url || item.video_url)!}
+            mediaType={item.video_url ? 'REELS' : 'IMAGE'}
+            caption={item.body ?? ''}
+            label="Schedule"
+          />
         )}
       </div>
     </div>
