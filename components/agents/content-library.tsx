@@ -109,7 +109,7 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
                       <div className="mt-3 space-y-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.image_url} alt={item.title} className="w-full max-w-sm rounded-xl" />
-                        <button onClick={(e) => { e.stopPropagation(); downloadMedia(item.image_url!, 'cada-image.png') }}
+                        <button onClick={(e) => { e.stopPropagation(); downloadMedia(item.image_url!, `image-${new Date().toISOString().slice(0,10)}.png`) }}
                           className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800">
                           <Download className="w-3.5 h-3.5" /> Download
                         </button>

@@ -955,7 +955,7 @@ export default function CreatorPage() {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => downloadMedia(url, 'cada-image.png')}
+                          onClick={() => downloadMedia(url, `image-${new Date().toISOString().slice(0,10)}.png`)}
                           className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium py-2.5 hover:bg-zinc-50 transition-colors"
                         >
                           <Download className="w-4 h-4" /> Download
