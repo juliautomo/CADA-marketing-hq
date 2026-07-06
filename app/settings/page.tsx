@@ -1206,9 +1206,20 @@ function SettingsContent() {
                         )}
                       </div>
                     </div>
-                    <a href="/api/auth/instagram" className="text-xs text-zinc-500 underline hover:text-zinc-700">
-                      Reconnect
-                    </a>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={async () => {
+                          await fetch('/api/auth/instagram/disconnect', { method: 'POST' })
+                          setConnections(c => ({ ...c, instagram_user_token: '', instagram_username: '', instagram_business_account_id: '', instagram_page_id: '', instagram_page_token: '' }))
+                        }}
+                        className="text-xs text-red-500 underline hover:text-red-700"
+                      >
+                        Disconnect
+                      </button>
+                      <a href="/api/auth/instagram" className="text-xs text-zinc-500 underline hover:text-zinc-700">
+                        Reconnect
+                      </a>
+                    </div>
                   </div>
                   <Field
                     label="Business Account ID"
