@@ -1,7 +1,7 @@
 ﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
-import { generateImage, generateImageWithReference } from '@/lib/openai'
+import { generateImage, generateImageWithReference, generateImageWithReferences } from '@/lib/openai'
 import { generateImageFlux } from '@/lib/fal'
 import { runVirtualTryOn } from '@/lib/fashn'
 import { uploadFileToDrive } from '@/lib/google'
@@ -136,11 +136,17 @@ Include:
 
         // Choose reference image: user upload > brand context ref (model → style)
         const refImage = body.referenceImageUrl || ctx.referenceImageUrl
+        const logoUrl = ctx.raw.brand_logo_url || undefined
+        const promptMentionsLogo = /logo/i.test(dallePrompt)
 
         const provider = body.imageProvider ?? 'gpt'
         let imageUrl: string
         if (provider === 'flux') {
           imageUrl = await generateImageFlux(dallePrompt, '1:1')
+        } else if (promptMentionsLogo && logoUrl && refImage) {
+          imageUrl = await generateImageWithReferences(dallePrompt, [refImage, logoUrl], '1024x1024', imgQuality)
+        } else if (promptMentionsLogo && logoUrl) {
+          imageUrl = await generateImageWithReference(dallePrompt, logoUrl, '1024x1024', imgQuality)
         } else {
           imageUrl = refImage
             ? await generateImageWithReference(dallePrompt, refImage, '1024x1024', imgQuality)

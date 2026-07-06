@@ -38,7 +38,6 @@ export async function generateImageWithReference(
   size: '1024x1024' | '1024x1536' = '1024x1024',
   quality: 'low' | 'medium' | 'high' = 'medium',
 ): Promise<string> {
-  // Fetch the reference image and convert to a File object
   const res = await fetch(referenceUrl)
   if (!res.ok) throw new Error(`Failed to fetch reference image: ${res.status}`)
   const buffer = Buffer.from(await res.arrayBuffer())
@@ -47,6 +46,31 @@ export async function generateImageWithReference(
   const response = await getClient().images.edit({
     model: 'gpt-image-1',
     image: file,
+    prompt,
+    n: 1,
+    size,
+  })
+  return extractBase64Result(response.data)
+}
+
+export async function generateImageWithReferences(
+  prompt: string,
+  referenceUrls: string[],
+  size: '1024x1024' | '1024x1536' = '1024x1024',
+  quality: 'low' | 'medium' | 'high' = 'medium',
+): Promise<string> {
+  const files = await Promise.all(
+    referenceUrls.map(async (url, i) => {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`Failed to fetch reference image ${i}: ${res.status}`)
+      const buffer = Buffer.from(await res.arrayBuffer())
+      return toFile(buffer, `reference-${i}.png`, { type: 'image/png' })
+    })
+  )
+
+  const response = await getClient().images.edit({
+    model: 'gpt-image-1',
+    image: files as Parameters<typeof getClient().images.edit>[0]['image'],
     prompt,
     n: 1,
     size,
