@@ -145,6 +145,16 @@ export function MediaReference({
       try {
         let upload: File | Blob = file
         if (file.size > 4 * 1024 * 1024) upload = await compressImage(file)
+
+        // Upload to Supabase so we have a public URL for scheduling/posting
+        const ext = file.name.split('.').pop()
+        const path = `starting-frames/${Date.now()}.${ext}`
+        const { error: uploadError } = await supabase.storage.from('product-images').upload(path, upload, { upsert: true })
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
+          onRawMedia?.(urlData.publicUrl, objectUrl)
+        }
+
         const form = new FormData()
         form.append('image', upload, file.name)
         const res  = await fetch('/api/analyze-image', { method: 'POST', body: form })
