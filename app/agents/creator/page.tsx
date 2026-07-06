@@ -979,7 +979,12 @@ export default function CreatorPage() {
                               className="text-[10px] text-violet-500 underline hover:text-violet-700"
                             >Regenerate</button>
                           </div>
-                          <p className="text-xs text-zinc-700 whitespace-pre-wrap">{generatedCaption}</p>
+                          <textarea
+                            value={generatedCaption}
+                            onChange={e => setGeneratedCaption(e.target.value)}
+                            rows={6}
+                            className="w-full text-xs text-zinc-700 bg-white border border-violet-100 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-violet-400"
+                          />
                         </div>
                       ) : (
                         <button
