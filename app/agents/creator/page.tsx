@@ -867,10 +867,8 @@ export default function CreatorPage() {
                     </div>
                     {task === 'caption' && resultMediaUrl && (
                       <div className="space-y-2">
-                        <TikTokPostButton videoUrl={resultMediaUrl} caption={result.text} />
-                        <ScheduleButton platform="tiktok" mediaUrl={resultMediaUrl} mediaType="REELS" caption={result.text} />
-                        <InstagramPostButton mediaUrl={resultMediaUrl} caption={result.text} mediaType="REELS" />
-                        <ScheduleButton platform="instagram" mediaUrl={resultMediaUrl} mediaType="REELS" caption={result.text} />
+                        <InstagramPostButton mediaUrl={resultMediaUrl} caption={result.text} mediaType="IMAGE" />
+                        <ScheduleButton platform="instagram" mediaUrl={resultMediaUrl} mediaType="IMAGE" caption={result.text} />
                       </div>
                     )}
                   </div>
