@@ -642,7 +642,7 @@ function SettingsContent() {
     setSaving(true)
     setSaved(false)
     const endpoint = tab === 'connections' ? '/api/settings/connections' : '/api/settings/brand'
-    const body = tab === 'brand' ? brand : tab === 'visual-kit' ? visualKit : connections
+    const body = tab === 'connections' ? connections : tab === 'visual-kit' ? visualKit : brand
     await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
