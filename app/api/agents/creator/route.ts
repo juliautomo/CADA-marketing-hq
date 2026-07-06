@@ -84,7 +84,7 @@ ${lenNote}
 Include relevant hashtags at the end (${brandHashtags}).`
         )
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, tags: [body.platform ?? 'instagram', 'cada'] })
+          .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, image_url: body.referenceImageUrl ?? null, tags: [body.platform ?? 'instagram', 'cada'] })
           .select().single()
         result = { text, item: data }
         break
