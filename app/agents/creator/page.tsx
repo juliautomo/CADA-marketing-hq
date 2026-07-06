@@ -991,8 +991,12 @@ export default function CreatorPage() {
                           {captionGenerating ? 'Generating caption…' : 'Generate Caption'}
                         </button>
                       )}
-                      <InstagramPostButton mediaUrl={url} caption={generatedCaption || (typeof result?.caption === 'string' ? result.caption : '')} mediaType="IMAGE" />
-                      <ScheduleButton platform="instagram" mediaUrl={url} mediaType="IMAGE" caption={generatedCaption || (typeof result?.caption === 'string' ? result.caption : '')} />
+                      {generatedCaption && (
+                        <>
+                          <InstagramPostButton mediaUrl={url} caption={generatedCaption} mediaType="IMAGE" />
+                          <ScheduleButton platform="instagram" mediaUrl={url} mediaType="IMAGE" caption={generatedCaption} />
+                        </>
+                      )}
                     </div>
                   )
                 })()}
