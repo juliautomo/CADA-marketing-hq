@@ -169,6 +169,8 @@ export interface CampaignInput {
   theme?: string
   budget?: string
   channels?: string[]
+  durationWeeks?: number
+  postsPerWeek?: number
 }
 
 // Performance reviewer inputs

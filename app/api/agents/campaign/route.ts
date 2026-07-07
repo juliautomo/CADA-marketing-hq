@@ -10,17 +10,13 @@ import { addDays, format } from 'date-fns'
 
 export async function POST(req: NextRequest) {
   const start = Date.now()
-  const body: CampaignInput = await req.json()
+  const body: CampaignInput & { brief?: Record<string, unknown>; durationWeeks?: number } = await req.json()
   const db = createServiceClient()
   const ctx = await getBrandContext()
   const brandName      = ctx.raw.brand_name || 'Your Brand'
-  const brandMarkets   = ctx.raw.brand_markets || ''
   const brandEcommerce = ctx.raw.brand_ecommerce_platform || ''
-  const SYSTEM_PROMPT = ctx.systemPrompt('Campaign Planner') + `
-
-You are an expert marketing campaign strategist specialising in ${ctx.raw.brand_industry || 'fashion'} brands.
-Create detailed, actionable 4-week campaign plans tailored to ${brandName}'s channels.
-Output structured JSON when asked.`
+  const durationWeeks  = body.durationWeeks ?? 4
+  const totalDays      = durationWeeks * 7
 
   const { data: run } = await db
     .from('cada_agent_runs')
@@ -30,68 +26,44 @@ Output structured JSON when asked.`
 
   try {
     const startDate = new Date(body.startDate)
-    const endDate = addDays(startDate, 27)
+    const endDate = addDays(startDate, totalDays - 1)
 
-    const briefText = await generateText(
-      SYSTEM_PROMPT,
-      `Create a detailed 4-week marketing campaign for ${brandName}:
-
-Campaign: "${body.name}"
-Description: ${body.description}
-Theme: ${body.theme ?? `${ctx.raw.brand_industry || 'fashion'} collection launch`}
-Budget: ${body.budget ?? 'not specified'}
-Channels: ${(body.channels ?? ['TikTok', 'Instagram', brandEcommerce]).join(', ')}
-Start date: ${format(startDate, 'MMMM d, yyyy')}
-Markets: ${brandMarkets}
-
-IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Start your response with { and end with }.
-
-{
-  "summary": "2-3 sentence campaign overview tailored to ${brandName}",
-  "objective": "primary campaign objective",
-  "kpis": ["kpi1", "kpi2", "kpi3"],
-  "weeks": [
-    {
-      "week": 1,
-      "theme": "week theme",
-      "milestones": [
-        { "title": "milestone title", "day_offset": 0, "description": "brief description" }
-      ]
-    }
-  ]
-}`
-    )
-
-    let brief: Record<string, unknown> = {}
+    // Use pre-generated brief if provided (from preview step), otherwise generate
+    let brief: Record<string, unknown> = body.brief ?? {}
+    let briefText = ''
     let milestones: Array<{ title: string; day_offset: number; week: number }> = []
 
+    if (Object.keys(brief).length === 0) {
+      briefText = await generateText(
+        ctx.systemPrompt('Campaign Planner'),
+        `Create a ${durationWeeks}-week campaign plan for ${brandName}: "${body.name}". Output raw JSON only.`
+      )
+      try {
+        const clean = briefText.replace(/```json\n?/gi, '').replace(/```\n?/g, '')
+        const match = clean.match(/\{[\s\S]*\}/)
+        if (match) brief = JSON.parse(match[0])
+      } catch { /* use empty */ }
+    }
+
     try {
-      // Strip markdown code fences before parsing
-      const cleanText = briefText.replace(/```json\n?/gi, '').replace(/```\n?/g, '')
-      const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        brief = JSON.parse(jsonMatch[0])
-        const weeks = (brief.weeks as Array<{ week: number; milestones: Array<{ title: string; day_offset: number }> }>) ?? []
-        milestones = weeks.flatMap((w) =>
-          w.milestones.map((m) => ({ title: m.title, day_offset: m.day_offset, week: w.week }))
-        )
-      }
+      const weeks = (brief.weeks as Array<{ week: number; milestones: Array<{ title: string; day_offset: number }> }>) ?? []
+      milestones = weeks.flatMap((w) =>
+        w.milestones.map((m) => ({ title: m.title, day_offset: m.day_offset, week: w.week }))
+      )
     } catch {
       milestones = [
         { title: 'Content creation & assets', day_offset: 0, week: 1 },
-        { title: 'Pre-launch teaser on TikTok & Instagram', day_offset: 7, week: 2 },
-        { title: `Launch day — ${brandEcommerce ? brandEcommerce + ' + ' : ''}TikTok Live`, day_offset: 14, week: 3 },
-        { title: 'Post-launch engagement & retargeting', day_offset: 21, week: 4 },
+        { title: `Launch day — ${brandEcommerce ? brandEcommerce + ' + ' : ''}Instagram`, day_offset: totalDays / 2, week: Math.ceil(durationWeeks / 2) },
       ]
     }
 
-    // Google Calendar
+    // Google Calendar — one event per week
     const calendarEventIds: string[] = []
     try {
-      for (let w = 0; w < 4; w++) {
+      for (let w = 0; w < durationWeeks; w++) {
         const eventId = await createCalendarEvent({
           summary: `${brandName} — ${body.name} · Week ${w + 1}`,
-          description: `Campaign week ${w + 1} of 4`,
+          description: `Campaign week ${w + 1} of ${durationWeeks}`,
           startDate: format(addDays(startDate, w * 7), 'yyyy-MM-dd'),
           endDate: format(addDays(startDate, w * 7 + 6), 'yyyy-MM-dd'),
         })
@@ -126,6 +98,7 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. No backticks. Star
         description: body.description,
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),
+        metadata: { durationWeeks, postsPerWeek: body.postsPerWeek },
         status: 'draft',
         google_drive_url: driveUrl || null,
         calendar_event_ids: calendarEventIds,
