@@ -84,7 +84,7 @@ ${lenNote}
 Include relevant hashtags at the end (${brandHashtags}).`
         )
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, image_url: body.referenceImageUrl ?? null, tags: [body.platform ?? 'instagram', 'cada'] })
+          .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, image_url: body.referenceImageUrl ?? null, tags: [body.platform ?? 'instagram', 'cada'], campaign_id: body.campaignId ?? null, milestone_index: body.milestoneIndex ?? null })
           .select().single()
         result = { text, item: data }
         break
@@ -154,7 +154,7 @@ Include:
         }
         const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `image-${Date.now()}.png`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'image', title: `Image: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt, provider }, tags: ['image', provider] })
+          .insert({ type: 'image', title: `Image: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt, provider }, tags: ['image', provider], campaign_id: body.campaignId ?? null, milestone_index: body.milestoneIndex ?? null })
           .select().single()
         result = { imageUrl, driveUrl, item: data }
         break

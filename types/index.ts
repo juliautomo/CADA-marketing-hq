@@ -150,6 +150,8 @@ export interface CreatorInput {
   imageProvider?: 'gpt' | 'flux'
   referenceImageUrl?: string
   referenceImageUrls?: string[]
+  campaignId?: string
+  milestoneIndex?: number
 }
 
 // Trend analyst inputs

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Type, FileText, Mail, Image, Video, Layout,
-  ArrowRight, Copy, Check, ExternalLink, RotateCcw, X, Upload, BookImage, Download,
+  ArrowRight, Copy, Check, ExternalLink, RotateCcw, X, Upload, BookImage, Download, CalendarDays,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -166,7 +167,14 @@ function InstagramStoryButton({ mediaUrl, caption, mediaType }: { mediaUrl: stri
   )
 }
 
-export default function CreatorPage() {
+function CreatorPageInner() {
+  const searchParams = useSearchParams()
+  const campaignId    = searchParams.get('campaign_id') ?? undefined
+  const milestoneIndex = searchParams.get('milestone_index') != null ? Number(searchParams.get('milestone_index')) : undefined
+  const campaignName  = searchParams.get('campaign_name') ?? undefined
+  const milestoneTitle = searchParams.get('milestone_title') ?? undefined
+  const weekTheme     = searchParams.get('week_theme') ?? undefined
+
   // ── State ──────────────────────────────────────────────────────────────────
   const [task, setTask]                 = useState<ContentType>('caption')
   const [product, setProduct]           = useState('')
@@ -221,6 +229,13 @@ export default function CreatorPage() {
     fetch('/api/products').then(r => r.json()).then(d => setProducts(d.products ?? []))
   }, [])
 
+  // Pre-fill from campaign context URL params
+  useEffect(() => {
+    if (milestoneTitle) setProduct(milestoneTitle)
+    if (weekTheme) setTone(weekTheme.split(' ')[0])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Auto-fill product details field when catalog item selected for image/video
   useEffect(() => {
     if (needsPrompt && selectedProduct) {
@@ -267,6 +282,8 @@ export default function CreatorPage() {
       referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : refImageUrls.length > 0 ? refImageUrls : undefined,
       prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
       additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '')) || undefined,
+      campaignId,
+      milestoneIndex,
     }
 
     try {
@@ -370,6 +387,19 @@ export default function CreatorPage() {
         </div>
         <Badge variant="info">Claude + GPT Image + Runway</Badge>
       </div>
+
+      {/* ── Campaign context banner ── */}
+      {campaignId && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 flex items-start gap-3">
+          <CalendarDays className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-blue-700">{campaignName ?? 'Campaign'}</p>
+            {milestoneTitle && <p className="text-xs text-blue-600 mt-0.5">Milestone: {milestoneTitle}{weekTheme ? ` · ${weekTheme}` : ''}</p>}
+            <p className="text-xs text-blue-400 mt-0.5">Content generated here will be linked to this campaign</p>
+          </div>
+          <a href="/agents/campaign" className="text-xs text-blue-500 hover:underline flex-shrink-0 mt-0.5">← Back to campaign</a>
+        </div>
+      )}
 
       {/* ── STEP 1: What do you want to create? ── */}
       <div>
@@ -1079,5 +1109,13 @@ export default function CreatorPage() {
       </div>
 
     </div>
+  )
+}
+
+export default function CreatorPage() {
+  return (
+    <Suspense fallback={null}>
+      <CreatorPageInner />
+    </Suspense>
   )
 }

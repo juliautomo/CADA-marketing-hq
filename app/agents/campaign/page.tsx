@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, ArrowRight, CheckCircle2, Circle, ExternalLink, Plus, X } from 'lucide-react'
+import { CalendarDays, ArrowRight, CheckCircle2, Circle, ExternalLink, Plus, X, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -256,38 +256,6 @@ export default function CampaignPage() {
                 </Card>
               )}
 
-              {/* Week-by-week plan */}
-              {Array.isArray(brief?.weeks) && brief.weeks.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-sm">4-Week Plan</CardTitle></CardHeader>
-                  <CardContent>
-                    <div className="space-y-5">
-                      {(brief.weeks as Array<{
-                        week: number
-                        theme: string
-                        milestones: Array<{ title: string; day_offset: number; description?: string }>
-                      }>).map((week) => (
-                        <div key={week.week}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">
-                              {week.week}
-                            </span>
-                            <span className="text-sm font-medium text-zinc-800">{week.theme}</span>
-                          </div>
-                          <div className="ml-8 space-y-1.5">
-                            {week.milestones.map((m, mi) => (
-                              <div key={mi} className="flex items-start gap-2 text-sm text-zinc-600">
-                                <Circle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-zinc-300" />
-                                <span>{m.title}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
               {/* Week plan */}
               {Array.isArray(brief?.weeks) && (brief.weeks as unknown[]).length > 0 && (
                 <Card>
@@ -306,17 +274,35 @@ export default function CampaignPage() {
                             <span className="text-sm font-semibold text-zinc-800">{week.theme}</span>
                           </div>
                           <div className="px-4 py-3 space-y-2">
-                            {week.milestones.map((m, mi) => (
+                            {week.milestones.map((m, mi) => {
+                              const globalIndex = (week.week - 1) * 10 + mi
+                              const params = new URLSearchParams({
+                                campaign_id: campaign!.id,
+                                milestone_index: String(globalIndex),
+                                campaign_name: campaign!.name,
+                                milestone_title: m.title,
+                                week_theme: week.theme,
+                              })
+                              return (
                               <div key={mi} className="space-y-0.5">
-                                <div className="flex items-start gap-2">
-                                  <Circle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-blue-300" />
-                                  <span className="text-sm font-medium text-zinc-700">{m.title}</span>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-start gap-2 min-w-0">
+                                    <Circle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-blue-300" />
+                                    <span className="text-sm font-medium text-zinc-700">{m.title}</span>
+                                  </div>
+                                  <a
+                                    href={`/agents/creator?${params.toString()}`}
+                                    className="flex-shrink-0 flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-800 border border-violet-200 hover:border-violet-400 rounded-lg px-2 py-1 bg-violet-50 hover:bg-violet-100 transition-colors"
+                                  >
+                                    <Sparkles className="w-3 h-3" /> Generate
+                                  </a>
                                 </div>
                                 {m.description && (
                                   <p className="text-xs text-zinc-400 ml-5 leading-relaxed">{m.description}</p>
                                 )}
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       ))}
