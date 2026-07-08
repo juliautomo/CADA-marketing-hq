@@ -21,12 +21,7 @@ const DURATION_OPTIONS = [
   { value: 8, label: '8 weeks' },
 ]
 
-const FREQUENCY_OPTIONS = [
-  { value: 3,  label: '3×/week',  sub: 'Mon · Wed · Fri' },
-  { value: 5,  label: '5×/week',  sub: 'Weekdays' },
-  { value: 7,  label: 'Daily',    sub: '7×/week' },
-  { value: 14, label: '2× daily', sub: '14×/week' },
-]
+const FREQUENCY_PRESETS = [3, 5, 7, 14]
 
 const CONTENT_TYPES = ['image', 'video', 'caption', 'story', 'email'] as const
 type ContentType = typeof CONTENT_TYPES[number]
@@ -229,13 +224,20 @@ export default function CampaignPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-600 mb-2">Posting Frequency</label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {FREQUENCY_OPTIONS.map(f => (
-                    <button key={f.value} onClick={() => setPostsPerWeek(f.value)} disabled={step !== 'form'}
-                      className={`px-2.5 py-2 rounded-lg text-left border transition-colors ${postsPerWeek === f.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'}`}>
-                      <p className={`text-xs font-semibold ${postsPerWeek === f.value ? 'text-white' : 'text-zinc-800'}`}>{f.label}</p>
-                      <p className={`text-[11px] ${postsPerWeek === f.value ? 'text-white/70' : 'text-zinc-400'}`}>{f.sub}</p>
+                <label className="block text-xs font-medium text-zinc-600 mb-2">
+                  Posting Frequency
+                  <span className="ml-1.5 font-bold text-zinc-900">{postsPerWeek}×/week</span>
+                  <span className="ml-1 font-normal text-zinc-400">= {postsPerWeek * durationWeeks} total posts</span>
+                </label>
+                <input type="range" min={1} max={21} value={postsPerWeek}
+                  onChange={e => setPostsPerWeek(Number(e.target.value))}
+                  disabled={step !== 'form'}
+                  className="w-full accent-blue-600 disabled:opacity-50" />
+                <div className="flex justify-between mt-1.5">
+                  {FREQUENCY_PRESETS.map(p => (
+                    <button key={p} onClick={() => setPostsPerWeek(p)} disabled={step !== 'form'}
+                      className={`text-xs px-2 py-0.5 rounded border transition-colors ${postsPerWeek === p ? 'bg-blue-600 text-white border-blue-600' : 'text-zinc-400 border-zinc-200 hover:border-zinc-400'}`}>
+                      {p}×
                     </button>
                   ))}
                 </div>
