@@ -247,13 +247,13 @@ export default function ProductsPage() {
           <p className="text-xs mt-1">Click "Add Product" to get started</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((p, i) => (
             <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
               <Card className={cn('h-full hover:shadow-sm transition-shadow', !p.active && 'opacity-50')}>
                 {p.image_url && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover rounded-t-2xl" />
+                  <img src={p.image_url} alt={p.name} className="w-full h-36 object-cover rounded-t-2xl" />
                 )}
                 <CardContent className="pt-4 pb-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
