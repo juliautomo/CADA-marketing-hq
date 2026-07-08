@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     // Use pre-generated brief if provided (from preview step), otherwise generate
     let brief: Record<string, unknown> = body.brief ?? {}
     let briefText = ''
-    let milestones: Array<{ title: string; day_offset: number; week: number }> = []
+    let milestones: Array<{ title: string; day_offset: number; week: number; platform?: string; content_type?: string }> = []
 
     if (Object.keys(brief).length === 0) {
       briefText = await generateText(
@@ -46,10 +46,11 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const weeks = (brief.weeks as Array<{ week: number; milestones: Array<{ title: string; day_offset: number }> }>) ?? []
-      milestones = weeks.flatMap((w) =>
-        w.milestones.map((m) => ({ title: m.title, day_offset: m.day_offset, week: w.week }))
-      )
+      const weeks = (brief.weeks as Array<{ week: number; posts?: Array<{ title: string; day_offset: number; platform?: string; content_type?: string }>; milestones?: Array<{ title: string; day_offset: number }> }>) ?? []
+      milestones = weeks.flatMap((w) => {
+        const items = w.posts ?? w.milestones ?? []
+        return items.map((m) => ({ title: m.title, day_offset: m.day_offset, week: w.week, platform: (m as Record<string, string>).platform, content_type: (m as Record<string, string>).content_type }))
+      })
     } catch {
       milestones = [
         { title: 'Content creation & assets', day_offset: 0, week: 1 },
@@ -106,12 +107,15 @@ export async function POST(req: NextRequest) {
       })
       .select().single()
 
-    const milestoneRows = milestones.map((m, i) => ({
+    const milestoneRows = milestones.map((m) => ({
       campaign_id: campaign!.id,
       title: m.title,
       due_date: format(addDays(startDate, m.day_offset), 'yyyy-MM-dd'),
       week_number: m.week,
       calendar_event_id: calendarEventIds[m.week - 1] ?? null,
+      platform: (m as Record<string, unknown>).platform ?? null,
+      content_type: (m as Record<string, unknown>).content_type ?? null,
+      status: 'not_started',
     }))
     await db.from('cada_campaign_milestones').insert(milestoneRows)
 

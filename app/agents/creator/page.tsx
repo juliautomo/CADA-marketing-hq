@@ -233,6 +233,10 @@ function CreatorPageInner() {
   useEffect(() => {
     if (milestoneTitle) setProduct(milestoneTitle)
     if (weekTheme) setTone(weekTheme.split(' ')[0])
+    const urlTask = searchParams.get('task') as ContentType | null
+    const urlPlatform = searchParams.get('platform')
+    if (urlTask && TASKS.find(t => t.id === urlTask)) setTask(urlTask)
+    if (urlPlatform) setPlatform(urlPlatform)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
