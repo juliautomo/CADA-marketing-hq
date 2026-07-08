@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       const weeks = (brief.weeks as Array<{ week: number; posts?: Array<{ title: string; day_offset: number; platform?: string; content_type?: string }>; milestones?: Array<{ title: string; day_offset: number }> }>) ?? []
       milestones = weeks.flatMap((w) => {
         const items = w.posts ?? w.milestones ?? []
-        return items.map((m) => ({ title: m.title, day_offset: m.day_offset, week: w.week, platform: (m as Record<string, string>).platform, content_type: (m as Record<string, string>).content_type }))
+        return items.map((m) => ({ title: m.title, day_offset: m.day_offset, week: w.week, platform: (m as Record<string, unknown>).platform as string | undefined, content_type: (m as Record<string, unknown>).content_type as string | undefined }))
       })
     } catch {
       milestones = [
