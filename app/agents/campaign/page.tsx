@@ -260,7 +260,7 @@ export default function CampaignPage() {
                 </Button>
               )}
               {step === 'preview' && (
-                <Button onClick={() => setStep('form')} variant="outline" className="w-full" size="sm">
+                <Button onClick={() => setStep('form')} variant="secondary" className="w-full" size="sm">
                   ← Edit Details
                 </Button>
               )}
