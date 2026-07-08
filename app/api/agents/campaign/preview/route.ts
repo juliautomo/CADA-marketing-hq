@@ -7,13 +7,17 @@ import { format, addDays } from 'date-fns'
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { name, description, startDate, theme, budget, channels, durationWeeks = 4, postsPerWeek = 5 } = body
+  const { name, description, startDate, theme, budget, channels, durationWeeks = 4, postsPerWeek = 5, products = [] } = body
   const db = createServiceClient()
   const ctx = await getBrandContext()
   const brandName    = ctx.raw.brand_name || 'Your Brand'
   const brandMarkets = ctx.raw.brand_markets || ''
   const brandIndustry = ctx.raw.brand_industry || 'fashion'
   const totalPosts   = durationWeeks * postsPerWeek
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const productLines = (products as any[]).map((p: any) =>
+    `- ${p.name}${p.category ? ` (${p.category})` : ''}${p.price ? ` · ${p.price}` : ''}${p.description ? `: ${p.description}` : ''}`
+  ).join('\n')
 
   const SYSTEM_PROMPT = ctx.systemPrompt('Campaign Planner') + `
 You are an expert marketing campaign strategist specialising in ${brandIndustry} brands.
@@ -41,6 +45,7 @@ Description: ${description}
 Theme: ${theme ?? `${brandIndustry} collection launch`}
 Budget: ${budget ?? 'not specified'}
 Channels: ${allowedChannels.join(', ')}
+${productLines ? `Products to feature:\n${productLines}\n\nEach post title should reference a specific product by name.` : ''}
 Start date: ${format(start, 'MMMM d, yyyy')}
 End date: ${format(end, 'MMMM d, yyyy')}
 Duration: ${durationWeeks} weeks

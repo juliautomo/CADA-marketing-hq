@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarDays, ArrowRight, CheckCircle2, ExternalLink, Plus, X, Sparkles, Pencil, Check, Circle, Image, Video, Type, Mail, BookImage } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
-import type { Campaign } from '@/types'
+import type { Campaign, Product } from '@/types'
 
 const channelOptions = ['Instagram', 'TikTok', 'Email', 'Pinterest', 'Facebook Ads', 'SMS', 'Influencer']
 
@@ -65,6 +65,19 @@ export default function CampaignPage() {
   const [durationWeeks, setDurationWeeks] = useState(4)
   const [postsPerWeek, setPostsPerWeek] = useState(5)
 
+  const [products, setProducts] = useState<Product[]>([])
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('/api/products').then(r => r.json()).then(d => setProducts(d.products ?? []))
+  }, [])
+
+  function toggleProduct(id: string) {
+    setSelectedProductIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])
+  }
+
+  const selectedProducts = products.filter(p => selectedProductIds.includes(p.id))
+
   const [step, setStep] = useState<'form' | 'previewing' | 'preview' | 'approving' | 'done'>('form')
   const [editableWeeks, setEditableWeeks] = useState<EditableWeek[]>([])
   const [editableSummary, setEditableSummary] = useState('')
@@ -92,7 +105,7 @@ export default function CampaignPage() {
       const res = await fetch('/api/agents/campaign/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, startDate, theme, budget, channels, durationWeeks, postsPerWeek }),
+        body: JSON.stringify({ name, description, startDate, theme, budget, channels, durationWeeks, postsPerWeek, products: selectedProducts }),
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error ?? 'Failed')
@@ -210,6 +223,35 @@ export default function CampaignPage() {
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">Budget <span className="text-zinc-400">(optional)</span></label>
                 <Input value={budget} onChange={e => setBudget(e.target.value)} placeholder="e.g. $5,000" disabled={step !== 'form'} />
               </div>
+
+              {products.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-2">
+                    Products <span className="text-zinc-400 font-normal">(optional)</span>
+                    {selectedProductIds.length > 0 && <span className="ml-1 text-blue-600">{selectedProductIds.length} selected</span>}
+                  </label>
+                  <div className="space-y-1.5">
+                    {products.map(p => {
+                      const selected = selectedProductIds.includes(p.id)
+                      return (
+                        <button key={p.id} onClick={() => toggleProduct(p.id)} disabled={step !== 'form'}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left transition-colors ${selected ? 'border-blue-400 bg-blue-50' : 'border-zinc-200 bg-white hover:border-zinc-300'}`}>
+                          {p.image_url
+                            ? <img src={p.image_url} alt={p.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                            : <div className="w-8 h-8 rounded bg-zinc-100 flex-shrink-0" />}
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-xs font-medium truncate ${selected ? 'text-blue-700' : 'text-zinc-700'}`}>{p.name}</p>
+                            {p.category && <p className="text-[11px] text-zinc-400">{p.category}</p>}
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selected ? 'border-blue-500 bg-blue-500' : 'border-zinc-300'}`}>
+                            {selected && <Check className="w-2.5 h-2.5 text-white" />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-2">Duration</label>
