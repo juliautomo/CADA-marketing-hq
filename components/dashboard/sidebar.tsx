@@ -111,8 +111,8 @@ export function Sidebar() {
       {/* Footer */}
       <div className="px-4 py-4 border-t border-zinc-100 space-y-1">
         <button onClick={handleSwitchClient}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 transition-colors">
-          <LogOut className="w-3.5 h-3.5" /> Switch client
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors">
+          <LogOut className="w-3.5 h-3.5" /> Sign out
         </button>
         <p className="text-xs text-zinc-400 px-3">Powered by Claude AI</p>
       </div>
