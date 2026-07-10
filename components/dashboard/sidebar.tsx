@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -16,6 +16,7 @@ import {
   Package,
   Settings,
   CalendarClock,
+  LogOut,
 } from 'lucide-react'
 
 const SECTIONS = [
@@ -48,6 +49,7 @@ const SECTIONS = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [brandName, setBrandName] = useState('')
 
   useEffect(() => {
@@ -56,6 +58,11 @@ export function Sidebar() {
       .then(d => { if (d.brand_name) setBrandName(d.brand_name) })
       .catch(() => {})
   }, [])
+
+  async function handleSwitchClient() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+  }
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 border-r border-zinc-200 bg-white flex flex-col z-40">
@@ -102,8 +109,12 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-zinc-100">
-        <p className="text-xs text-zinc-400">Powered by Claude AI</p>
+      <div className="px-4 py-4 border-t border-zinc-100 space-y-1">
+        <button onClick={handleSwitchClient}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 transition-colors">
+          <LogOut className="w-3.5 h-3.5" /> Switch client
+        </button>
+        <p className="text-xs text-zinc-400 px-3">Powered by Claude AI</p>
       </div>
     </aside>
   )

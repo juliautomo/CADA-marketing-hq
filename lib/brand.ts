@@ -11,7 +11,7 @@ export interface BrandContext {
   raw: Record<string, string>
 }
 
-export async function getBrandContext(): Promise<BrandContext> {
+export async function getBrandContext(clientId?: string | null): Promise<BrandContext> {
   const db = createServiceClient()
   const KEYS = [
     'brand_name', 'brand_handle', 'brand_description',
@@ -24,7 +24,10 @@ export async function getBrandContext(): Promise<BrandContext> {
     'brand_model_reference_url', 'brand_logo_url',
     'image_quality', 'drive_media_upload_enabled', 'drive_media_folder_id',
   ]
-  const { data } = await db.from('cada_settings').select('key, value').in('key', KEYS)
+  let query = db.from('cada_settings').select('key, value').in('key', KEYS)
+  if (clientId) query = query.eq('client_id', clientId)
+  else query = query.is('client_id', null)
+  const { data } = await query
   const raw: Record<string, string> = {}
   for (const row of data ?? []) {
     if (row.value && row.value !== 'null') {

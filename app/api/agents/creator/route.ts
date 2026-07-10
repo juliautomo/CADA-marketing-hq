@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id') ?? null
+  const ctx = await getBrandContext(clientId)
   const brandName     = ctx.raw.brand_name || 'Your Brand'
   const brandSubject  = ctx.raw.brand_subject_description || ''
   const brandHashtags = ctx.raw.brand_hashtags || ''
@@ -84,7 +85,7 @@ ${lenNote}
 Include relevant hashtags at the end (${brandHashtags}).`
         )
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, image_url: body.referenceImageUrl ?? null, tags: [body.platform ?? 'instagram', 'cada'], campaign_id: body.campaignId ?? null, milestone_index: body.milestoneIndex ?? null })
+          .insert({ type: 'caption', title: `Caption: ${body.product}`, body: text, image_url: body.referenceImageUrl ?? null, tags: [body.platform ?? 'instagram', 'cada'], campaign_id: body.campaignId ?? null, milestone_index: body.milestoneIndex ?? null, client_id: clientId })
           .select().single()
         result = { text, item: data }
         break
@@ -102,7 +103,7 @@ Include: key features, fabric/material benefits, who it's for, how to style it.
 End with sizing/care notes placeholder.`
         )
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'description', title: `Description: ${body.product}`, body: text, tags: ['shopee', 'cada'] })
+          .insert({ type: 'description', title: `Description: ${body.product}`, body: text, tags: ['shopee', 'cada'], client_id: clientId })
           .select().single()
         result = { text, item: data }
         break
@@ -121,7 +122,7 @@ Include:
 - Full email body with greeting, product highlight, styling tips, and CTA to ${brandEcommerce}`
         )
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'email', title: `Email: ${body.product ?? body.prompt}`, body: text, tags: ['email', 'cada'] })
+          .insert({ type: 'email', title: `Email: ${body.product ?? body.prompt}`, body: text, tags: ['email', 'cada'], client_id: clientId })
           .select().single()
         result = { text, item: data }
         break
@@ -154,7 +155,7 @@ Include:
         }
         const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `image-${Date.now()}.png`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'image', title: `Image: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt, provider }, tags: ['image', provider], campaign_id: body.campaignId ?? null, milestone_index: body.milestoneIndex ?? null })
+          .insert({ type: 'image', title: `Image: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { prompt: dallePrompt, provider }, tags: ['image', provider], campaign_id: body.campaignId ?? null, milestone_index: body.milestoneIndex ?? null, client_id: clientId })
           .select().single()
         result = { imageUrl, driveUrl, item: data }
         break
@@ -177,7 +178,7 @@ Include:
                                        await generateVideoRunway(videoPrompt, duration, refImage)
         const videoDriveUrl = driveEnabled ? await uploadMediaToDrive(videoUrl, `cada-video-${Date.now()}.mp4`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, drive_url: videoDriveUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider] })
+          .insert({ type: 'video', title: `Video: ${productDesc}`, video_url: videoUrl, drive_url: videoDriveUrl, metadata: { prompt: videoPrompt, duration, provider }, tags: ['video', 'cada', provider], client_id: clientId })
           .select().single()
         result = { videoUrl, driveUrl: videoDriveUrl, item: data }
         break
@@ -211,7 +212,7 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
               : await generateImage(imagePrompt, '1024x1536', imgQuality)
           const storyImgDriveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-story-${Date.now()}.png`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
-            .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, drive_url: storyImgDriveUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'] })
+            .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, drive_url: storyImgDriveUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'], client_id: clientId })
             .select().single()
           result = { imageUrl, caption, driveUrl: storyImgDriveUrl, item: data }
         } else {
@@ -225,7 +226,7 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
             : await generateVideoKling(videoPrompt, duration, refImage)
           const storyVidDriveUrl = driveEnabled ? await uploadMediaToDrive(videoUrl, `cada-story-video-${Date.now()}.mp4`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
-            .insert({ type: 'story', title: `Story Video: ${productDesc}`, video_url: videoUrl, drive_url: storyVidDriveUrl, body: caption, metadata: { prompt: videoPrompt, duration, provider, format: 'story_video' }, tags: ['story', 'instagram', 'cada', provider] })
+            .insert({ type: 'story', title: `Story Video: ${productDesc}`, video_url: videoUrl, drive_url: storyVidDriveUrl, body: caption, metadata: { prompt: videoPrompt, duration, provider, format: 'story_video' }, tags: ['story', 'instagram', 'cada', provider], client_id: clientId })
             .select().single()
           result = { videoUrl, caption, driveUrl: storyVidDriveUrl, item: data }
         }
@@ -239,7 +240,7 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
         const imageUrl = await runVirtualTryOn({ modelImageUrl: modelUrl, garmentImageUrl: garmentUrl })
         const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `tryon-${Date.now()}.jpg`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'tryon', title: `Try-On: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { garmentUrl, modelUrl }, tags: ['tryon'] })
+          .insert({ type: 'tryon', title: `Try-On: ${body.product ?? brandName}`, image_url: imageUrl, drive_url: driveUrl, metadata: { garmentUrl, modelUrl }, tags: ['tryon'], client_id: clientId })
           .select().single()
         result = { imageUrl, driveUrl, item: data }
         break
@@ -267,4 +268,5 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
+
 

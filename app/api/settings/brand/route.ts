@@ -13,9 +13,13 @@ const KEYS = [
   'product_catalog_config',
 ]
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id')
   const supabase = createServiceClient()
-  const { data } = await supabase.from('cada_settings').select('key, value').in('key', KEYS)
+  let query = supabase.from('cada_settings').select('key, value').in('key', KEYS)
+  if (clientId) query = query.eq('client_id', clientId)
+  else query = query.is('client_id', null)
+  const { data } = await query
   const result: Record<string, string> = {}
   for (const row of data ?? []) {
     result[row.key] = row.value === 'null' ? '' : (typeof row.value === 'string' ? row.value : JSON.stringify(row.value))
@@ -24,12 +28,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id')
   const body = await req.json()
   const supabase = createServiceClient()
   const updates = KEYS
     .filter(k => k in body)
-    .map(k => ({ key: k, value: body[k] || 'null', updated_at: new Date().toISOString() }))
+    .map(k => ({ key: k, value: body[k] || 'null', updated_at: new Date().toISOString(), client_id: clientId ?? null }))
   if (updates.length === 0) return NextResponse.json({ ok: true })
-  await supabase.from('cada_settings').upsert(updates)
+  await supabase.from('cada_settings').upsert(updates, { onConflict: 'key,client_id' })
   return NextResponse.json({ ok: true })
 }
