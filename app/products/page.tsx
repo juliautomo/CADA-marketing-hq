@@ -566,13 +566,22 @@ export default function ProductsPage() {
                         </button>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
-                        className="w-full rounded-xl border-2 border-dashed border-zinc-200 hover:border-violet-300 py-8 flex flex-col items-center gap-2 transition-colors">
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('border-violet-400', 'bg-violet-50') }}
+                        onDragLeave={e => { e.currentTarget.classList.remove('border-violet-400', 'bg-violet-50') }}
+                        onDrop={e => {
+                          e.preventDefault()
+                          e.currentTarget.classList.remove('border-violet-400', 'bg-violet-50')
+                          const f = e.dataTransfer.files?.[0]
+                          if (f) handleImageUpload(f)
+                        }}
+                        className="w-full rounded-xl border-2 border-dashed border-zinc-200 hover:border-violet-300 py-8 flex flex-col items-center gap-2 transition-colors cursor-pointer">
                         {uploading
                           ? <><div className="w-5 h-5 border-2 border-zinc-300 border-t-violet-500 rounded-full animate-spin" /><p className="text-xs text-zinc-400">Uploading…</p></>
-                          : <><Upload className="w-5 h-5 text-zinc-300" /><p className="text-xs text-zinc-400">Click to upload JPG or PNG</p></>
+                          : <><Upload className="w-5 h-5 text-zinc-300" /><p className="text-xs text-zinc-400">Click or drag &amp; drop JPG · PNG · WebP</p></>
                         }
-                      </button>
+                      </div>
                     )}
                   </div>
                 </div>
