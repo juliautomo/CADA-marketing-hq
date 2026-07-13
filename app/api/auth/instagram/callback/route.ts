@@ -53,10 +53,11 @@ export async function GET(req: NextRequest) {
   const pageWithIG = pages.find(p => p.instagram_business_account?.id)
 
   const supabase = createServiceClient()
+  const clientId = req.cookies.get('cada_client_id')?.value ?? null
 
   const upsertRows = [
-    { key: 'instagram_user_token', value: longLivedToken, updated_at: new Date().toISOString() },
-    { key: 'instagram_pages', value: JSON.stringify(pages), updated_at: new Date().toISOString() },
+    { key: 'instagram_user_token', value: longLivedToken, updated_at: new Date().toISOString(), client_id: clientId },
+    { key: 'instagram_pages', value: JSON.stringify(pages), updated_at: new Date().toISOString(), client_id: clientId },
   ]
 
   if (pageWithIG) {
@@ -70,15 +71,15 @@ export async function GET(req: NextRequest) {
     const igUsername = igData.username ?? igData.name ?? ''
 
     upsertRows.push(
-      { key: 'instagram_page_id', value: pageWithIG.id, updated_at: new Date().toISOString() },
-      { key: 'instagram_page_name', value: pageWithIG.name, updated_at: new Date().toISOString() },
-      { key: 'instagram_page_token', value: pageWithIG.access_token, updated_at: new Date().toISOString() },
-      { key: 'instagram_business_account_id', value: igId, updated_at: new Date().toISOString() },
-      { key: 'instagram_username', value: igUsername, updated_at: new Date().toISOString() },
+      { key: 'instagram_page_id', value: pageWithIG.id, updated_at: new Date().toISOString(), client_id: clientId },
+      { key: 'instagram_page_name', value: pageWithIG.name, updated_at: new Date().toISOString(), client_id: clientId },
+      { key: 'instagram_page_token', value: pageWithIG.access_token, updated_at: new Date().toISOString(), client_id: clientId },
+      { key: 'instagram_business_account_id', value: igId, updated_at: new Date().toISOString(), client_id: clientId },
+      { key: 'instagram_username', value: igUsername, updated_at: new Date().toISOString(), client_id: clientId },
     )
   }
 
-  await supabase.from('cada_settings').upsert(upsertRows)
+  await supabase.from('cada_settings').upsert(upsertRows, { onConflict: 'key,client_id' })
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=connections&success=instagram`)
 }

@@ -1,8 +1,9 @@
 export const dynamic = 'force-dynamic'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id')
   const supabase = createServiceClient()
 
   const keys = [
@@ -15,7 +16,10 @@ export async function POST() {
     'instagram_pages',
   ]
 
-  await supabase.from('cada_settings').delete().in('key', keys)
+  let query = supabase.from('cada_settings').delete().in('key', keys)
+  if (clientId) query = query.eq('client_id', clientId)
+  else query = query.is('client_id', null)
+  await query
 
   return NextResponse.json({ ok: true })
 }
