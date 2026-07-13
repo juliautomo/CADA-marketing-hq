@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} bg-zinc-50 text-zinc-900 antialiased`}>
         <Sidebar />
         <main className="ml-60 min-h-screen">
-          <div className="max-w-6xl mx-auto px-8 py-8">
+          <div className="px-8 py-8">
             {children}
           </div>
         </main>

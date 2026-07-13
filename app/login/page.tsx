@@ -77,8 +77,7 @@ function LoginPageInner() {
     })
     const data = await res.json()
     if (res.ok) {
-      router.push(next)
-      router.refresh()
+      window.location.href = next
     } else {
       setLoginError(data.error ?? 'Login failed')
       setLogging(false)
