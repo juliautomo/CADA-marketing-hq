@@ -1,8 +1,14 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
-import { clearClientCookie } from '@/lib/client-auth'
 
 export async function POST() {
-  await clearClientCookie()
-  return NextResponse.json({ ok: true })
+  const res = NextResponse.json({ ok: true })
+  res.cookies.set('cada_client_id', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  })
+  return res
 }

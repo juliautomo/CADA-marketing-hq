@@ -17,6 +17,13 @@ export async function POST(req: NextRequest) {
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   if (client.pin !== hashPin(pin)) return NextResponse.json({ error: 'Incorrect PIN' }, { status: 401 })
 
-  await setClientCookie(client.id)
-  return NextResponse.json({ ok: true, clientId: client.id, name: client.name })
+  const res = NextResponse.json({ ok: true, clientId: client.id, name: client.name })
+  res.cookies.set('cada_client_id', client.id, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  })
+  return res
 }
