@@ -51,8 +51,13 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [brandName, setBrandName] = useState('')
+  const [clientName, setClientName] = useState('')
 
   useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(d => { if (d.client?.name) setClientName(d.client.name) })
+      .catch(() => {})
     fetch('/api/settings/brand')
       .then(r => r.json())
       .then(d => { if (d.brand_name) setBrandName(d.brand_name) })
@@ -73,8 +78,8 @@ export function Sidebar() {
             <Layers className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-sm font-bold text-zinc-900 leading-none">{brandName || 'Marketing HQ'}</p>
-            <p className="text-xs text-zinc-400 leading-none mt-0.5">{brandName ? 'Marketing HQ' : 'Configure in Settings'}</p>
+            <p className="text-sm font-bold text-zinc-900 leading-none">{brandName || clientName || 'Marketing HQ'}</p>
+            <p className="text-xs text-zinc-400 leading-none mt-0.5">{clientName || 'Marketing HQ'}</p>
           </div>
         </div>
       </div>
