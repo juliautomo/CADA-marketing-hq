@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { name, description, startDate, theme, budget, channels, durationWeeks = 4, postsPerWeek = 5, products = [] } = body
   const db = createServiceClient()
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id') ?? null
+  const ctx = await getBrandContext(clientId)
   const brandName    = ctx.raw.brand_name || 'Your Brand'
   const brandMarkets = ctx.raw.brand_markets || ''
   const brandIndustry = ctx.raw.brand_industry || 'fashion'
@@ -26,7 +27,7 @@ Output structured JSON when asked.`
 
   const { data: run } = await db
     .from('cada_agent_runs')
-    .insert({ agent: 'campaign_planner', status: 'running', input: body })
+    .insert({ agent: 'campaign_planner', status: 'running', input: body, client_id: clientId })
     .select().single()
 
   try {

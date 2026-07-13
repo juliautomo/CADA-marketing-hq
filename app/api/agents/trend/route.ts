@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
   const start = Date.now()
   const body: TrendInput = await req.json()
   const db = createServiceClient()
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id') ?? null
+  const ctx = await getBrandContext(clientId)
   const brandName    = ctx.raw.brand_name || 'Your Brand'
   const brandMarkets = ctx.raw.brand_markets || ''
   const brandIndustry = ctx.raw.brand_industry || 'fashion'
@@ -67,7 +68,7 @@ FULL ANALYSIS:
 
   const { data: run } = await db
     .from('cada_agent_runs')
-    .insert({ agent: 'trend_analyst', status: 'running', input: body })
+    .insert({ agent: 'trend_analyst', status: 'running', input: body, client_id: clientId })
     .select()
     .single()
 
@@ -176,6 +177,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
         trending_creators,
         trending_content,
         raw_data: { focus: body.focus, season: body.season, market: body.market },
+        client_id: clientId,
       })
       .select()
       .single()

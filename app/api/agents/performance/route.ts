@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
   const start = Date.now()
   const body: PerformanceInput = await req.json()
   const db = createServiceClient()
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id') ?? null
+  const ctx = await getBrandContext(clientId)
   const brandName    = ctx.raw.brand_name || 'Your Brand'
   const brandChannels = ctx.raw.brand_channels || ''
   const SYSTEM_PROMPT = ctx.systemPrompt('Performance Analyst') + `
@@ -21,7 +22,7 @@ Provide clear, actionable insights with specific recommendations for improving p
 
   const { data: run } = await db
     .from('cada_agent_runs')
-    .insert({ agent: 'performance_reviewer', status: 'running', input: body })
+    .insert({ agent: 'performance_reviewer', status: 'running', input: body, client_id: clientId })
     .select()
     .single()
 

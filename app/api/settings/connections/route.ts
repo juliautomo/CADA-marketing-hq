@@ -18,9 +18,13 @@ const KEYS = [
   'drive_media_upload_enabled',
 ]
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id')
   const supabase = createServiceClient()
-  const { data } = await supabase.from('cada_settings').select('key, value').in('key', KEYS)
+  let query = supabase.from('cada_settings').select('key, value').in('key', KEYS)
+  if (clientId) query = query.eq('client_id', clientId)
+  else query = query.is('client_id', null)
+  const { data } = await query
   const result: Record<string, string> = {}
   for (const row of data ?? []) {
     result[row.key] = row.value === 'null' ? '' : (typeof row.value === 'string' ? row.value : JSON.stringify(row.value))
@@ -29,14 +33,13 @@ export async function GET() {
   // Auto-fetch Instagram username if missing
   if (!result.instagram_username && result.instagram_user_token) {
     try {
-      const token = result.instagram_page_token ?? result.instagram_user_token
       const igUserId = result.instagram_business_account_id
       if (igUserId) {
-        const r = await fetch(`https://graph.facebook.com/v25.0/${igUserId}?fields=username&access_token=${token}`)
+        const r = await fetch(`https://graph.facebook.com/v25.0/${igUserId}?fields=username&access_token=${result.instagram_user_token}`)
         const d = await r.json()
         if (d.username) {
           result.instagram_username = d.username
-          await supabase.from('cada_settings').upsert([{ key: 'instagram_username', value: d.username, updated_at: new Date().toISOString() }])
+          await supabase.from('cada_settings').upsert([{ key: 'instagram_username', value: d.username, updated_at: new Date().toISOString(), client_id: clientId ?? null }], { onConflict: 'key,client_id' })
         }
       }
     } catch { /* non-critical */ }
@@ -52,7 +55,7 @@ export async function GET() {
       const username = d.data?.user?.username ?? d.data?.user?.display_name
       if (username) {
         result.tiktok_username = username
-        await supabase.from('cada_settings').upsert([{ key: 'tiktok_username', value: username, updated_at: new Date().toISOString() }])
+        await supabase.from('cada_settings').upsert([{ key: 'tiktok_username', value: username, updated_at: new Date().toISOString(), client_id: clientId ?? null }], { onConflict: 'key,client_id' })
       }
     } catch { /* non-critical */ }
   }
@@ -61,12 +64,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id')
   const body = await req.json()
   const supabase = createServiceClient()
   const updates = KEYS
     .filter(k => k in body)
-    .map(k => ({ key: k, value: body[k] || 'null', updated_at: new Date().toISOString() }))
+    .map(k => ({ key: k, value: body[k] || 'null', updated_at: new Date().toISOString(), client_id: clientId ?? null }))
   if (updates.length === 0) return NextResponse.json({ ok: true })
-  await supabase.from('cada_settings').upsert(updates)
+  await supabase.from('cada_settings').upsert(updates, { onConflict: 'key,client_id' })
   return NextResponse.json({ ok: true })
 }

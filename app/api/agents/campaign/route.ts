@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
   const start = Date.now()
   const body: CampaignInput & { brief?: Record<string, unknown>; durationWeeks?: number } = await req.json()
   const db = createServiceClient()
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id') ?? null
+  const ctx = await getBrandContext(clientId)
   const brandName      = ctx.raw.brand_name || 'Your Brand'
   const brandEcommerce = ctx.raw.brand_ecommerce_platform || ''
   const durationWeeks  = body.durationWeeks ?? 4
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const { data: run } = await db
     .from('cada_agent_runs')
-    .insert({ agent: 'campaign_planner', status: 'running', input: body })
+    .insert({ agent: 'campaign_planner', status: 'running', input: body, client_id: clientId })
     .select()
     .single()
 
