@@ -638,6 +638,15 @@ function SettingsContent() {
     }).catch(() => setLoading(false))
   }, [])
 
+  // Re-fetch connections after successful OAuth so the connected badge shows immediately
+  useEffect(() => {
+    if (instagramStatus === 'success') {
+      fetch('/api/settings/connections').then(r => r.json()).then(c => {
+        setConnections(prev => ({ ...prev, ...c }))
+      }).catch(() => {})
+    }
+  }, [instagramStatus])
+
   async function handleSave() {
     setSaving(true)
     setSaved(false)
