@@ -76,10 +76,10 @@ export function ScheduleButton({ platform, mediaUrl, mediaType, caption, label }
     <div className="space-y-1.5">
       <button
         onClick={() => setOpen(o => !o)}
-        className={`flex items-center justify-center gap-2 w-full rounded-xl text-white text-sm font-semibold py-2.5 hover:opacity-90 transition-opacity ${gradientClass} opacity-80`}
+        className={`flex items-center gap-1.5 rounded-lg text-white text-xs font-semibold px-3 py-1.5 hover:opacity-90 transition-opacity ${gradientClass}`}
       >
-        <Clock className="w-4 h-4" />
-        {label ?? `Schedule for ${isInstagram ? 'Instagram' : 'TikTok'}`}
+        <Clock className="w-3.5 h-3.5" />
+        {label ?? 'Schedule'}
       </button>
 
       {open && (
