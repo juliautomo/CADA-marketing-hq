@@ -79,7 +79,7 @@ export function Sidebar() {
           </div>
           <div>
             <p className="text-sm font-bold text-zinc-900 leading-none">{brandName || clientName || 'Marketing HQ'}</p>
-            <p className="text-xs text-zinc-400 leading-none mt-0.5">{clientName || 'Marketing HQ'}</p>
+            <p className="text-xs text-zinc-400 leading-none mt-0.5">{clientName ? `${clientName} · Marketing HQ` : 'Marketing HQ'}</p>
           </div>
         </div>
       </div>
