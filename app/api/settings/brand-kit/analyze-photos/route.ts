@@ -7,18 +7,19 @@ import { createServiceClient } from '@/lib/supabase'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
-export async function POST() {
+export async function POST(req: import('next/server').NextRequest) {
   try {
+    const clientId = req.headers.get('x-client-id')
     const db = createServiceClient()
-    const ctx = await getBrandContext()
+    const ctx = await getBrandContext(clientId ?? undefined)
     const brandName = ctx.raw.brand_name || 'Your Brand'
     const brandIndustry = ctx.raw.brand_industry || ''
 
     // Fetch photos from library
-    const { data: photos, error } = await db
-      .from('cada_brand_photos')
-      .select('url')
-      .order('created_at', { ascending: false })
+    let photoQuery = db.from('cada_brand_photos').select('url').order('created_at', { ascending: false })
+    if (clientId) photoQuery = photoQuery.eq('client_id', clientId)
+    else photoQuery = photoQuery.is('client_id', null)
+    const { data: photos, error } = await photoQuery
     if (error) throw error
     if (!photos || photos.length === 0) return NextResponse.json({ error: 'No photos in library. Add some photos first.' }, { status: 400 })
 
@@ -89,6 +90,7 @@ For brand_colors: extract 3–6 dominant hex color codes actually observed in th
         brand_colors: analysis.brand_colors,
         shot_style: analysis.shot_style,
         negative_prompts: analysis.negative_prompts,
+        client_id: clientId ?? null,
       })
     } catch { /* history optional */ }
 

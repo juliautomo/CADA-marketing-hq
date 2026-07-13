@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   try {
+    const clientId = req.headers.get('x-client-id')
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const key = formData.get('key') as string | null
@@ -31,7 +32,8 @@ export async function POST(req: NextRequest) {
       key,
       value: publicUrl,
       updated_at: new Date().toISOString(),
-    })
+      client_id: clientId ?? null,
+    }, { onConflict: 'key,client_id' })
 
     return NextResponse.json({ url: publicUrl })
   } catch (e) {
