@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+import { headers } from 'next/headers'
 import { AgentCard } from '@/components/dashboard/agent-card'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { RecentRuns } from '@/components/dashboard/recent-runs'
@@ -40,14 +40,19 @@ const agents = [
   },
 ]
 
-async function getDashboardData() {
+async function getDashboardData(clientId: string | null) {
   try {
     const db = createServiceClient()
+    const cid = clientId
     const [runsRes, contentRes, campaignsRes, trendsRes] = await Promise.all([
-      db.from('cada_agent_runs').select('*').order('created_at', { ascending: false }).limit(8),
-      db.from('cada_content_items').select('id', { count: 'exact', head: true }),
-      db.from('cada_campaigns').select('id', { count: 'exact', head: true }),
-      db.from('cada_trend_reports').select('id', { count: 'exact', head: true }),
+      cid ? db.from('cada_agent_runs').select('*').eq('client_id', cid).order('created_at', { ascending: false }).limit(8)
+          : db.from('cada_agent_runs').select('*').is('client_id', null).order('created_at', { ascending: false }).limit(8),
+      cid ? db.from('cada_content_items').select('id', { count: 'exact', head: true }).eq('client_id', cid)
+          : db.from('cada_content_items').select('id', { count: 'exact', head: true }).is('client_id', null),
+      cid ? db.from('cada_campaigns').select('id', { count: 'exact', head: true }).eq('client_id', cid)
+          : db.from('cada_campaigns').select('id', { count: 'exact', head: true }).is('client_id', null),
+      cid ? db.from('cada_trend_reports').select('id', { count: 'exact', head: true }).eq('client_id', cid)
+          : db.from('cada_trend_reports').select('id', { count: 'exact', head: true }).is('client_id', null),
     ])
     return {
       runs: (runsRes.data ?? []) as AgentRun[],
@@ -61,7 +66,8 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
-  const { runs, contentCount, campaignCount, trendCount } = await getDashboardData()
+  const clientId = (await headers()).get('x-client-id')
+  const { runs, contentCount, campaignCount, trendCount } = await getDashboardData(clientId)
   const completedRuns = runs.filter((r) => r.status === 'completed').length
 
   return (
