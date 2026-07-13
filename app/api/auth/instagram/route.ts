@@ -13,6 +13,7 @@ export async function GET(req: import('next/server').NextRequest) {
     'instagram_content_publish',
     'instagram_manage_insights',
     'pages_manage_posts',
+    'business_management',
   ].join(',')
 
   const url = new URL('https://www.facebook.com/v25.0/dialog/oauth')
