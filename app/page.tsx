@@ -68,7 +68,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-zinc-900">CADA Marketing HQ</h1>
+        <h1 className="text-2xl font-bold text-zinc-900">Marketing HQ</h1>
         <p className="text-sm text-zinc-500 mt-1">Your AI-powered marketing command centre</p>
       </div>
 
