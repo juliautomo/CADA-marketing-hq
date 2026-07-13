@@ -298,15 +298,10 @@ function LoginPageInner() {
                   <input value={newName} onChange={e => setNewName(e.target.value)}
                     placeholder="Client name (e.g. Acme Fashion)" autoFocus
                     className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-zinc-400" />
-                  <input value={newSlug} onChange={e => setNewSlug(e.target.value)}
-                    placeholder="Slug (auto-generated)"
-                    className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-zinc-400 text-zinc-400" />
-                  <div className="relative">
-                    <input type="password" value={addPin} onChange={e => setAddPin(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                      placeholder="Set a PIN"
-                      className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-zinc-400 tracking-widest" />
-                  </div>
+                  <input type="password" value={addPin} onChange={e => setAddPin(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                    placeholder="Set a PIN"
+                    className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-zinc-400 tracking-widest" />
                 </div>
                 {createError && <p className="text-xs text-red-500">{createError}</p>}
                 <button onClick={handleCreate} disabled={!newName || !newSlug || !addPin || creating}
