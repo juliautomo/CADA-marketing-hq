@@ -21,10 +21,10 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Pass client_id as a header so API routes can read it without re-parsing cookies
-  const res = NextResponse.next()
-  res.headers.set('x-client-id', clientId)
-  return res
+  // Inject client_id into request headers so API routes can read it
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set('x-client-id', clientId)
+  return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
 export const config = {

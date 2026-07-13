@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   const pageWithIG = pages.find(p => p.instagram_business_account?.id)
 
   const supabase = createServiceClient()
-  const clientId = req.cookies.get('cada_client_id')?.value ?? null
+  const clientId = req.headers.get('x-client-id') ?? req.cookies.get('cada_client_id')?.value ?? null
 
   const upsertRows = [
     { key: 'instagram_user_token', value: longLivedToken, updated_at: new Date().toISOString(), client_id: clientId },
