@@ -2,14 +2,18 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
-export async function GET() {
+export async function GET(req: import('next/server').NextRequest) {
+  const clientId = req.headers.get('x-client-id')
   const supabase = createServiceClient()
 
   // Get Instagram token + business account ID
-  const { data: settingsRows } = await supabase
+  let settingsQuery = supabase
     .from('cada_settings')
     .select('key, value')
     .in('key', ['instagram_page_token', 'instagram_user_token', 'instagram_business_account_id'])
+  if (clientId) settingsQuery = settingsQuery.eq('client_id', clientId)
+  else settingsQuery = settingsQuery.is('client_id', null)
+  const { data: settingsRows } = await settingsQuery
 
   const settings: Record<string, string> = {}
   for (const row of settingsRows ?? []) {
