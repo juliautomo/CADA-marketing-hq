@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(req: import('next/server').NextRequest) {
   const appId = process.env.META_APP_ID
   if (!appId) return NextResponse.json({ error: 'Meta app ID not configured' }, { status: 500 })
 
@@ -20,7 +20,9 @@ export async function GET() {
   url.searchParams.set('redirect_uri', redirectUri)
   url.searchParams.set('scope', scope)
   url.searchParams.set('response_type', 'code')
-  url.searchParams.set('state', Math.random().toString(36).substring(2))
+  const clientId = req.headers.get('x-client-id') ?? req.cookies.get('cada_client_id')?.value ?? ''
+  const nonce = Math.random().toString(36).substring(2)
+  url.searchParams.set('state', `${nonce}.${clientId}`)
 
   return NextResponse.redirect(url.toString())
 }

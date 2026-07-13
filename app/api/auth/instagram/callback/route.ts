@@ -6,6 +6,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const state = searchParams.get('state') ?? ''
+  const clientIdFromState = state.includes('.') ? state.split('.').slice(1).join('.') : null
 
   if (error || !code) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=connections&error=instagram_denied`)
@@ -53,7 +55,7 @@ export async function GET(req: NextRequest) {
   const pageWithIG = pages.find(p => p.instagram_business_account?.id)
 
   const supabase = createServiceClient()
-  const clientId = req.headers.get('x-client-id') ?? req.cookies.get('cada_client_id')?.value ?? null
+  const clientId = clientIdFromState || req.headers.get('x-client-id') || req.cookies.get('cada_client_id')?.value || null
 
   const upsertRows = [
     { key: 'instagram_user_token', value: longLivedToken, updated_at: new Date().toISOString(), client_id: clientId },
