@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   const longLivedData = await longLivedRes.json()
   const longLivedToken = longLivedData.access_token ?? userToken
 
-  // Get pages the user manages
+  // Get pages the user manages (direct admin)
   const pagesRes = await fetch(
     `https://graph.facebook.com/v25.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${longLivedToken}`
   )
@@ -51,7 +51,18 @@ export async function GET(req: NextRequest) {
   let pages: Array<{ id: string; name: string; access_token: string; instagram_business_account?: { id: string } }> =
     pagesData.data ?? []
 
-// Find the page with an Instagram Business Account
+  // Fallback: check Business Manager pages if /me/accounts returned nothing
+  if (pages.length === 0) {
+    const bizRes = await fetch(
+      `https://graph.facebook.com/v25.0/me/businesses?fields=owned_pages{id,name,access_token,instagram_business_account}&access_token=${longLivedToken}`
+    )
+    const bizData = await bizRes.json()
+    for (const biz of bizData.data ?? []) {
+      pages = [...pages, ...(biz.owned_pages?.data ?? [])]
+    }
+  }
+
+  // Find the page with an Instagram Business Account
   const pageWithIG = pages.find(p => p.instagram_business_account?.id)
 
   const supabase = createServiceClient()
