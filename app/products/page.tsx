@@ -121,9 +121,24 @@ export default function ProductsPage() {
   async function handleImageUpload(file: File) {
     setUploading(true)
     try {
-      const ext  = file.name.split('.').pop()
-      const path = `${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+      // Compress before upload
+      const blob = await new Promise<Blob>((resolve) => {
+        const img = document.createElement('img')
+        const url = URL.createObjectURL(file)
+        img.onload = () => {
+          const MAX = 1200
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+          URL.revokeObjectURL(url)
+          canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.85)
+        }
+        img.src = url
+      })
+      const path = `${Date.now()}.jpg`
+      const { error } = await supabase.storage.from('product-images').upload(path, blob, { contentType: 'image/jpeg', upsert: true })
       if (error) throw error
       const { data } = supabase.storage.from('product-images').getPublicUrl(path)
       setForm(f => ({ ...f, image_url: data.publicUrl }))
