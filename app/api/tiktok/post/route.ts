@@ -4,11 +4,13 @@ import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const { videoUrl, caption, coverTimestamp = 0 } = await req.json()
+  const clientId = req.headers.get('x-client-id') ?? null
 
   const supabase = createServiceClient()
-  const { data } = await supabase.from('cada_settings')
-    .select('key, value')
-    .in('key', ['tiktok_access_token', 'tiktok_open_id', 'tiktok_post_mode'])
+  let settingsQuery = supabase.from('cada_settings').select('key, value').in('key', ['tiktok_access_token', 'tiktok_open_id', 'tiktok_post_mode'])
+  if (clientId) settingsQuery = settingsQuery.eq('client_id', clientId)
+  else settingsQuery = settingsQuery.is('client_id', null)
+  const { data } = await settingsQuery
 
   const settings: Record<string, string> = {}
   for (const row of data ?? []) {
@@ -93,6 +95,7 @@ export async function POST(req: NextRequest) {
       status: 'completed',
       input: { videoUrl, caption },
       output: { publish_id: publishId, open_id: openId },
+      client_id: clientId,
     }),
     supabase.from('cada_posts').insert({
       platform: 'tiktok',
@@ -101,6 +104,7 @@ export async function POST(req: NextRequest) {
       media_type: 'REELS',
       caption,
       source: 'manual',
+      client_id: clientId,
     }),
   ])
 

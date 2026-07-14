@@ -64,7 +64,7 @@ Keep recommendations practical for the brand's scale and market.`
     } catch { /* Google key not set */ }
 
     const { data: report } = await db.from('cada_performance_reports')
-      .insert({ title: body.title, metrics, insights, google_drive_url: driveUrl || null })
+      .insert({ title: body.title, metrics, insights, google_drive_url: driveUrl || null, client_id: clientId })
       .select().single()
 
     await db.from('cada_agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run!.id)

@@ -2,12 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id')
   const supabase = createServiceClient()
-  const { data } = await supabase
-    .from('cada_settings')
-    .select('key, value')
-    .in('key', ['automation_monday_trend_enabled', 'automation_daily_content_enabled'])
+  let query = supabase.from('cada_settings').select('key, value').in('key', ['automation_monday_trend_enabled', 'automation_daily_content_enabled'])
+  if (clientId) query = query.eq('client_id', clientId)
+  else query = query.is('client_id', null)
+  const { data } = await query
 
   const result: Record<string, boolean> = {
     'monday-trend': true,
@@ -30,8 +31,9 @@ export async function POST(req: NextRequest) {
   const key = keyMap[id]
   if (!key) return NextResponse.json({ error: 'Unknown automation' }, { status: 400 })
 
+  const clientId = req.headers.get('x-client-id')
   const supabase = createServiceClient()
-  await supabase.from('cada_settings').upsert({ key, value: enabled, updated_at: new Date().toISOString() })
+  await supabase.from('cada_settings').upsert({ key, value: enabled, updated_at: new Date().toISOString(), client_id: clientId ?? null }, { onConflict: 'key,client_id' })
   return NextResponse.json({ ok: true })
 }
 

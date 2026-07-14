@@ -29,8 +29,9 @@ function createSSE() {
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json()
   const db = createServiceClient()
+  const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
-  const ctx = await getBrandContext()
+  const ctx = await getBrandContext(clientId)
   const BASE = ctx.systemPrompt('Full Campaign Agent')
   const brandName      = ctx.raw.brand_name || 'Your Brand'
   const brandHashtags  = ctx.raw.brand_hashtags || ''
@@ -196,6 +197,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
         start_date: parsed.startDate,
         end_date: format(addDays(new Date(parsed.startDate), parsed.durationDays - 1), 'yyyy-MM-dd'),
         status: 'draft',
+        client_id: clientId,
         brief: {
           tagline: briefText.match(/Tagline[:\s]+(.+)/i)?.[1]?.trim() ?? '',
           concept: briefText,
@@ -220,6 +222,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
           campaign_id: campaign?.id,
         },
         tags: ['campaign', parsed.name.toLowerCase().replace(/\s+/g, '-'), day.platform.toLowerCase(), 'cada'],
+        client_id: clientId,
       }))
 
       await db.from('cada_content_items').insert(contentInserts)

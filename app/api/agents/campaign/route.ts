@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
         google_drive_url: driveUrl || null,
         calendar_event_ids: calendarEventIds,
         brief,
+        client_id: clientId,
       })
       .select().single()
 

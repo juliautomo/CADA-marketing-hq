@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
 
   if (!imageUrl) return NextResponse.json({ error: 'imageUrl required' }, { status: 400 })
 
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id') ?? null
+  const ctx = await getBrandContext(clientId)
   const brandName = ctx.raw.brand_name || 'Your Brand'
   const brandHashtags = ctx.raw.brand_hashtags || ''
   const brandIndustry = ctx.raw.brand_industry || ''
@@ -75,6 +76,7 @@ Include relevant hashtags at the end (${brandHashtags}).`
     body: caption,
     image_url: imageUrl,
     tags: ['instagram', 'caption', 'from-image'],
+    client_id: clientId,
   })
 
   return NextResponse.json({ caption })

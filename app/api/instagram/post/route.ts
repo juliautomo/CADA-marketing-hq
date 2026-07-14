@@ -4,12 +4,13 @@ import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const { mediaUrl, caption, mediaType = 'IMAGE' } = await req.json()
+  const clientId = req.headers.get('x-client-id') ?? null
 
   const supabase = createServiceClient()
-  const { data } = await supabase
-    .from('cada_settings')
-    .select('key, value')
-    .in('key', ['instagram_user_token', 'instagram_page_token', 'instagram_business_account_id', 'instagram_page_id'])
+  let settingsQuery = supabase.from('cada_settings').select('key, value').in('key', ['instagram_user_token', 'instagram_page_token', 'instagram_business_account_id', 'instagram_page_id'])
+  if (clientId) settingsQuery = settingsQuery.eq('client_id', clientId)
+  else settingsQuery = settingsQuery.is('client_id', null)
+  const { data } = await settingsQuery
 
   const settings: Record<string, string> = {}
   for (const row of data ?? []) {
@@ -34,21 +35,13 @@ export async function POST(req: NextRequest) {
       const pageData = await pageRes.json()
       igUserId = pageData.instagram_business_account?.id
     }
-    // Last resort: try known CADA page ID
-    if (!igUserId) {
-      const pageRes = await fetch(
-        `https://graph.facebook.com/v25.0/61582752606289?fields=instagram_business_account&access_token=${token}`
-      )
-      const pageData = await pageRes.json()
-      igUserId = pageData.instagram_business_account?.id
-    }
     if (!igUserId) {
       return NextResponse.json({ error: 'Instagram Business Account not found. Please reconnect in Settings.' }, { status: 400 })
     }
     // Save for next time
     await supabase.from('cada_settings').upsert([
-      { key: 'instagram_business_account_id', value: igUserId, updated_at: new Date().toISOString() },
-    ])
+      { key: 'instagram_business_account_id', value: igUserId, updated_at: new Date().toISOString(), client_id: clientId },
+    ], { onConflict: 'key,client_id' })
   }
 
   // Step 1: Create media container
@@ -113,6 +106,7 @@ export async function POST(req: NextRequest) {
       status: 'completed',
       input: { mediaUrl, caption, mediaType },
       output: { post_id: publishData.id, ig_user_id: igUserId },
+      client_id: clientId,
     }),
     supabase.from('cada_posts').insert({
       platform: 'instagram',
@@ -121,6 +115,7 @@ export async function POST(req: NextRequest) {
       media_type: mediaType,
       caption,
       source: 'manual',
+      client_id: clientId,
     }),
   ])
 

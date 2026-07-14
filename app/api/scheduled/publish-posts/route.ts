@@ -27,11 +27,12 @@ export async function GET(req: Request) {
 
   for (const post of posts) {
     try {
+      const clientHeader: Record<string, string> = post.client_id ? { 'x-client-id': post.client_id } : {}
       let res: Response
       if (post.platform === 'instagram') {
         res = await fetch(`${APP_URL}/api/instagram/post`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...clientHeader },
           body: JSON.stringify({
             mediaUrl: post.media_url,
             caption: post.caption,
@@ -41,7 +42,7 @@ export async function GET(req: Request) {
       } else if (post.platform === 'tiktok') {
         res = await fetch(`${APP_URL}/api/tiktok/post`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...clientHeader },
           body: JSON.stringify({
             videoUrl: post.media_url,
             caption: post.caption,
