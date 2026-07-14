@@ -56,7 +56,10 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
   // Use first library photo as style reference, fall back to manual uploads
   let referenceImageUrl: string | undefined = raw.brand_model_reference_url || undefined
   try {
-    const { data: libraryPhotos } = await db.from('cada_brand_photos').select('url').order('created_at', { ascending: false }).limit(1)
+    let photoQuery = db.from('cada_brand_photos').select('url').order('created_at', { ascending: false }).limit(1)
+    if (clientId) photoQuery = photoQuery.eq('client_id', clientId)
+    else photoQuery = photoQuery.is('client_id', null)
+    const { data: libraryPhotos } = await photoQuery
     if (libraryPhotos?.[0]?.url) referenceImageUrl = libraryPhotos[0].url
   } catch { /* fall back to manual reference */ }
 
