@@ -16,7 +16,7 @@ Extract and return a JSON object with these exact keys (leave value as empty str
   "brand_description": "1–2 sentence overview of what the brand sells and who it's for",
   "brand_voice": "Voice, tone, personality. Language style, words they use, words to avoid. 3–5 sentences.",
   "brand_target_customer": "Who the target customer is — age, lifestyle, values, location. 2–3 sentences.",
-  "brand_guidelines": "Content rules: what to show/not show, hashtags used, platform preferences, pricing format. 3–5 sentences.",
+  "brand_guidelines": "Infer practical content rules from the brand's tone, audience, and industry: what to always/never show, platform-specific tone (Instagram vs TikTok), pricing format, hashtag style. Write 3–5 sentences even if not explicitly stated.",
   "brand_caption_examples": "2–3 example captions in the brand's voice, written based on what you observed.",
   "brand_campaign_theme": "A suggested campaign theme based on current products, promotions, or seasonal focus. 2–3 sentences.",
   "brand_industry": "The industry or niche (e.g. fashion, skincare, F&B)",
