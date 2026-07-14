@@ -811,31 +811,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
-          {/* Products */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-500" />
-                <CardTitle className="text-base">Product Summary</CardTitle>
-              </div>
-              <CardDescription>
-                A text summary of your key products for AI agents. For full product management (images, colors, links) use the{' '}
-                <a href="/products" className="text-violet-600 underline">Product Catalog</a>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Field
-                label="Products"
-                description="One product per line: Name | Price | Notes"
-                placeholder={"Classic Linen Shirt | $39 | Relaxed fit, breathable\nHigh-Waist Trousers | $49 | Wide-leg, versatile"}
-                value={brand.brand_products_list}
-                onChange={v => updateBrand('brand_products_list', v)}
-                rows={5}
-              />
-            </CardContent>
-          </Card>
-
-
           <SaveBar onSave={handleSave} saving={saving} saved={saved} />
 
         </div>
