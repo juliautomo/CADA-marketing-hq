@@ -443,8 +443,8 @@ function CreatorPageInner() {
           2 — {needsPrompt ? 'Starting frame' : 'Add a reference'} <span className="normal-case font-normal text-zinc-300">(optional)</span>
         </p>
         <MediaReference
-          onImageAnalysis={(analysis) => { setImageAnalysis(analysis) }}
-          onVideoAnalysis={(analysis) => { setVideoAnalysis(analysis) }}
+          onImageAnalysis={(analysis) => { setImageAnalysis(analysis); setCaptionNotes(n => n || analysis.captionAngle) }}
+          onVideoAnalysis={(analysis) => { setVideoAnalysis(analysis); setCaptionNotes(n => n || analysis.captionAngle) }}
           onRawMedia={(url) => setRawMediaUrl(url)}
           onClear={() => { setImageAnalysis(null); setVideoAnalysis(null); setRawMediaUrl(null); setCaptionNotes('') }}
           platform={platform}
