@@ -269,12 +269,12 @@ function CreatorPageInner() {
     const imageContext = imageAnalysis
       ? `\n\nIMAGE REFERENCE:\n- Product: ${imageAnalysis.product}\n- Colors: ${imageAnalysis.colors.join(', ')}\n- Mood: ${imageAnalysis.mood}\n- Caption angle: ${imageAnalysis.captionAngle}\nWrite content inspired by this image.`
       : videoAnalysis
-      ? `\n\nVIDEO REFERENCE:\n- Product: ${videoAnalysis.product}\n- Colors: ${videoAnalysis.colors.join(', ')}\n- Mood: ${videoAnalysis.mood}\n- Setting: ${videoAnalysis.setting}\n- Caption angle: ${videoAnalysis.captionAngle}\nWrite content inspired by this video.`
+      ? `\n\nVIDEO REFERENCE:\n${videoAnalysis.description}\n\nItems shown: ${videoAnalysis.product}\nColors: ${videoAnalysis.colors.join(', ')}\nMood: ${videoAnalysis.mood}\nSetting: ${videoAnalysis.setting}\nWrite a caption that reflects everything shown in this video — not just one product.`
       : ''
 
     const body: CreatorInput = {
       task,
-      product:        product || selectedProduct?.name || imageAnalysis?.product || videoAnalysis?.product || undefined,
+      product:        product || selectedProduct?.name || imageAnalysis?.product || (videoAnalysis && !product ? undefined : videoAnalysis?.product) || undefined,
       platform,
       tone,
       language,

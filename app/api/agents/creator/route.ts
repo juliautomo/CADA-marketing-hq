@@ -77,9 +77,17 @@ Write content that is warm, elegant, and aspirational. Always output ONLY the re
       case 'caption': {
         const text = await generateText(
           SYSTEM_PROMPT,
-          `Write a ${body.platform ?? 'Instagram'} caption for ${brandName}'s product: ${body.product}.
+          body.additionalContext
+            ? `Write a ${body.platform ?? 'Instagram'} caption for ${brandName}.
 Tone: ${body.tone ?? 'elegant and aspirational'}.
-${body.additionalContext ? `IMPORTANT — use the following context to shape the caption's setting, mood, and angle. Do NOT write a generic product description; let the visual reference drive the creative direction:\n${body.additionalContext}\n` : ''}
+${langNote}
+${lenNote}
+Include relevant hashtags at the end (${brandHashtags}).
+
+REFERENCE CONTEXT — let this drive the caption's scope, products, mood, and angle. Cover everything shown, not just one item:
+${body.additionalContext}`
+            : `Write a ${body.platform ?? 'Instagram'} caption for ${brandName}'s product: ${body.product}.
+Tone: ${body.tone ?? 'elegant and aspirational'}.
 ${langNote}
 ${lenNote}
 Include relevant hashtags at the end (${brandHashtags}).`
