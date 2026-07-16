@@ -18,7 +18,8 @@ function driveToDirectUrl(input: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id')
+  const ctx = await getBrandContext(clientId)
   const brandName = ctx.raw.brand_name || 'Your Brand'
   const SYSTEM = ctx.systemPrompt('Fashion Image Analyst') + `
 You analyse images to extract styling insights and content opportunities for ${brandName}.`

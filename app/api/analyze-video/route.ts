@@ -19,7 +19,8 @@ export interface VideoAnalysis {
 }
 
 export async function POST(req: NextRequest) {
-  const ctx = await getBrandContext()
+  const clientId = req.headers.get('x-client-id')
+  const ctx = await getBrandContext(clientId)
   const brandName = ctx.raw.brand_name || 'Your Brand'
   const brandIndustry = ctx.raw.brand_industry || 'fashion'
   const SYSTEM = ctx.systemPrompt('Fashion Video Analyst') + `

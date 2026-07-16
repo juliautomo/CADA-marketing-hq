@@ -267,14 +267,14 @@ function CreatorPageInner() {
       : ''
 
     const imageContext = imageAnalysis
-      ? `\n\nIMAGE REFERENCE:\n- Product: ${imageAnalysis.product}\n- Colors: ${imageAnalysis.colors.join(', ')}\n- Mood: ${imageAnalysis.mood}\n- Caption angle: ${imageAnalysis.captionAngle}\nWrite content inspired by this image.`
+      ? `\n\nIMAGE REFERENCE:\n${imageAnalysis.description}\nColors: ${imageAnalysis.colors.join(', ')}\nMood: ${imageAnalysis.mood}\nStyling: ${imageAnalysis.styling}\nWrite a caption that reflects everything shown in this image.`
       : videoAnalysis
       ? `\n\nVIDEO REFERENCE:\n${videoAnalysis.description}\nColors: ${videoAnalysis.colors.join(', ')}\nMood: ${videoAnalysis.mood}\nSetting: ${videoAnalysis.setting}\nWrite a caption that reflects the full range of styling shown in this video.`
       : ''
 
     const body: CreatorInput = {
       task,
-      product:        product || selectedProduct?.name || imageAnalysis?.product || (videoAnalysis && !product ? undefined : videoAnalysis?.product) || undefined,
+      product:        product || selectedProduct?.name || undefined,
       platform,
       tone,
       language,
