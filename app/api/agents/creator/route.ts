@@ -80,11 +80,11 @@ Write content that is warm, elegant, and aspirational. Always output ONLY the re
           body.additionalContext
             ? `Write a ${body.platform ?? 'Instagram'} caption for ${brandName}.
 Tone: ${body.tone ?? 'elegant and aspirational'}.
-${langNote}
+${body.product ? `Products to feature: ${body.product}\n` : ''}${langNote}
 ${lenNote}
 Include relevant hashtags at the end (${brandHashtags}).
 
-REFERENCE CONTEXT — let this drive the caption's scope, products, mood, and angle. Cover everything shown, not just one item:
+REFERENCE CONTEXT — let this drive the caption's mood, angle, and scope. If products are listed above, make sure all of them are reflected:
 ${body.additionalContext}`
             : `Write a ${body.platform ?? 'Instagram'} caption for ${brandName}'s product: ${body.product}.
 Tone: ${body.tone ?? 'elegant and aspirational'}.
