@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import {
   TrendingUp, ArrowRight, Palette, Layers, Shirt,
-  Hash, Users, Video, ExternalLink, Play, ImageIcon,
+  Hash, Users, Video, ExternalLink, Play, ImageIcon, CalendarDays,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,7 @@ export default function TrendPage() {
   const [report, setReport] = useState<TrendReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [lightboxImg, setLightboxImg] = useState<string | null>(null)
+  const router = useRouter()
 
   async function handleAnalyze() {
     setLoading(true)
@@ -145,7 +147,20 @@ export default function TrendPage() {
 
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-zinc-700">{report.title}</h2>
-                <Badge variant="success">Saved to DB</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="success">Saved to DB</Badge>
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        theme: report.title,
+                        context: report.summary ?? '',
+                      })
+                      router.push(`/agents/campaign?${params.toString()}`)
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                    <CalendarDays className="w-3.5 h-3.5" /> Plan Campaign
+                  </button>
+                </div>
               </div>
 
               {/* ── Mood Board ── */}

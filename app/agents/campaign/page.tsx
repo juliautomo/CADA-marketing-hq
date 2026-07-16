@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CalendarDays, ArrowRight, CheckCircle2, ExternalLink, Plus, X, Sparkles, Pencil, Check, Circle, Image, Video, Type, Mail, BookImage } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -55,11 +56,12 @@ type EditableWeek = {
   posts: Post[]
 }
 
-export default function CampaignPage() {
+function CampaignPageInner() {
+  const searchParams = useSearchParams()
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const [description, setDescription] = useState(() => searchParams.get('context') ?? '')
   const [startDate, setStartDate] = useState('')
-  const [theme, setTheme] = useState('')
+  const [theme, setTheme] = useState(() => searchParams.get('theme') ?? '')
   const [budget, setBudget] = useState('')
   const [channels, setChannels] = useState<string[]>(['Instagram', 'TikTok'])
   const [durationWeeks, setDurationWeeks] = useState(4)
@@ -574,5 +576,13 @@ export default function CampaignPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CampaignPage() {
+  return (
+    <Suspense>
+      <CampaignPageInner />
+    </Suspense>
   )
 }
