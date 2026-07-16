@@ -354,7 +354,7 @@ export function MediaReference({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-zinc-800 mb-0.5">{imageAnalysis.product}</p>
-                      <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{imageAnalysis.description}</p>
+                      <p className="text-xs text-zinc-500 leading-relaxed">{imageAnalysis.description}</p>
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {imageAnalysis.colors.map((c) => (
                           <span key={c} className="text-xs bg-white border border-zinc-200 px-2 py-0.5 rounded-full text-zinc-600">
@@ -383,7 +383,7 @@ export function MediaReference({
                         <VideoIcon className="w-3 h-3 text-zinc-400" />
                         <p className="text-sm font-semibold text-zinc-800">{videoAnalysis.product}</p>
                       </div>
-                      <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{videoAnalysis.description}</p>
+                      <p className="text-xs text-zinc-500 leading-relaxed">{videoAnalysis.description}</p>
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {videoAnalysis.colors.map((c) => (
                           <span key={c} className="text-xs bg-white border border-zinc-200 px-2 py-0.5 rounded-full text-zinc-600">{c}</span>
