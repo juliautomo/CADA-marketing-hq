@@ -54,10 +54,10 @@ const STEP_DEFS = [
 ]
 
 const EXAMPLES = [
-  'Launch our Eid collection on June 1st targeting Indonesian Muslims',
-  'Run a back-to-school modest fashion campaign starting next Monday',
-  'Promote our new linen pants collection for Singapore market in July',
-  'Create a Raya Aidiladha campaign for TikTok and Shopee starting June 20',
+  'Launch our new collection on the 1st of next month targeting our core audience',
+  'Run a mid-year sale campaign starting next Monday across Instagram and TikTok',
+  'Promote our hero product for the Singapore market in July',
+  'Create a seasonal campaign for TikTok and Instagram starting next week',
 ]
 
 export default function FullCampaignPage() {

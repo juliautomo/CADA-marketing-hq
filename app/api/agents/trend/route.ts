@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const brandIndustry = ctx.raw.brand_industry || 'fashion'
   const SYSTEM_PROMPT = ctx.systemPrompt('Trend Analyst') + `
 
-You are a leading fashion trend analyst specialising in modest fashion and Southeast Asian markets.
+You are a leading trend analyst specialising in ${brandIndustry} and ${brandMarkets || 'Southeast Asian'} markets.
 Today's date is ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
 
 You MUST respond using EXACTLY this format with these exact section headers — no deviations:
@@ -145,7 +145,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
     // â”€â”€ Pexels mood board â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Build search query from top styles + focus
     const imageQuery = [
-      body.focus ?? 'modest fashion hijab',
+      body.focus ?? brandIndustry ?? 'fashion',
       styles[0] ?? '',
       colors[0] ?? '',
     ].filter(Boolean).join(' ')

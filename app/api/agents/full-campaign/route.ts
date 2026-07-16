@@ -292,7 +292,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
       try {
         for (let w = 0; w < 4; w++) {
           const eventId = await createCalendarEvent({
-            summary: `CADA â€” ${parsed.name} Â· Week ${w + 1}`,
+            summary: `${brandName} — ${parsed.name} · Week ${w + 1}`,
             description: `Campaign week ${w + 1}. Theme: ${parsed.theme}`,
             startDate: format(addDays(new Date(parsed.startDate), w * 7), 'yyyy-MM-dd'),
             endDate: format(addDays(new Date(parsed.startDate), w * 7 + 6), 'yyyy-MM-dd'),

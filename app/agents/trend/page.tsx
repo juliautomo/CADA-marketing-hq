@@ -15,7 +15,6 @@ import type { TrendReport } from '@/types'
 
 const seasons = ['Current Season', 'Spring/Summer 2026', 'Fall/Winter 2026', 'Resort 2026']
 const markets = ['Indonesia & Singapore', 'Indonesia', 'Singapore', 'Global', 'SEA', 'Luxury']
-const focuses = ['Muslimwear', 'Modest Womenswear', 'Hijab Fashion', 'Modest Casual', 'Modest Formal', 'Modest Streetwear']
 
 const platformColors = {
   tiktok: 'bg-zinc-900 text-white',
@@ -26,12 +25,18 @@ export default function TrendPage() {
   const [brandName, setBrandName] = useState('')
   const [season, setSeason] = useState('Current Season')
   const [market, setMarket] = useState('Indonesia & Singapore')
-  const [focus, setFocus] = useState('Muslimwear')
+  const [focus, setFocus] = useState('')
 
   useEffect(() => {
-    fetch('/api/settings/brand').then(r => r.json()).then(d => { if (d.brand_name) setBrandName(d.brand_name) }).catch(() => {})
+    fetch('/api/settings/brand').then(r => r.json()).then(d => {
+      if (d.brand_name) setBrandName(d.brand_name)
+      if (d.brand_industry) {
+        setBrandIndustry(d.brand_industry)
+        setFocus(d.brand_industry)
+      }
+    }).catch(() => {})
   }, [])
-  const [customFocus, setCustomFocus] = useState('')
+  const [brandIndustry, setBrandIndustry] = useState('')
   const [loading, setLoading] = useState(false)
   const [report, setReport] = useState<TrendReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +51,7 @@ export default function TrendPage() {
       const res = await fetch('/api/agents/trend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ season, market, focus: customFocus || focus }),
+        body: JSON.stringify({ season, market, focus }),
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error ?? 'Failed')
@@ -108,15 +113,7 @@ export default function TrendPage() {
 
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-2">Category Focus</label>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {focuses.map((f) => (
-                    <button key={f} onClick={() => { setFocus(f); setCustomFocus('') }}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${focus === f && !customFocus ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'}`}>
-                      {f}
-                    </button>
-                  ))}
-                </div>
-                <Input value={customFocus} onChange={(e) => setCustomFocus(e.target.value)} placeholder="Or type a custom focus…" className="text-sm" />
+                <Input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder={brandIndustry || 'e.g. modest fashion, F&B, skincare…'} className="text-sm" />
               </div>
 
               <Button onClick={handleAnalyze} loading={loading} className="w-full" size="lg">
