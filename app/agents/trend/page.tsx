@@ -113,7 +113,12 @@ export default function TrendPage() {
 
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-2">Category Focus</label>
-                <Input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder={brandIndustry || 'e.g. modest fashion, F&B, skincare…'} className="text-sm" />
+                <textarea
+                  value={focus}
+                  onChange={(e) => setFocus(e.target.value)}
+                  placeholder={brandIndustry || 'e.g. modest fashion, F&B, skincare…'}
+                  rows={2}
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none" />
               </div>
 
               <Button onClick={handleAnalyze} loading={loading} className="w-full" size="lg">
