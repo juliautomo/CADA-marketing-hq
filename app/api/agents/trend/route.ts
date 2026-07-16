@@ -162,7 +162,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
     }))
 
     // â”€â”€ Save to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const title = `Trend Report â€” ${body.season ?? 'Current Season'} ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}${body.focus ? ` Â· ${body.focus}` : ' Â· Modest Fashion'}`
+    const title = `Trend Report — ${body.season ?? 'Current Season'} ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}${body.focus ? ` · ${body.focus}` : brandIndustry ? ` · ${brandIndustry}` : ''}`
 
     const { data: report } = await db
       .from('cada_trend_reports')

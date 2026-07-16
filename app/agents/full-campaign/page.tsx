@@ -170,7 +170,7 @@ export default function FullCampaignPage() {
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleLaunch() } }}
                   rows={3}
-                  placeholder='e.g. "Launch our Eid collection on June 1st targeting Indonesian Muslim women"'
+                  placeholder='e.g. "Launch our new collection on June 1st targeting our core audience"'
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                 />
               </div>

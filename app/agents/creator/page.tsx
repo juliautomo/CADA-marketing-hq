@@ -511,7 +511,7 @@ function CreatorPageInner() {
                   onChange={(e) => setProduct(e.target.value)}
                   placeholder={
                     selectedProduct ? 'e.g. focus on the relaxed fit, style it with sandals…' :
-                    task === 'email' ? 'e.g. Raya Eid Collection launch' :
+                    task === 'email' ? 'e.g. New Collection launch' :
                     task === 'canva' ? 'e.g. Linen wide-leg pants' :
                     'e.g. silk slip dress in champagne'
                   }

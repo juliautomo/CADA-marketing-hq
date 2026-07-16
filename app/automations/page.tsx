@@ -30,7 +30,7 @@ const AUTOMATIONS: Automation[] = [
   {
     id: 'monday-trend',
     name: 'Monday Trend Brief',
-    description: 'Every Monday at 8am WIB: researches latest modest fashion trends for Indonesia & Singapore, saves report to DB and Google Drive.',
+    description: 'Every Monday at 8am WIB: researches latest trends for your brand\'s industry and market, saves report to DB and Google Drive.',
     schedule: '0 1 * * 1',
     scheduleHuman: 'Every Monday at 8:00 AM WIB',
     endpoint: '/api/scheduled/monday-trend',
@@ -41,7 +41,7 @@ const AUTOMATIONS: Automation[] = [
   {
     id: 'daily-content',
     name: 'Daily Content Queue',
-    description: 'Every day at 9am WIB: generates 3 ready-to-post content ideas for CADA\'s top products. Saves to content library and creates Todoist tasks.',
+    description: 'Every day at 9am WIB: generates 3 ready-to-post content ideas for your top products. Saves to content library and creates Todoist tasks.',
     schedule: '0 2 * * *',
     scheduleHuman: 'Every day at 9:00 AM WIB',
     endpoint: '/api/scheduled/daily-content',

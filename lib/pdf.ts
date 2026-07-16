@@ -40,7 +40,7 @@ export function generateCampaignBriefPDF(data: CampaignBriefData): Promise<Buffe
 
     doc.fillColor(WHITE)
        .fontSize(26).font('Helvetica-Bold')
-       .text('CADA Marketing HQ', L, 35, { width: W })
+       .text('Marketing HQ', L, 35, { width: W })
 
     doc.fontSize(13).font('Helvetica')
        .text('Campaign Brief', L, 68)
@@ -131,7 +131,7 @@ export function generateCampaignBriefPDF(data: CampaignBriefData): Promise<Buffe
       doc.switchToPage(i)
       doc.fillColor(ZINC400).fontSize(8).font('Helvetica')
          .text(
-           `CADA Marketing HQ  ·  Confidential  ·  Page ${i + 1} of ${pages.count}`,
+           `Marketing HQ  ·  Confidential  ·  Page ${i + 1} of ${pages.count}`,
            L, doc.page.height - 35,
            { width: W, align: 'center' }
          )

@@ -1064,7 +1064,7 @@ function SettingsContent() {
             <CardContent className="grid grid-cols-2 gap-4">
               <ImageUploadField
                 label="Model Reference"
-                description="Consistent model look — face, hijab style, body type."
+                description="Consistent model look — face, style, body type."
                 settingKey="brand_model_reference_url"
                 value={visualKit.brand_model_reference_url}
                 onChange={v => updateVisualKit('brand_model_reference_url', v)}
@@ -1117,7 +1117,7 @@ function SettingsContent() {
               <Field
                 label="Style Prefix"
                 description="Photography style, lighting, and mood — injected at the start of every image prompt."
-                placeholder="e.g. Soft natural daylight, warm editorial lighting, modest fashion photography, clean minimalist background, professional brand photography"
+                placeholder="e.g. Soft natural daylight, warm editorial lighting, clean minimalist background, professional brand photography"
                 value={visualKit.brand_style_prefix}
                 onChange={v => updateVisualKit('brand_style_prefix', v)}
                 rows={3}

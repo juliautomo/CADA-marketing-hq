@@ -75,8 +75,8 @@ export async function analyzeImage(
       ? { type: 'image', source: { type: 'url', url: source.url } }
       : { type: 'image', source: { type: 'base64', media_type: source.mediaType, data: source.data } }
 
-  const system = systemContext ?? `You are a fashion analyst and content strategist for CADA, an Indonesian modest fashion brand.
-Analyse fashion images with expert precision — identifying garments, styling, colors, silhouettes, and content opportunities.`
+  const system = systemContext ?? `You are a visual content analyst and content strategist.
+Analyse images with expert precision — identifying products, styling, colors, and content opportunities.`
 
   const message = await getClient().messages.create({
     model: 'claude-sonnet-4-5',
@@ -89,15 +89,15 @@ Analyse fashion images with expert precision — identifying garments, styling, 
           imageBlock,
           {
             type: 'text',
-            text: `Analyse this fashion image for CADA's content strategy. Return ONLY valid JSON matching this exact shape:
+            text: `Analyse this image for content strategy. Return ONLY valid JSON matching this exact shape:
 {
-  "description": "Describe everything visible — list ALL garments/products shown, how each is styled, outfit combinations, setting, and mood. If no specific product is shown (e.g. lifestyle or setting shot), describe the scene. Be specific and comprehensive.",
-  "product": "ALL garments and products visible, comma-separated. If none, write 'none'.",
+  "description": "Describe everything visible — list ALL products/items shown, how each is styled or presented, setting, and mood. If no specific product is shown (e.g. lifestyle or setting shot), describe the scene. Be specific and comprehensive.",
+  "product": "ALL products and items visible, comma-separated. If none, write 'none'.",
   "colors": ["color1", "color2", "color3"],
-  "silhouette": "description of the garment silhouette and cut, or 'n/a' if no garment shown",
-  "styling": "how the outfit is styled — layers, accessories, etc. Or describe the scene if no outfit.",
+  "silhouette": "description of the shape/form of the main product or subject, or 'n/a' if not applicable",
+  "styling": "how the subject is styled or presented — layers, accessories, plating, props, etc. Or describe the scene.",
   "mood": "the aesthetic mood and vibe of the image",
-  "dallePrompt": "a detailed DALL-E 3 prompt to generate a similar editorial fashion image with a Muslim woman wearing hijab, in the same style and mood",
+  "dallePrompt": "a detailed DALL-E 3 prompt to generate a similar editorial image in the same style, mood, and composition",
   "captionAngle": "the strongest hook or angle for a social media caption covering everything shown — not just one item",
   "contentIdeas": ["idea 1", "idea 2", "idea 3"]
 }`,
