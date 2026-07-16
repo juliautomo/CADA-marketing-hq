@@ -64,12 +64,12 @@ Tone: ${tone ?? 'Aspirational'}
 
 Analyse the video frames and return ONLY valid JSON matching this exact shape:
 {
-  "description": "What is happening in this video — movement, styling, setting",
-  "product": "The main garment or product being shown",
+  "description": "What is happening in this video — list ALL products/garments shown, how they are styled, the outfit combinations, movement, and setting. Be specific and mention every item featured.",
+  "product": "ALL garments and products shown in this video, comma-separated (e.g. navy wide-leg trousers, denim culottes, butter yellow shirt, cream fitted tee)",
   "colors": ["color1", "color2"],
   "mood": "The aesthetic mood and vibe",
   "setting": "Where it's filmed",
-  "captionAngle": "The strongest hook or angle for a social media caption",
+  "captionAngle": "The strongest hook or angle for a social media caption that covers all the products shown — not just one item",
   "captions": {
     "instagram": "Full ready-to-post Instagram caption with emojis and hashtags (max 2200 chars)",
     "tiktok": "Full ready-to-post TikTok caption with trending hashtags (punchy, max 300 chars)"
