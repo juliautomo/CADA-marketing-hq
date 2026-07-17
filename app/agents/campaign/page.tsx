@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { CalendarDays, ArrowRight, CheckCircle2, ExternalLink, Plus, X, Sparkles, Pencil, Check, Circle, Image, Video, Type, Mail, BookImage } from 'lucide-react'
+import { CalendarDays, ArrowRight, CheckCircle2, ExternalLink, Plus, X, Sparkles, Pencil, Check, Circle, Image, Video, Type, Mail, BookImage, Archive, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -87,6 +87,8 @@ function CampaignPageInner() {
   const [editingCell, setEditingCell] = useState<{ wi: number; pi: number; field: string } | null>(null)
   const [brief, setBrief] = useState<Record<string, unknown>>({})
 
+  const [isEditingDone, setIsEditingDone] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [savedMilestones, setSavedMilestones] = useState<Array<{
     id: string; title: string; due_date: string; platform?: string; content_type?: string;
@@ -172,6 +174,37 @@ function CampaignPageInner() {
     setEditableWeeks(weeks => weeks.map((w, i) =>
       i !== wi ? w : { ...w, posts: [...w.posts, { day_offset: wi * 7, platform: channels[0] ?? 'Instagram', content_type: 'image', title: 'New post' }] }
     ))
+  }
+
+  async function handleSavePlan() {
+    if (!campaign) return
+    setIsSaving(true)
+    await fetch(`/api/campaigns/${campaign.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: editableSummary, objective: editableObjective }),
+    })
+    setIsSaving(false)
+    setIsEditingDone(false)
+  }
+
+  async function handleArchive() {
+    if (!campaign) return
+    if (!confirm('Archive this campaign? It will be hidden from the active view.')) return
+    await fetch(`/api/campaigns/${campaign.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'archived' }),
+    })
+    // Reset to form for a new campaign
+    setStep('form')
+    setCampaign(null)
+    setName('')
+    setDescription('')
+    setStartDate('')
+    setTheme('')
+    setEditableWeeks([])
+    setIsEditingDone(false)
   }
 
   const formValid = !!(name && description && startDate)
@@ -471,14 +504,44 @@ function CampaignPageInner() {
               {/* Overview card */}
               <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
                 <CardContent className="pt-5 space-y-3">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <h2 className="font-bold text-zinc-900 text-lg">{campaign.name}</h2>
                       <p className="text-xs text-zinc-500 mt-0.5">{formatDate(campaign.start_date)} → {formatDate(campaign.end_date)} · {totalPosts} posts</p>
                     </div>
                     <Badge variant="info">Active</Badge>
                   </div>
-                  {editableSummary && <p className="text-sm text-zinc-700 leading-relaxed">{editableSummary}</p>}
+                  {isEditingDone ? (
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-400 mb-1">Summary</p>
+                        <Textarea value={editableSummary} onChange={e => setEditableSummary(e.target.value)} rows={4} className="text-sm bg-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-400 mb-1">Objective</p>
+                        <Textarea value={editableObjective} onChange={e => setEditableObjective(e.target.value)} rows={2} className="text-sm bg-white" />
+                      </div>
+                    </div>
+                  ) : (
+                    editableSummary && <p className="text-sm text-zinc-700 leading-relaxed">{editableSummary}</p>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    {isEditingDone ? (
+                      <>
+                        <Button onClick={handleSavePlan} loading={isSaving} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                          <Save className="w-3.5 h-3.5" /> Save Plan
+                        </Button>
+                        <Button onClick={() => setIsEditingDone(false)} variant="secondary" size="sm">Cancel</Button>
+                      </>
+                    ) : (
+                      <Button onClick={() => setIsEditingDone(true)} variant="secondary" size="sm">
+                        <Pencil className="w-3.5 h-3.5" /> Edit Plan
+                      </Button>
+                    )}
+                    <Button onClick={handleArchive} variant="secondary" size="sm" className="ml-auto text-zinc-400 hover:text-red-500">
+                      <Archive className="w-3.5 h-3.5" /> Archive
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 

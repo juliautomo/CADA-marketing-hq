@@ -54,3 +54,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   return NextResponse.json({ campaign, milestones: milestonesWithStatus })
 }
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const db = createServiceClient()
+  const body = await req.json()
+
+  const { status, summary, objective } = body
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (status !== undefined) updates.status = status
+  if (summary !== undefined) updates.summary = summary
+  if (objective !== undefined) updates.objective = objective
+
+  const { error } = await db.from('cada_campaigns').update(updates).eq('id', id)
+  if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+
+  return NextResponse.json({ success: true })
+}
