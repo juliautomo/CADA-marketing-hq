@@ -380,24 +380,31 @@ function CampaignPageInner() {
               {/* Editable content calendar per week */}
               {editableWeeks.map((week, wi) => (
                 <Card key={wi}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">{week.week}</span>
-                        {editingCell?.wi === wi && editingCell?.field === 'theme' ? (
-                          <input autoFocus value={week.theme}
-                            onChange={e => setEditableWeeks(weeks => weeks.map((w, i) => i !== wi ? w : { ...w, theme: e.target.value }))}
-                            onBlur={() => setEditingCell(null)}
-                            onKeyDown={e => e.key === 'Enter' && setEditingCell(null)}
-                            className="text-sm font-semibold border border-blue-300 rounded px-2 py-0.5 outline-none" />
-                        ) : (
-                          <button onClick={() => setEditingCell({ wi, pi: -1, field: 'theme' })}
-                            className="text-sm font-semibold text-zinc-800 hover:text-blue-600 flex items-center gap-1 group">
-                            {week.theme} <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-40" />
-                          </button>
-                        )}
+                  <CardHeader className="pb-3 border-b border-zinc-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0 text-center">
+                          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold text-sm flex items-center justify-center">{week.week}</div>
+                          <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">WEEK</p>
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider mb-0.5">Theme</p>
+                          {editingCell?.wi === wi && editingCell?.field === 'theme' ? (
+                            <input autoFocus value={week.theme}
+                              onChange={e => setEditableWeeks(weeks => weeks.map((w, i) => i !== wi ? w : { ...w, theme: e.target.value }))}
+                              onBlur={() => setEditingCell(null)}
+                              onKeyDown={e => e.key === 'Enter' && setEditingCell(null)}
+                              className="w-full text-sm font-semibold border border-blue-300 rounded px-2 py-0.5 outline-none" />
+                          ) : (
+                            <button onClick={() => setEditingCell({ wi, pi: -1, field: 'theme' })}
+                              className="text-left text-sm font-semibold text-zinc-800 hover:text-blue-600 flex items-center gap-1 group w-full">
+                              <span>{week.theme}</span>
+                              <Pencil className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-40" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-xs text-zinc-400">{week.posts.length} posts</span>
+                      <span className="text-xs text-zinc-400 flex-shrink-0 pt-1">{week.posts.length} posts</span>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-2">
