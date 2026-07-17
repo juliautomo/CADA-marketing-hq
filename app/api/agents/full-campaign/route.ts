@@ -57,7 +57,7 @@ Return ONLY this JSON (no markdown, no explanation):
   "theme": "campaign theme/concept",
   "startDate": "YYYY-MM-DD (if mentioned, else use next Monday)",
   "durationDays": 28,
-  "channels": ["TikTok", "Instagram", "Shopee"],
+  "channels": ["TikTok", "Instagram"],
   "targetAudience": "description",
   "keyMessage": "one sentence brand message"
 }`
@@ -79,10 +79,10 @@ Return ONLY this JSON (no markdown, no explanation):
       } catch {
         parsed = {
           name: prompt.slice(0, 50),
-          theme: 'Fashion Collection Launch',
+          theme: `${brandIndustry} Collection Launch`,
           startDate: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
           durationDays: 28,
-          channels: ['TikTok', 'Instagram', 'Shopee'],
+          channels: ['TikTok', 'Instagram'],
           targetAudience: ctx.raw.brand_target_customer || `${brandIndustry} customers`,
           keyMessage: 'Discover something new',
         }

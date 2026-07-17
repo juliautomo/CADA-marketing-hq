@@ -137,9 +137,9 @@ Include:
       }
 
       case 'image': {
-        const subjectPart = brandSubject ? `${brandSubject} wearing ${body.product}` : body.product
+        const subjectPart = brandSubject ? `${brandSubject} with ${body.product}` : body.product
         const basePrompt = body.prompt ??
-          `High-fashion editorial photo of ${subjectPart} by ${brandName}. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, ${brandIndustry} brand photography style.`
+          `Professional editorial photo of ${subjectPart} by ${brandName}. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, ${brandIndustry} brand photography style.`
 
         const dallePrompt = [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
 
@@ -172,7 +172,7 @@ Include:
       case 'video': {
         const productDesc = body.product ?? `${brandIndustry} product`
         const videoPrompt = body.prompt ??
-          `Cinematic fashion video featuring ${productDesc} by ${brandName}. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, ${brandIndustry} aesthetic.`
+          `Cinematic ${brandIndustry} video featuring ${productDesc} by ${brandName}. ${body.additionalContext ?? ''} Elegant movement, soft natural lighting, ${brandIndustry} aesthetic.`
         const duration  = body.videoLength ?? 5
         const provider  = body.videoProvider ?? 'kling'
         const refImage  = body.referenceImageUrl || undefined
@@ -207,9 +207,9 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
         )
 
         if (storyType === 'image') {
-          const storySubject = brandSubject ? `${brandSubject} wearing ${productDesc}` : productDesc
+          const storySubject = brandSubject ? `${brandSubject} with ${productDesc}` : productDesc
           const storyBase = body.prompt ??
-            `Vertical 9:16 portrait fashion editorial photo of ${storySubject} by ${brandName}. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
+            `Vertical 9:16 portrait editorial photo of ${storySubject} by ${brandName}. ${body.additionalContext ?? ''} Clean minimalist background, soft natural lighting, elegant aesthetic, full-length portrait shot optimised for Instagram Story format.`
           const imagePrompt = [ctx.imagePrompt, storyBase].filter(Boolean).join('. ')
           const storyRefImage = body.referenceImageUrl || ctx.referenceImageUrl
           const storyImgProvider = body.imageProvider ?? 'gpt'
@@ -225,7 +225,7 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           result = { imageUrl, caption, driveUrl: storyImgDriveUrl, item: data }
         } else {
           const videoPrompt = body.prompt ??
-            `Vertical 9:16 cinematic fashion video featuring ${productDesc} by ${brandName}. ${body.additionalContext ?? ''} Portrait orientation, elegant movement, soft natural lighting, ${brandIndustry} aesthetic.`
+            `Vertical 9:16 cinematic ${brandIndustry} video featuring ${productDesc} by ${brandName}. ${body.additionalContext ?? ''} Portrait orientation, elegant movement, soft natural lighting, ${brandIndustry} aesthetic.`
           const duration = body.videoLength ?? 5
           const provider = body.videoProvider === 'runway' ? 'runway' : 'kling'
           const refImage = body.referenceImageUrl || undefined

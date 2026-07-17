@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
   const ctx = await getBrandContext(clientId)
   const brandName = ctx.raw.brand_name || 'Your Brand'
   const brandIndustry = ctx.raw.brand_industry || 'fashion'
-  const SYSTEM = ctx.systemPrompt('Fashion Video Analyst') + `
-You analyse fashion video frames to extract styling insights and generate social media captions for ${brandName}.
+  const SYSTEM = ctx.systemPrompt('Video Content Analyst') + `
+You analyse video frames to extract product and content insights, and generate social media captions for ${brandName} (${brandIndustry}).
 You will receive multiple frames from a short video — treat them as a sequence to understand what's happening.`
 
   try {

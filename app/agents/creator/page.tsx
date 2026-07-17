@@ -26,7 +26,7 @@ const TASKS = [
   { id: 'caption'      as ContentType, label: 'Caption',      icon: Type,     color: 'bg-violet-500', description: 'Social media captions with hashtags' },
   { id: 'description'  as ContentType, label: 'Description',  icon: FileText, color: 'bg-blue-500',   description: 'E-commerce product copy for Shopee' },
   { id: 'email'        as ContentType, label: 'Promo Email',  icon: Mail,     color: 'bg-amber-500',  description: 'Full email with subject line & CTA' },
-  { id: 'image'        as ContentType, label: 'AI Image',     icon: Image,    color: 'bg-emerald-500',description: 'Generate fashion imagery via GPT Image' },
+  { id: 'image'        as ContentType, label: 'AI Image',     icon: Image,    color: 'bg-emerald-500',description: 'Generate brand imagery via GPT Image' },
   { id: 'video'        as ContentType, label: 'Short Video',  icon: Video,    color: 'bg-red-500',    description: 'Generate video clips via Runway ML' },
   { id: 'canva'        as ContentType, label: 'Canva',        icon: Layout,   color: 'bg-pink-500',   description: 'Auto-create a Canva design template' },
   { id: 'story'        as ContentType, label: 'IG Story',     icon: BookImage,color: 'bg-rose-500',   description: 'Generate 9:16 image or video for Instagram Story' },

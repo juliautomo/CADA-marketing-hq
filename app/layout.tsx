@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'CADA Marketing HQ',
-  description: 'Multi-agent AI marketing dashboard for fashion e-commerce',
+  description: 'Multi-agent AI marketing dashboard for your brand',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

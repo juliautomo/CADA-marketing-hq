@@ -12,7 +12,7 @@ export default function TermsPage() {
       <p>By accessing or using CADA Marketing HQ ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Service.</p>
 
       <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 32, marginBottom: 8 }}>2. Description of Service</h2>
-      <p>CADA Marketing HQ is an AI-powered marketing platform that helps fashion businesses create content, plan campaigns, analyse trends, and manage social media publishing.</p>
+      <p>CADA Marketing HQ is an AI-powered marketing platform that helps businesses create content, plan campaigns, analyse trends, and manage social media publishing.</p>
 
       <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 32, marginBottom: 8 }}>3. Use of Third-Party Platforms</h2>
       <p>The Service integrates with third-party platforms including Instagram, TikTok, and Google. Your use of those platforms is subject to their respective terms of service. We are not responsible for any changes to or interruptions in those platforms.</p>

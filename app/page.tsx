@@ -16,7 +16,7 @@ const agents = [
   },
   {
     title: 'Trend Analyst',
-    description: 'Search live fashion trends and get structured insights on colors, silhouettes, and styles.',
+    description: 'Search live trends and get structured insights on styles, content angles, and hashtags.',
     href: '/agents/trend',
     iconName: 'TrendingUp' as const,
     color: 'bg-emerald-500',
