@@ -55,21 +55,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Provide either a URL or text to analyze' }, { status: 400 })
   }
 
-  const message = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: EXTRACT_PROMPT(content) }],
-  })
+  if (!content || content.length < 50) {
+    return NextResponse.json({ error: 'Could not extract enough content from that URL. Try pasting the text instead.' }, { status: 400 })
+  }
 
-  const raw = message.content[0].type === 'text' ? message.content[0].text : ''
   try {
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: EXTRACT_PROMPT(content) }],
+    })
+
+    const raw = message.content[0].type === 'text' ? message.content[0].text : ''
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No JSON found')
+    if (!jsonMatch) throw new Error('No JSON found in AI response')
     const parsed = JSON.parse(jsonMatch[0])
-    // Strip empty strings so they don't overwrite existing values
     const filtered = Object.fromEntries(Object.entries(parsed).filter(([, v]) => v !== ''))
     return NextResponse.json({ brand: filtered })
-  } catch {
-    return NextResponse.json({ error: 'Could not parse AI response', raw }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Could not analyze content' }, { status: 500 })
   }
 }
