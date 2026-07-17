@@ -120,6 +120,7 @@ function PhotoLibrary({ onResult }: {
   const [analyzing, setAnalyzing] = useState(false)
   const [summary, setSummary] = useState('')
   const [error, setError] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     fetch('/api/settings/brand-kit/photos').then(r => r.json()).then(d => setPhotos(d.photos ?? [])).catch(() => {}).finally(() => setLoading(false))
@@ -194,10 +195,15 @@ function PhotoLibrary({ onResult }: {
   if (loading) return <p className="text-xs text-zinc-400">Loading library…</p>
 
   return (
-    <div className="space-y-3">
+    <div
+      className={`space-y-3 rounded-xl transition-colors ${isDragging ? 'ring-2 ring-violet-400 ring-offset-2 bg-violet-50/50' : ''}`}
+      onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false) }}
+      onDrop={e => { e.preventDefault(); setIsDragging(false); handleAdd(e.dataTransfer.files) }}
+    >
       {/* Photo grid */}
       {photos.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className={`flex flex-wrap gap-2 rounded-xl p-1 transition-colors ${isDragging ? 'bg-violet-50 outline-dashed outline-2 outline-violet-300' : ''}`}>
           {photos.map(p => (
             <div key={p.id} className="relative group w-16 h-16 rounded-xl overflow-hidden border border-zinc-200">
               <img src={p.url} alt="" className="w-full h-full object-cover" />
@@ -225,10 +231,8 @@ function PhotoLibrary({ onResult }: {
       {/* Empty state */}
       {photos.length === 0 && (
         <div
-          className="rounded-xl border-2 border-dashed border-violet-200 bg-white p-6 text-center cursor-pointer hover:border-violet-400 transition-colors"
+          className={`rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${isDragging ? 'border-violet-500 bg-violet-100' : 'border-violet-200 bg-white hover:border-violet-400'}`}
           onClick={() => inputRef.current?.click()}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); handleAdd(e.dataTransfer.files) }}
         >
           <Upload className="w-5 h-5 text-violet-400 mx-auto mb-1.5" />
           <p className="text-sm font-medium text-violet-700">Add up to 20 brand photos</p>
