@@ -111,7 +111,7 @@ Include: key features, fabric/material benefits, who it's for, how to style it.
 End with sizing/care notes placeholder.`
         )
         const { data } = await db.from('cada_content_items')
-          .insert({ type: 'description', title: `Description: ${body.product}`, body: text, tags: ['shopee', 'cada'], client_id: clientId })
+          .insert({ type: 'description', title: `Description: ${body.product}`, body: text, tags: ['description'], client_id: clientId })
           .select().single()
         result = { text, item: data }
         break

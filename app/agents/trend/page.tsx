@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
-  TrendingUp, ArrowRight, Palette, Layers, Shirt,
+  TrendingUp, ArrowRight, Palette, Layers,
   Hash, Users, Video, ExternalLink, Play, ImageIcon, CalendarDays,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -116,7 +116,7 @@ export default function TrendPage() {
                 <textarea
                   value={focus}
                   onChange={(e) => setFocus(e.target.value)}
-                  placeholder={brandIndustry || 'e.g. modest fashion, F&B, skincare…'}
+                  placeholder={brandIndustry || 'e.g. fashion, F&B, skincare…'}
                   rows={2}
                   className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none" />
               </div>
@@ -208,7 +208,7 @@ export default function TrendPage() {
                 )}
                 {report.silhouettes.length > 0 && (
                   <Card>
-                    <CardHeader><CardTitle className="text-xs flex items-center gap-1.5"><Shirt className="w-3.5 h-3.5 text-emerald-500" /> Silhouettes</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="text-xs flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-emerald-500" /> Forms & Formats</CardTitle></CardHeader>
                     <CardContent className="flex flex-wrap gap-1.5">
                       {report.silhouettes.map((s) => <Badge key={s} variant="default">{s}</Badge>)}
                     </CardContent>

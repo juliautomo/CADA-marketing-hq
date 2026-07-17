@@ -42,7 +42,7 @@ Provide a structured analysis with:
 2. **Top 3 Wins** (what worked across our channels)
 3. **Top 3 Areas for Improvement** (specific to our channels)
 4. **Actionable Recommendations** for next period (channel-specific: ${brandChannels})
-5. **${ctx.raw.brand_industry || 'Fashion'} Market Insights** — any broader trends we should act on
+5. **${ctx.raw.brand_industry || 'Brand'} Market Insights** — any broader trends we should act on
 
 Keep recommendations practical for the brand's scale and market.`
     )

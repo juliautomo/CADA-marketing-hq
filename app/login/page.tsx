@@ -296,7 +296,7 @@ function LoginPageInner() {
                 </div>
                 <div className="space-y-3">
                   <input value={newName} onChange={e => setNewName(e.target.value)}
-                    placeholder="Client name (e.g. Acme Fashion)" autoFocus
+                    placeholder="Client name (e.g. Acme Brand)" autoFocus
                     className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-zinc-400" />
                   <input type="password" value={addPin} onChange={e => setAddPin(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleCreate()}

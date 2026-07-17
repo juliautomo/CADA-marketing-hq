@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const ctx = await getBrandContext(clientId)
   const brandName    = ctx.raw.brand_name || 'Your Brand'
   const brandMarkets = ctx.raw.brand_markets || ''
-  const brandIndustry = ctx.raw.brand_industry || 'fashion'
+  const brandIndustry = ctx.raw.brand_industry || 'brand'
   const SYSTEM_PROMPT = ctx.systemPrompt('Trend Analyst') + `
 
 You are a leading trend analyst specialising in ${brandIndustry} and ${brandMarkets || 'Southeast Asian'} markets.
@@ -29,11 +29,11 @@ TRENDING COLORS:
 - [specific color name]
 - [specific color name]
 
-KEY SILHOUETTES:
-- [silhouette description]
-- [silhouette description]
-- [silhouette description]
-- [silhouette description]
+KEY FORMS & FORMATS:
+- [key form, format, or shape description]
+- [key form, format, or shape description]
+- [key form, format, or shape description]
+- [key form, format, or shape description]
 
 TRENDING STYLES:
 - [style or aesthetic name]
@@ -97,7 +97,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
     }
 
     const colors = extractSection('TRENDING COLORS', text)
-    const silhouettes = extractSection('KEY SILHOUETTES', text)
+    const silhouettes = extractSection('KEY FORMS & FORMATS', text)
     const styles = extractSection('TRENDING STYLES', text)
 
     // â”€â”€ Parse hashtags â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

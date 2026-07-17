@@ -20,7 +20,7 @@ const agents = [
     href: '/agents/trend',
     iconName: 'TrendingUp' as const,
     color: 'bg-emerald-500',
-    capabilities: ['Live Search', 'Color Trends', 'Silhouettes', 'Style Directions'],
+    capabilities: ['Live Search', 'Color Trends', 'Forms & Formats', 'Style Directions'],
   },
   {
     title: 'Campaign Planner',

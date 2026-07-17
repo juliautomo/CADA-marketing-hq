@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'CADA Marketing HQ',
+  title: 'Marketing HQ',
   description: 'Multi-agent AI marketing dashboard for your brand',
 }
 

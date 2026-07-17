@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const ctx = await getBrandContext(clientId)
   const brandName    = ctx.raw.brand_name || 'Your Brand'
   const brandMarkets = ctx.raw.brand_markets || ''
-  const brandIndustry = ctx.raw.brand_industry || 'fashion'
+  const brandIndustry = ctx.raw.brand_industry || 'brand'
   const totalPosts   = durationWeeks * postsPerWeek
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const productLines = (products as any[]).map((p: any) =>

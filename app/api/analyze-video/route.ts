@@ -6,7 +6,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
 export interface VideoAnalysis {
   description: string       // What's happening in the video
-  product: string           // Main garment / product shown
+  product: string           // Main product / item shown
   colors: string[]          // Dominant colors
   mood: string              // Aesthetic mood / vibe
   setting: string           // Where it's filmed (studio, outdoor, etc.)
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const clientId = req.headers.get('x-client-id')
   const ctx = await getBrandContext(clientId)
   const brandName = ctx.raw.brand_name || 'Your Brand'
-  const brandIndustry = ctx.raw.brand_industry || 'fashion'
+  const brandIndustry = ctx.raw.brand_industry || 'brand'
   const SYSTEM = ctx.systemPrompt('Video Content Analyst') + `
 You analyse video frames to extract product and content insights, and generate social media captions for ${brandName} (${brandIndustry}).
 You will receive multiple frames from a short video — treat them as a sequence to understand what's happening.`
@@ -65,8 +65,8 @@ Tone: ${tone ?? 'Aspirational'}
 
 Analyse the video frames and return ONLY valid JSON matching this exact shape:
 {
-  "description": "What is happening in this video — list ALL products/garments shown, how they are styled, the outfit combinations, movement, and setting. Be specific and mention every item featured.",
-  "product": "ALL garments and products shown in this video, comma-separated (e.g. navy wide-leg trousers, denim culottes, butter yellow shirt, cream fitted tee)",
+  "description": "What is happening in this video — list ALL products/items shown, how they are presented, the combinations and pairings, movement, and setting. Be specific and mention every item featured.",
+  "product": "ALL products and items shown in this video, comma-separated (e.g. navy wide-leg trousers, ceramic mug, butter yellow tote bag, cream packaging)",
   "colors": ["color1", "color2"],
   "mood": "The aesthetic mood and vibe",
   "setting": "Where it's filmed",

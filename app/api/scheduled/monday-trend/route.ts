@@ -45,11 +45,11 @@ TRENDING COLORS:
 - [color]
 - [color]
 
-KEY SILHOUETTES:
-- [silhouette]
-- [silhouette]
-- [silhouette]
-- [silhouette]
+KEY FORMS & FORMATS:
+- [key form, format, or shape]
+- [key form, format, or shape]
+- [key form, format, or shape]
+- [key form, format, or shape]
 
 TRENDING STYLES:
 - [style]
@@ -95,7 +95,7 @@ Include 5 specific content ideas ${brandName} can execute this week.`
     }
 
     const colors = extractSection('TRENDING COLORS', text)
-    const silhouettes = extractSection('KEY SILHOUETTES', text)
+    const silhouettes = extractSection('KEY FORMS & FORMATS', text)
     const styles = extractSection('TRENDING STYLES', text)
     const actionItems = extractSection("THIS WEEK'S ACTION ITEMS", text)
 

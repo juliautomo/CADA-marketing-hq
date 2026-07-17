@@ -24,7 +24,7 @@ import type { VideoAnalysis } from '@/app/api/analyze-video/route'
 // ── Task definitions ───────────────────────────────────────────────────────────
 const TASKS = [
   { id: 'caption'      as ContentType, label: 'Caption',      icon: Type,     color: 'bg-violet-500', description: 'Social media captions with hashtags' },
-  { id: 'description'  as ContentType, label: 'Description',  icon: FileText, color: 'bg-blue-500',   description: 'E-commerce product copy for Shopee' },
+  { id: 'description'  as ContentType, label: 'Description',  icon: FileText, color: 'bg-blue-500',   description: 'E-commerce product copy for your store' },
   { id: 'email'        as ContentType, label: 'Promo Email',  icon: Mail,     color: 'bg-amber-500',  description: 'Full email with subject line & CTA' },
   { id: 'image'        as ContentType, label: 'AI Image',     icon: Image,    color: 'bg-emerald-500',description: 'Generate brand imagery via GPT Image' },
   { id: 'video'        as ContentType, label: 'Short Video',  icon: Video,    color: 'bg-red-500',    description: 'Generate video clips via Runway ML' },
@@ -530,7 +530,7 @@ function CreatorPageInner() {
                   <Input
                     value={product}
                     onChange={(e) => setProduct(e.target.value)}
-                    placeholder={selectedProduct ? 'e.g. focus on the wide leg silhouette, earthy tone…' : 'e.g. Navy linen wide-leg pants, relaxed fit, minimal style'}
+                    placeholder={selectedProduct ? 'e.g. focus on the signature shape, earthy tones…' : 'e.g. Navy linen trousers, relaxed fit, minimal style'}
                   />
                 </div>
                 {/* Scene / visual prompt */}
