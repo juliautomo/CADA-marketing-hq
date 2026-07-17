@@ -345,14 +345,9 @@ function CampaignPageInner() {
           {/* ── PREVIEW — review & edit ── */}
           {step === 'preview' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-amber-800">Review your content calendar</p>
-                  <p className="text-xs text-amber-600 mt-0.5">{totalPosts} posts planned. Edit titles, types, or platforms. Remove posts you don&apos;t need. Approve when ready.</p>
-                </div>
-                <Button onClick={handleApprove} size="sm" className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white">
-                  Approve & Create <Check className="w-3.5 h-3.5" />
-                </Button>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-800">Review your content calendar</p>
+                <p className="text-xs text-amber-600 mt-0.5">{totalPosts} posts planned. Edit titles, types, or platforms. Remove posts you don&apos;t need. Approve when ready.</p>
               </div>
 
               {/* Summary / Objective editable */}
@@ -361,11 +356,11 @@ function CampaignPageInner() {
                   <h2 className="font-bold text-zinc-900">{name}</h2>
                   <div>
                     <p className="text-xs font-semibold text-zinc-400 mb-1">Summary</p>
-                    <Textarea value={editableSummary} onChange={e => setEditableSummary(e.target.value)} rows={2} className="text-sm resize-none" />
+                    <Textarea value={editableSummary} onChange={e => setEditableSummary(e.target.value)} rows={5} className="text-sm" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-zinc-400 mb-1">Objective</p>
-                    <Input value={editableObjective} onChange={e => setEditableObjective(e.target.value)} className="text-sm" />
+                    <Textarea value={editableObjective} onChange={e => setEditableObjective(e.target.value)} rows={2} className="text-sm" />
                   </div>
                   {Array.isArray(brief?.kpis) && (
                     <div>
