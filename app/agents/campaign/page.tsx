@@ -116,11 +116,14 @@ function CampaignPageInner() {
       setEditableSummary(typeof b.summary === 'string' ? b.summary : '')
       setEditableObjective(typeof b.objective === 'string' ? b.objective : '')
       const weeks = Array.isArray(b.weeks) ? b.weeks as Array<{ week: number; theme: string; posts?: Post[]; milestones?: Post[] }> : []
-      setEditableWeeks(weeks.map(w => ({
+      const parsedWeeks = weeks.map(w => ({
         week: w.week,
         theme: w.theme,
         posts: (w.posts ?? w.milestones ?? []) as Post[],
-      })))
+      }))
+      const totalParsedPosts = parsedWeeks.reduce((sum, w) => sum + w.posts.length, 0)
+      if (totalParsedPosts === 0) throw new Error('AI returned an empty calendar — please try again.')
+      setEditableWeeks(parsedWeeks)
       setStep('preview')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')

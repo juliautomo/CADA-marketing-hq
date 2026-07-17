@@ -153,8 +153,10 @@ export default function TrendPage() {
                   <Badge variant="success">Saved to DB</Badge>
                   <button
                     onClick={() => {
+                      // Strip "Trend Report — Current Season July 2026 · " prefix, keep only the focus/topic
+                      const trendTopic = report.title.replace(/^Trend Report\s*[–—-]\s*[^·]+·?\s*/i, '').trim()
                       const params = new URLSearchParams({
-                        theme: report.title,
+                        theme: trendTopic || '',
                         context: report.summary ?? '',
                       })
                       router.push(`/agents/campaign?${params.toString()}`)
