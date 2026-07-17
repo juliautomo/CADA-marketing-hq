@@ -211,7 +211,7 @@ function CampaignPageInner() {
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">Description *</label>
                 <Textarea value={description} onChange={e => setDescription(e.target.value)}
-                  placeholder="Products, goals, audience?" rows={3} disabled={step !== 'form'} />
+                  placeholder="Products, goals, audience?" rows={6} disabled={step !== 'form'} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">Start Date *</label>
