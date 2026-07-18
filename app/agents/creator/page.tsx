@@ -206,6 +206,7 @@ function CreatorPageInner() {
   const [selectedProduct, setSelectedProduct] = useState<import('@/types').Product | null>(null)
 
   const [generatedCaption, setGeneratedCaption] = useState('')
+  const [retryFeedback, setRetryFeedback] = useState('')
   const [captionGenerating, setCaptionGenerating] = useState(false)
 
   const taskDef    = TASKS.find(t => t.id === task)!
@@ -285,7 +286,7 @@ function CreatorPageInner() {
       referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
       referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : refImageUrls.length > 0 ? refImageUrls : undefined,
       prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
-      additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '')) || undefined,
+      additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '') + (retryFeedback.trim() ? `\n\nREGENERATION FEEDBACK: The previous result wasn't right. Please change: ${retryFeedback}` : '')) || undefined,
       campaignId,
       milestoneIndex,
     }
@@ -988,6 +989,24 @@ function CreatorPageInner() {
                       <div className="rounded-xl overflow-hidden border border-zinc-200">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="Generated" className="w-full" />
+                      </div>
+                      {/* Try Again */}
+                      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 space-y-2">
+                        <p className="text-xs font-medium text-zinc-500">Not happy with this?</p>
+                        <textarea
+                          value={retryFeedback}
+                          onChange={e => setRetryFeedback(e.target.value)}
+                          rows={2}
+                          placeholder="What would you like to change? (e.g. brighter colors, remove text, warmer lighting…)"
+                          className="w-full text-xs text-zinc-700 bg-white border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                        />
+                        <button
+                          onClick={handleGenerate}
+                          disabled={!retryFeedback.trim() || loading}
+                          className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-800 text-white text-sm font-medium py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" /> Try Again
+                        </button>
                       </div>
                       <div className="flex gap-2">
                         <button
