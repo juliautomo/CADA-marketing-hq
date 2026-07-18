@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   TrendingUp, CalendarDays, BarChart3, FileText,
   Image, Palette, Layers, ExternalLink, ChevronDown,
   ChevronUp, Type, Mail, Video, Layout, LayoutGrid, ChevronLeft, ChevronRight,
+  RotateCcw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -225,39 +227,84 @@ function Pagination({ page, totalPages, total, pageSize, onChange }: { page: num
 function ContentRow({ item }: { item: ContentItem }) {
   const meta = CONTENT_TYPE_META[item.type] ?? { label: item.type, color: 'bg-zinc-500', icon: FileText }
   const Icon = meta.icon
+  const router = useRouter()
+  const [retryOpen, setRetryOpen] = useState(false)
+  const [feedback, setFeedback] = useState('')
+  const isImage = item.type === 'image' && !!item.image_url
+
+  function handleTryAgain() {
+    if (!feedback.trim() || !item.image_url) return
+    const params = new URLSearchParams({
+      task: 'image',
+      prompt: feedback,
+      refImg: item.image_url,
+    })
+    router.push(`/agents/creator?${params.toString()}`)
+  }
+
   return (
-    <div className="flex items-start gap-4 px-4 py-3 bg-white hover:bg-zinc-50 transition-colors">
-      <span className={`flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium text-white px-2 py-1 rounded-full mt-0.5 ${meta.color}`}>
-        <Icon className="w-3 h-3" /> {meta.label}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-800 truncate">{item.title}</p>
-        {item.body && <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1">{item.body}</p>}
-        {item.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {item.tags.map((tag) => <Badge key={tag} variant="default" className="text-xs">{tag}</Badge>)}
-          </div>
-        )}
+    <div className="bg-white hover:bg-zinc-50 transition-colors">
+      <div className="flex items-start gap-4 px-4 py-3">
+        <span className={`flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium text-white px-2 py-1 rounded-full mt-0.5 ${meta.color}`}>
+          <Icon className="w-3 h-3" /> {meta.label}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-zinc-800 truncate">{item.title}</p>
+          {item.body && <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1">{item.body}</p>}
+          {item.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {item.tags.map((tag) => <Badge key={tag} variant="default" className="text-xs">{tag}</Badge>)}
+            </div>
+          )}
+        </div>
+        {item.image_url && <img src={item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
+        {item.video_url && <video src={item.video_url} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
+        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+          <span className="text-xs text-zinc-400 whitespace-nowrap">{formatRelativeTime(item.created_at)}</span>
+          {item.canva_url && (
+            <a href={item.canva_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+              Canva <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+          {isImage && (
+            <button
+              onClick={() => setRetryOpen(v => !v)}
+              className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" /> Try Again
+            </button>
+          )}
+          {(item.image_url || item.video_url) && (
+            <ScheduleButton
+              platform="instagram"
+              mediaUrl={(item.image_url || item.video_url)!}
+              mediaType={item.video_url ? 'REELS' : 'IMAGE'}
+              caption={item.body ?? ''}
+              label="Schedule"
+            />
+          )}
+        </div>
       </div>
-      {item.image_url && <img src={item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
-      {item.video_url && <video src={item.video_url} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
-      <div className="flex-shrink-0 flex flex-col items-end gap-1">
-        <span className="text-xs text-zinc-400 whitespace-nowrap">{formatRelativeTime(item.created_at)}</span>
-        {item.canva_url && (
-          <a href={item.canva_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-            Canva <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-        {(item.image_url || item.video_url) && (
-          <ScheduleButton
-            platform="instagram"
-            mediaUrl={(item.image_url || item.video_url)!}
-            mediaType={item.video_url ? 'REELS' : 'IMAGE'}
-            caption={item.body ?? ''}
-            label="Schedule"
+      {retryOpen && isImage && (
+        <div className="mx-4 mb-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 space-y-2">
+          <p className="text-xs font-medium text-zinc-500">What would you like to change?</p>
+          <textarea
+            value={feedback}
+            onChange={e => setFeedback(e.target.value)}
+            rows={2}
+            autoFocus
+            placeholder="e.g. brighter colors, remove the text, warmer lighting, different background…"
+            className="w-full text-xs text-zinc-700 bg-white border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400"
           />
-        )}
-      </div>
+          <button
+            onClick={handleTryAgain}
+            disabled={!feedback.trim()}
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-800 text-white text-sm font-medium py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Regenerate in Creator
+          </button>
+        </div>
+      )}
     </div>
   )
 }

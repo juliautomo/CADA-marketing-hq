@@ -236,8 +236,12 @@ function CreatorPageInner() {
     if (weekTheme) setTone(weekTheme.split(' ')[0])
     const urlTask = searchParams.get('task') as ContentType | null
     const urlPlatform = searchParams.get('platform')
+    const urlPrompt = searchParams.get('prompt')
+    const urlRefImg = searchParams.get('refImg')
     if (urlTask && TASKS.find(t => t.id === urlTask)) setTask(urlTask)
     if (urlPlatform) setPlatform(urlPlatform)
+    if (urlPrompt) setCustomPrompt(urlPrompt)
+    if (urlRefImg) setRefImageUrls([urlRefImg])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
