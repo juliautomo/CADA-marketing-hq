@@ -138,10 +138,17 @@ Include:
 
       case 'image': {
         const subjectPart = brandSubject ? `${brandSubject} with ${body.product}` : body.product
+
+        // Detect graphic/infographic intent — skip photography brand prefix for these
+        const graphicKeywords = /infographic|list|tips|steps|slide|card|poster|education|edukasi|layout|graphic|numbered|carousel|template|text overlay|headline/i
+        const isGraphic = graphicKeywords.test(body.prompt ?? '') || graphicKeywords.test(body.additionalContext ?? '')
+
         const basePrompt = body.prompt ??
           `Professional editorial photo of ${subjectPart} by ${brandName}. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, ${brandIndustry} brand photography style.`
 
-        const dallePrompt = [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
+        const dallePrompt = isGraphic
+          ? basePrompt
+          : [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
 
         // Choose reference image: user upload > brand context ref (model → style)
         const refImage = body.referenceImageUrl || ctx.referenceImageUrl
