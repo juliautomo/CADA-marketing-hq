@@ -94,13 +94,12 @@ export async function POST(req: NextRequest) {
       })
     } catch (e) { driveError = e instanceof Error ? e.message : 'Unknown Drive error' }
 
-    const { data: campaign } = await db.from('cada_campaigns')
+    const { data: campaign, error: campaignError } = await db.from('cada_campaigns')
       .insert({
         name: body.name,
         description: body.description,
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),
-        metadata: { durationWeeks, postsPerWeek: body.postsPerWeek },
         status: 'draft',
         google_drive_url: driveUrl || null,
         calendar_event_ids: calendarEventIds,
@@ -109,8 +108,10 @@ export async function POST(req: NextRequest) {
       })
       .select().single()
 
+    if (campaignError || !campaign) throw new Error(campaignError?.message ?? 'Failed to save campaign — please try again')
+
     const milestoneRows = milestones.map((m) => ({
-      campaign_id: campaign!.id,
+      campaign_id: campaign.id,
       title: m.title,
       due_date: format(addDays(startDate, m.day_offset), 'yyyy-MM-dd'),
       week_number: m.week,
