@@ -139,15 +139,24 @@ Include:
       case 'image': {
         const subjectPart = brandSubject ? `${brandSubject} with ${body.product}` : body.product
 
-        // Detect graphic/infographic intent — skip photography brand prefix for these
+        // Detect graphic/infographic intent — adapt brand prompt instead of using photography prefix
         const graphicKeywords = /infographic|list|tips|steps|slide|card|poster|education|edukasi|layout|graphic|numbered|carousel|template|text overlay|headline/i
         const isGraphic = graphicKeywords.test(body.prompt ?? '') || graphicKeywords.test(body.additionalContext ?? '')
 
         const basePrompt = body.prompt ??
           `Professional editorial photo of ${subjectPart} by ${brandName}. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, ${brandIndustry} brand photography style.`
 
+        // For graphics: use brand colors + name but drop photography prefix/shot style/negative prompts
+        let colorContext = ''
+        if (ctx.raw.brand_colors) {
+          try { colorContext = `Brand color palette: ${(JSON.parse(ctx.raw.brand_colors) as string[]).join(', ')}.` } catch { /* ignore */ }
+        } else if (ctx.raw.brand_color_description) {
+          colorContext = ctx.raw.brand_color_description
+        }
+        const graphicBrandContext = [colorContext].filter(Boolean).join(' ')
+
         const dallePrompt = isGraphic
-          ? basePrompt
+          ? [graphicBrandContext, basePrompt].filter(Boolean).join(' ')
           : [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
 
         // Choose reference image: user upload > brand context ref (model → style)
