@@ -293,8 +293,8 @@ function CreatorPageInner() {
       videoLength:    ['video', 'story'].includes(task) ? videoLength   : undefined,
       videoProvider:  task === 'video'   ? videoProvider : task === 'story' ? storyFormat : undefined,
       imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
-      referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
-      referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : refImageUrls.length > 0 ? refImageUrls : undefined,
+      referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : (task === 'image' || task === 'story') ? (refImageUrls[0] || undefined) : rawMediaUrl ?? undefined,
+      referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : (task === 'video') ? (refImageUrls.length > 0 ? refImageUrls : undefined) : undefined,
       prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
       additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '') + (retryFeedback.trim() ? `\n\nREGENERATION FEEDBACK: The previous result wasn't right. Please change: ${retryFeedback}` : '')) || undefined,
       campaignId,
@@ -677,6 +677,42 @@ function CreatorPageInner() {
                     }
                   </label>
                 </div>
+              </div>
+            )}
+
+            {/* Style reference image for image tasks */}
+            {task === 'image' && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1.5">Style reference <span className="text-zinc-400 font-normal">(optional)</span></label>
+                <p className="text-xs text-zinc-400 mb-2">Upload an existing image to guide the visual style — layout, colors, and tone will be matched.</p>
+                <label className={cn(
+                  'relative rounded-xl border-2 border-dashed cursor-pointer flex items-center justify-center h-28 transition-colors overflow-hidden',
+                  refImageUrls[0] ? 'border-violet-300' : 'border-zinc-200 hover:border-violet-300'
+                )}>
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    const path = `style-refs/${Date.now()}.${file.name.split('.').pop()}`
+                    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+                    if (error) return
+                    const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+                    setRefImageUrls([data.publicUrl])
+                  }} />
+                  {refImageUrls[0] ? (
+                    <>
+                      <img src={refImageUrls[0]} alt="style ref" className="w-full h-full object-cover" />
+                      <button onClick={(e) => { e.preventDefault(); setRefImageUrls([]) }}
+                        className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow">
+                        <X className="w-3 h-3 text-zinc-500" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-zinc-400">
+                      <Upload className="w-5 h-5" />
+                      <span className="text-xs">Upload style reference</span>
+                    </div>
+                  )}
+                </label>
               </div>
             )}
 
