@@ -29,9 +29,14 @@ export async function POST(req: NextRequest) {
 
   const subjectHint = brandSubject ? `featuring ${brandSubject} for ${brandName}` : `for ${brandName} (${brandIndustry})`
 
+  const brandColors = ctx.raw.brand_colors ? (JSON.parse(ctx.raw.brand_colors) as string[]).join(', ') : 'brand palette'
+  const brandHandle = ctx.raw.brand_handle ? `@${ctx.raw.brand_handle}` : brandName
+  const brandVoice  = ctx.raw.brand_voice || ''
+
   const systemPrompt = isGraphic
-    ? `You are an expert graphic design prompt engineer for social media content.
-Your job is to take a rough layout idea and rewrite it as a detailed image generation prompt for a flat-design graphic — NOT a photograph.
+    ? `You are an expert graphic design prompt engineer creating social media infographics for a ${brandIndustry} brand called ${brandName}.
+Your job is to take a rough layout idea and rewrite it as a detailed image generation prompt for a clean, modern flat-design graphic — NOT a photograph.
+The design should feel appropriate for the ${brandIndustry} industry: use the right visual tone, typography style, and layout conventions for that space.
 Output ONLY the improved prompt — no explanation, no preamble, no quotes.`
     : `You are an expert AI image prompt engineer specialising in ${brandIndustry} content for Instagram.
 Your job is to take a rough scene idea and rewrite it as a detailed, photorealistic image generation prompt.
@@ -41,9 +46,11 @@ Output ONLY the improved prompt — no explanation, no preamble, no quotes.`
     ? `RULES:
 - This is a GRAPHIC DESIGN prompt, not a photography prompt — do NOT add camera, lens, or photography terms
 - Keep ALL content details the user mentioned (titles, list items, numbers, text)
-- ADD: precise layout description, typography style (bold/sans-serif/etc), color scheme using brand colors (${ctx.raw.brand_colors ? JSON.parse(ctx.raw.brand_colors).join(', ') : 'brand palette'}), icon style, spacing and hierarchy
+- ADD: precise layout description, typography style suited to ${brandIndustry} (e.g. bold serif headline, clean sans-serif body), color scheme using brand colors (${brandColors}), icon/illustration style, spacing and visual hierarchy
+- Include a small brand footer area showing "${brandHandle}" in the brand colors
+- The overall aesthetic should feel on-brand for a ${brandIndustry} brand${brandVoice ? ` with a ${brandVoice} tone` : ''}
 - It's fine to use dark backgrounds, bold colors, or strong contrast if the design calls for it
-- Keep it under 130 words
+- Keep it under 150 words
 - Output only the improved prompt, no explanation`
     : `RULES:
 - Keep ALL specific details the user mentioned (location, pose, props, framing, zoom level, product details) — do NOT remove or contradict them

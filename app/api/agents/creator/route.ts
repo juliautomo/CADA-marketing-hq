@@ -146,14 +146,16 @@ Include:
         const basePrompt = body.prompt ??
           `Professional editorial photo of ${subjectPart} by ${brandName}. ${body.additionalContext ?? ''} Clean studio background, soft natural lighting, elegant and minimalist aesthetic, ${brandIndustry} brand photography style.`
 
-        // For graphics: use brand colors + name but drop photography prefix/shot style/negative prompts
+        // For graphics: use brand identity + colors but drop photography prefix/shot style/negative prompts
         let colorContext = ''
         if (ctx.raw.brand_colors) {
           try { colorContext = `Brand color palette: ${(JSON.parse(ctx.raw.brand_colors) as string[]).join(', ')}.` } catch { /* ignore */ }
         } else if (ctx.raw.brand_color_description) {
           colorContext = ctx.raw.brand_color_description
         }
-        const graphicBrandContext = [colorContext].filter(Boolean).join(' ')
+        const brandHandle = ctx.raw.brand_handle ? `@${ctx.raw.brand_handle}` : brandName
+        const industryContext = `Flat-design social media graphic for ${brandName} (${brandIndustry} brand). Design aesthetic and typography should feel appropriate for ${brandIndustry}. Include a small brand footer with "${brandHandle}".`
+        const graphicBrandContext = [industryContext, colorContext].filter(Boolean).join(' ')
 
         const dallePrompt = isGraphic
           ? [graphicBrandContext, basePrompt].filter(Boolean).join(' ')
