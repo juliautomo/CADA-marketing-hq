@@ -74,6 +74,31 @@ function CampaignPageInner() {
     fetch('/api/products').then(r => r.json()).then(d => setProducts(d.products ?? []))
   }, [])
 
+  // Load latest active campaign on mount (skip if coming from trend handoff)
+  useEffect(() => {
+    if (searchParams.get('theme') || searchParams.get('context')) return
+    fetch('/api/campaigns')
+      .then(r => r.json())
+      .then(async d => {
+        const latest = (d.campaigns ?? []).find((c: Campaign) => c.status !== 'archived')
+        if (!latest) return
+        setCampaign(latest)
+        const milRes = await fetch(`/api/campaigns/${latest.id}`)
+        const milData = await milRes.json()
+        setSavedMilestones(milData.milestones ?? [])
+        const brief = (latest.brief ?? {}) as Record<string, unknown>
+        setEditableSummary(typeof brief.summary === 'string' ? brief.summary : '')
+        setEditableObjective(typeof brief.objective === 'string' ? brief.objective : '')
+        setIntegrations({
+          calendar: (latest.calendar_event_ids?.length ?? 0) > 0,
+          drive: !!latest.google_drive_url,
+        })
+        setStep('done')
+      })
+      .catch(() => { /* stay on form */ })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function toggleProduct(id: string) {
     setSelectedProductIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])
   }
