@@ -76,7 +76,8 @@ IMPORTANT: Output ONLY raw JSON. No markdown. No code blocks. Start with { end w
           "platform": "Instagram",
           "content_type": "image",
           "title": "Specific post title",
-          "description": "What this post should show/say"
+          "description": "1-2 sentence brief of what this post should communicate",
+          "visual_prompt": "Detailed image/graphic generation prompt — describe layout, style, colors, text to include, mood. For infographic/educational posts describe the graphic design. For photo posts describe the scene."
         }
       ]
     }

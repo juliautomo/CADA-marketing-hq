@@ -644,6 +644,8 @@ function CampaignPageInner() {
                           week_theme: week.theme,
                           task: post.content_type,
                           platform: post.platform,
+                          ...(post.description ? { post_description: post.description } : {}),
+                          ...((post as Record<string, unknown>).visual_prompt ? { post_visual_prompt: String((post as Record<string, unknown>).visual_prompt) } : {}),
                         })
 
                         return (

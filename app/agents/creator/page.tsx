@@ -242,9 +242,12 @@ function CreatorPageInner() {
     if (urlPlatform) setPlatform(urlPlatform)
     if (urlPrompt) setCustomPrompt(urlPrompt)
     if (urlRefImg) setRefImageUrls([urlRefImg])
-    // Pre-fill from campaign milestone
+    // Pre-fill from campaign milestone — visual_prompt > description > week theme
     if (milestoneTitle) setProduct(milestoneTitle)
-    if (weekTheme) setCustomPrompt(prev => prev || weekTheme)
+    const postVisualPrompt = searchParams.get('post_visual_prompt')
+    const postDescription  = searchParams.get('post_description')
+    const promptToUse = postVisualPrompt || postDescription || weekTheme
+    if (promptToUse) setCustomPrompt(prev => prev || promptToUse)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
