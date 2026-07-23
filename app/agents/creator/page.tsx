@@ -447,8 +447,8 @@ function CreatorPageInner() {
         </div>
       </div>
 
-      {/* ── STEP 2: Reference (optional) — hidden for Runway References and Try-On which has its own slots ── */}
-      {videoProvider !== 'runway-ref' && !isTryon && (
+      {/* ── STEP 2: Reference (optional) — hidden for Runway References, Try-On, and Image (which has Style reference in Step 3) ── */}
+      {videoProvider !== 'runway-ref' && !isTryon && task !== 'image' && (
       <div>
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
           2 — {needsPrompt ? 'Starting frame' : 'Add a reference'} <span className="normal-case font-normal text-zinc-300">(optional)</span>
