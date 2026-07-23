@@ -83,7 +83,7 @@ export interface Campaign {
   description?: string
   start_date: string
   end_date: string
-  status: 'draft' | 'active' | 'completed' | 'paused'
+  status: 'draft' | 'active' | 'completed' | 'paused' | 'archived'
   google_drive_url?: string
   todoist_project_id?: string
   calendar_event_ids: string[]
