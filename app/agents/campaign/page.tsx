@@ -89,6 +89,21 @@ function CampaignPageInner() {
         const brief = (latest.brief ?? {}) as Record<string, unknown>
         setEditableSummary(typeof brief.summary === 'string' ? brief.summary : '')
         setEditableObjective(typeof brief.objective === 'string' ? brief.objective : '')
+        // Reconstruct editableWeeks from brief so the content checklist renders
+        if (Array.isArray(brief.weeks)) {
+          const weeks = (brief.weeks as Array<Record<string, unknown>>).map(w => ({
+            week: Number(w.week),
+            theme: String(w.theme ?? ''),
+            posts: (Array.isArray(w.posts) ? w.posts : []).map((p: Record<string, unknown>) => ({
+              day_offset: Number(p.day_offset ?? 0),
+              platform: String(p.platform ?? 'Instagram'),
+              content_type: (p.content_type ?? 'image') as ContentType,
+              title: String(p.title ?? ''),
+              description: p.description ? String(p.description) : undefined,
+            })),
+          }))
+          setEditableWeeks(weeks)
+        }
         setIntegrations({
           calendar: (latest.calendar_event_ids?.length ?? 0) > 0,
           drive: !!latest.google_drive_url,
