@@ -16,6 +16,26 @@ export async function POST(req: NextRequest) {
   const brandIndustry = ctx.raw.brand_industry || 'brand'
 
   const isStory = task === 'story'
+  const isCaptionDirection = task === 'caption-direction'
+
+  // Caption direction enhancement — rewrite as clear, specific creative brief
+  if (isCaptionDirection) {
+    const brandVoiceHint = ctx.raw.brand_voice ? ` The brand voice is: ${ctx.raw.brand_voice}.` : ''
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      system: `You are a social media strategist for a ${brandIndustry} brand called ${brandName}.${brandVoiceHint}
+Your job is to rewrite a rough caption direction into a clear, specific creative brief that tells a copywriter exactly what angle, emotion, and message to lead with.
+Output ONLY the improved direction — no explanation, no preamble, no quotes. Keep it under 60 words.`,
+      messages: [{
+        role: 'user',
+        content: `Rewrite this caption direction to be more specific and actionable:\n\n${prompt}`,
+      }],
+    })
+    const block = message.content[0]
+    const enhanced = block.type === 'text' ? block.text.trim() : prompt
+    return NextResponse.json({ enhanced })
+  }
 
   // Detect graphic/infographic intent — these need design mode, not photography mode
   const graphicKeywords = /infographic|list|tips|steps|slide|card|poster|education|edukasi|layout|graphic|icon|numbered|carousel|template|text overlay|headline/i

@@ -195,6 +195,7 @@ function CreatorPageInner() {
   const [resultMediaUrl, setResultMediaUrl] = useState<string | null>(null)
 
   const [enhancing, setEnhancing] = useState(false)
+  const [enhancingCaption, setEnhancingCaption] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [result, setResult]     = useState<Record<string, unknown> | null>(null)
   const [error, setError]       = useState<string | null>(null)
@@ -358,6 +359,21 @@ function CreatorPageInner() {
       if (data.enhanced) setCustomPrompt(data.enhanced)
     } catch { /* keep original */ }
     finally { setEnhancing(false) }
+  }
+
+  async function enhanceCaptionNotes() {
+    if (!captionNotes) return
+    setEnhancingCaption(true)
+    try {
+      const res = await fetch('/api/enhance-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: captionNotes, task: 'caption-direction' }),
+      })
+      const data = await res.json()
+      if (data.enhanced) setCaptionNotes(data.enhanced)
+    } catch { /* keep original */ }
+    finally { setEnhancingCaption(false) }
   }
 
   async function downloadMedia(url: string, filename: string) {
@@ -836,6 +852,17 @@ function CreatorPageInner() {
                   placeholder="e.g. focus on the flower shop vibe, make it feel dreamy and romantic..."
                   className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
+                {captionNotes && (
+                  <button
+                    type="button"
+                    onClick={enhanceCaptionNotes}
+                    disabled={enhancingCaption}
+                    className="flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-800 disabled:opacity-40 transition-colors mt-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {enhancingCaption ? 'Enhancing…' : 'Enhance direction with AI'}
+                  </button>
+                )}
               </div>
             )}
 
