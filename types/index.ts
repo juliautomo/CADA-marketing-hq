@@ -147,7 +147,7 @@ export interface CreatorInput {
   captionLength?: 'short' | 'standard' | 'long'
   videoLength?: 5 | 10
   videoProvider?: 'runway' | 'kling' | 'runway-ref' | 'image'
-  imageProvider?: 'gpt' | 'flux'
+  imageProvider?: 'gpt' | 'flux' | 'gemini'
   imageSize?: '1:1' | '4:5' | '9:16'
   referenceImageUrl?: string
   referenceImageUrls?: string[]

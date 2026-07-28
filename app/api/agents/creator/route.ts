@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage, generateImageWithReference, generateImageWithReferences } from '@/lib/openai'
 import { generateImageFlux } from '@/lib/fal'
+import { generateImageGemini, generateImageGeminiWithReference } from '@/lib/gemini'
 import { runVirtualTryOn } from '@/lib/fashn'
 import { uploadFileToDrive } from '@/lib/google'
 import { generateVideoRunway, generateVideoRunwayRef } from '@/lib/runway'
@@ -172,11 +173,14 @@ Include:
         const provider = body.imageProvider ?? 'gpt'
         const sizeKey = (body.imageSize ?? '1:1') as '1:1' | '4:5' | '9:16'
         const gptSize: '1024x1024' | '1024x1536' = sizeKey === '1:1' ? '1024x1024' : '1024x1536'
-        const fluxRatio: '1:1' | '4:5' | '9:16' = sizeKey
 
         let imageUrl: string
-        if (provider === 'flux') {
-          imageUrl = await generateImageFlux(dallePrompt, fluxRatio)
+        if (provider === 'gemini') {
+          imageUrl = refImage
+            ? await generateImageGeminiWithReference(dallePrompt, refImage, sizeKey)
+            : await generateImageGemini(dallePrompt, sizeKey)
+        } else if (provider === 'flux') {
+          imageUrl = await generateImageFlux(dallePrompt, sizeKey)
         } else if (promptMentionsLogo && logoUrl && refImage) {
           imageUrl = await generateImageWithReferences(dallePrompt, [refImage, logoUrl], gptSize, imgQuality)
         } else if (promptMentionsLogo && logoUrl) {

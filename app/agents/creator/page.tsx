@@ -184,7 +184,7 @@ function CreatorPageInner() {
   const [captionLength, setCaptionLen]  = useState<CreatorInput['captionLength']>('standard')
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
   const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
-  const [imageProvider, setImageProvider] = useState<'gpt' | 'flux'>('flux')
+  const [imageProvider, setImageProvider] = useState<'gpt' | 'flux' | 'gemini'>('flux')
   const [imageSize, setImageSize] = useState<'1:1' | '4:5' | '9:16'>('1:1')
   const [storyFormat, setStoryFormat] = useState<'image' | 'kling' | 'runway'>('image')
   const [refImageUrls, setRefImageUrls]   = useState<string[]>([])
@@ -703,10 +703,11 @@ function CreatorPageInner() {
             {(task === 'image' || (task === 'story' && storyFormat === 'image')) && (
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">Image provider</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {([
-                    { id: 'flux', label: 'Flux 1.1 Pro', sub: 'Most photorealistic' },
-                    { id: 'gpt',  label: 'GPT Image 1',  sub: 'Best with reference photo' },
+                    { id: 'gemini', label: 'Nano Banana 2', sub: 'Best text & infographics' },
+                    { id: 'flux',   label: 'Flux 1.1 Pro',  sub: 'Most photorealistic' },
+                    { id: 'gpt',    label: 'GPT Image 1',   sub: 'Best with reference photo' },
                   ] as const).map((p) => (
                     <button key={p.id} onClick={() => setImageProvider(p.id)}
                       className={cn('rounded-xl border p-3 text-left transition-all',
