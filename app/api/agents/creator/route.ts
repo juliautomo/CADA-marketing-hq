@@ -157,12 +157,15 @@ Include:
         const industryContext = `Flat-design social media graphic for ${brandName} (${brandIndustry} brand). Design aesthetic and typography should feel appropriate for ${brandIndustry}. Include a small brand footer with "${brandHandle}".`
         const graphicBrandContext = [industryContext, colorContext].filter(Boolean).join(' ')
 
-        const dallePrompt = isGraphic
-          ? [graphicBrandContext, basePrompt].filter(Boolean).join(' ')
-          : [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
-
         // Choose reference image: user upload > brand context ref (model → style)
         const refImage = body.referenceImageUrl || ctx.referenceImageUrl
+
+        const dallePrompt = isGraphic && body.referenceImageUrl
+          // Reference uploaded: treat it as a layout template — match exactly, only swap content
+          ? `Reproduce the layout, typography style, color palette, spacing, and visual structure of the reference image exactly as a template. Do NOT change the design structure. Only update the content with: ${basePrompt}. Keep all design elements (logo position, footer, icons, card shapes, background) identical to the reference.`
+          : isGraphic
+          ? [graphicBrandContext, basePrompt].filter(Boolean).join(' ')
+          : [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
         const logoUrl = ctx.raw.brand_logo_url || undefined
         const promptMentionsLogo = /logo/i.test(dallePrompt)
 
