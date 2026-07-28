@@ -160,9 +160,9 @@ Include:
         // Choose reference image: user upload > brand context ref (model → style)
         const refImage = body.referenceImageUrl || ctx.referenceImageUrl
 
-        const dallePrompt = isGraphic && body.referenceImageUrl
-          // Reference uploaded: treat it as a layout template — match exactly, only swap content
-          ? `Reproduce the layout, typography style, color palette, spacing, and visual structure of the reference image exactly as a template. Do NOT change the design structure. Only update the content with: ${basePrompt}. Keep all design elements (logo position, footer, icons, card shapes, background) identical to the reference.`
+        const dallePrompt = body.referenceImageUrl
+          // Reference uploaded: user's prompt + reference image are the complete instruction — skip brand context injection
+          ? basePrompt
           : isGraphic
           ? [graphicBrandContext, basePrompt].filter(Boolean).join(' ')
           : [ctx.imagePrompt, basePrompt].filter(Boolean).join('. ')
