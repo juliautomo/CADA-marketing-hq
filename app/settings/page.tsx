@@ -282,8 +282,17 @@ interface AnalysisRecord {
   negative_prompts: string
 }
 
-function AnalysisCard({ a, onApply }: { a: AnalysisRecord; onApply: (r: AnalysisRecord) => void }) {
+function AnalysisCard({ a, onApply, onDelete }: { a: AnalysisRecord; onApply: (r: AnalysisRecord) => void; onDelete: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    if (!confirm('Delete this analysis?')) return
+    setDeleting(true)
+    await fetch(`/api/settings/brand-kit/analyses?id=${a.id}`, { method: 'DELETE' })
+    onDelete(a.id)
+  }
+
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-3">
       <div className="flex items-start gap-3">
@@ -294,7 +303,10 @@ function AnalysisCard({ a, onApply }: { a: AnalysisRecord; onApply: (r: Analysis
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
             <p className="text-xs text-zinc-400">{new Date(a.created_at).toLocaleDateString()} · {a.photo_count} photos</p>
-            <button onClick={() => onApply(a)} className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex-shrink-0">Apply</button>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button onClick={() => onApply(a)} className="text-xs font-semibold text-violet-600 hover:text-violet-800">Apply</button>
+              <button onClick={handleDelete} disabled={deleting} className="text-xs text-zinc-400 hover:text-red-500 disabled:opacity-40 transition-colors">{deleting ? '…' : 'Delete'}</button>
+            </div>
           </div>
           <p className="text-xs text-zinc-600 leading-relaxed">{a.summary}</p>
           {a.brand_colors && (
@@ -342,7 +354,14 @@ function AnalysisHistory({ onApply, refreshKey }: {
 
   return (
     <div className="space-y-3">
-      {analyses.map(a => <AnalysisCard key={a.id} a={a} onApply={onApply} />)}
+      {analyses.map(a => (
+        <AnalysisCard
+          key={a.id}
+          a={a}
+          onApply={onApply}
+          onDelete={(id) => setAnalyses(prev => prev.filter(x => x.id !== id))}
+        />
+      ))}
     </div>
   )
 }
