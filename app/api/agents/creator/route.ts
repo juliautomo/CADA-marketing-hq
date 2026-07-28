@@ -170,17 +170,21 @@ Include:
         const promptMentionsLogo = /logo/i.test(dallePrompt)
 
         const provider = body.imageProvider ?? 'gpt'
+        const sizeKey = (body.imageSize ?? '1:1') as '1:1' | '4:5' | '9:16'
+        const gptSize: '1024x1024' | '1024x1536' = sizeKey === '1:1' ? '1024x1024' : '1024x1536'
+        const fluxRatio: '1:1' | '4:5' | '9:16' = sizeKey
+
         let imageUrl: string
         if (provider === 'flux') {
-          imageUrl = await generateImageFlux(dallePrompt, '1:1')
+          imageUrl = await generateImageFlux(dallePrompt, fluxRatio)
         } else if (promptMentionsLogo && logoUrl && refImage) {
-          imageUrl = await generateImageWithReferences(dallePrompt, [refImage, logoUrl], '1024x1024', imgQuality)
+          imageUrl = await generateImageWithReferences(dallePrompt, [refImage, logoUrl], gptSize, imgQuality)
         } else if (promptMentionsLogo && logoUrl) {
-          imageUrl = await generateImageWithReference(dallePrompt, logoUrl, '1024x1024', imgQuality)
+          imageUrl = await generateImageWithReference(dallePrompt, logoUrl, gptSize, imgQuality)
         } else {
           imageUrl = refImage
-            ? await generateImageWithReference(dallePrompt, refImage, '1024x1024', imgQuality)
-            : await generateImage(dallePrompt, '1024x1024', imgQuality)
+            ? await generateImageWithReference(dallePrompt, refImage, gptSize, imgQuality)
+            : await generateImage(dallePrompt, gptSize, imgQuality)
         }
         const driveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `image-${Date.now()}.png`, driveFolderId) : null
         const { data } = await db.from('cada_content_items')

@@ -185,6 +185,7 @@ function CreatorPageInner() {
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
   const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
   const [imageProvider, setImageProvider] = useState<'gpt' | 'flux'>('flux')
+  const [imageSize, setImageSize] = useState<'1:1' | '4:5' | '9:16'>('1:1')
   const [storyFormat, setStoryFormat] = useState<'image' | 'kling' | 'runway'>('image')
   const [refImageUrls, setRefImageUrls]   = useState<string[]>([])
   const [customPrompt, setCustomPrompt] = useState('')
@@ -294,6 +295,7 @@ function CreatorPageInner() {
       videoLength:    ['video', 'story'].includes(task) ? videoLength   : undefined,
       videoProvider:  task === 'video'   ? videoProvider : task === 'story' ? storyFormat : undefined,
       imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
+      imageSize:      task === 'image' ? imageSize : undefined,
       referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
       referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : (task === 'video') ? (refImageUrls.length > 0 ? refImageUrls : undefined) : undefined,
       prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
@@ -717,6 +719,26 @@ function CreatorPageInner() {
                 </div>
                 {imageProvider === 'gpt' && (
                   <p className="text-xs text-zinc-400 mt-1.5">GPT Image 1 quality is set in Brand Settings.</p>
+                )}
+                {task === 'image' && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">Aspect ratio</label>
+                    <div className="flex gap-2">
+                      {([
+                        { id: '1:1',  label: '1:1',  sub: 'Square' },
+                        { id: '4:5',  label: '4:5',  sub: 'Feed portrait' },
+                        { id: '9:16', label: '9:16', sub: 'Story / Reel' },
+                      ] as const).map((s) => (
+                        <button key={s.id} onClick={() => setImageSize(s.id)}
+                          className={cn('flex-1 rounded-xl border p-2.5 text-center transition-all',
+                            imageSize === s.id ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white hover:border-zinc-300'
+                          )}>
+                          <p className={cn('text-xs font-semibold', imageSize === s.id ? 'text-white' : 'text-zinc-800')}>{s.label}</p>
+                          <p className={cn('text-xs mt-0.5', imageSize === s.id ? 'text-white/60' : 'text-zinc-400')}>{s.sub}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
