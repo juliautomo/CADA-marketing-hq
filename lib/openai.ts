@@ -61,12 +61,21 @@ export async function generateImageGPT5(
   const client = getClient()
   const sizeParam = size === '1024x1024' ? '1024x1024' : '1024x1536'
 
-  const input: object[] = referenceUrl
+  let imageData: string | undefined
+  if (referenceUrl) {
+    const res = await fetch(referenceUrl)
+    if (!res.ok) throw new Error(`Failed to fetch reference image: ${res.status}`)
+    const buffer = Buffer.from(await res.arrayBuffer())
+    const mime = res.headers.get('content-type') ?? 'image/png'
+    imageData = `data:${mime};base64,${buffer.toString('base64')}`
+  }
+
+  const input: object[] = imageData
     ? [
         {
           role: 'user',
           content: [
-            { type: 'input_image', image_url: referenceUrl },
+            { type: 'input_image', image_url: imageData },
             { type: 'input_text', text: prompt },
           ],
         },
