@@ -186,6 +186,7 @@ function CreatorPageInner() {
   const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
   const [imageProvider, setImageProvider] = useState<'gpt' | 'flux' | 'gemini' | 'gpt5'>('flux')
   const [imageSize, setImageSize] = useState<'1:1' | '4:5' | '9:16'>('1:1')
+  const [imageQuality, setImageQuality] = useState<'medium' | 'high'>('medium')
   const [storyFormat, setStoryFormat] = useState<'image' | 'kling' | 'runway'>('image')
   const [refImageUrls, setRefImageUrls]   = useState<string[]>([])
   const [customPrompt, setCustomPrompt] = useState('')
@@ -296,6 +297,7 @@ function CreatorPageInner() {
       videoProvider:  task === 'video'   ? videoProvider : task === 'story' ? storyFormat : undefined,
       imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
       imageSize:      task === 'image' ? imageSize : undefined,
+      imageQualityOverride: task === 'image' && (imageProvider === 'gpt' || imageProvider === 'gpt5') ? imageQuality : undefined,
       referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
       referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : (task === 'video') ? (refImageUrls.length > 0 ? refImageUrls : undefined) : undefined,
       prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
@@ -719,8 +721,26 @@ function CreatorPageInner() {
                     </button>
                   ))}
                 </div>
-                {imageProvider === 'gpt' && (
-                  <p className="text-xs text-zinc-400 mt-1.5">GPT Image 1 quality is set in Brand Settings.</p>
+                {/* HD toggle — GPT providers only */}
+                {(imageProvider === 'gpt' || imageProvider === 'gpt5') && (
+                  <div className="mt-2 flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+                    <div>
+                      <p className="text-xs font-medium text-zinc-700">HD quality</p>
+                      <p className="text-xs text-zinc-400">Sharper detail · ~2× cost · slower</p>
+                    </div>
+                    <button
+                      onClick={() => setImageQuality(q => q === 'high' ? 'medium' : 'high')}
+                      className={cn(
+                        'relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
+                        imageQuality === 'high' ? 'bg-violet-600' : 'bg-zinc-300'
+                      )}
+                    >
+                      <span className={cn(
+                        'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                        imageQuality === 'high' ? 'translate-x-4' : 'translate-x-0'
+                      )} />
+                    </button>
+                  </div>
                 )}
                 {task === 'image' && (
                   <div className="mt-3">
@@ -740,6 +760,11 @@ function CreatorPageInner() {
                         </button>
                       ))}
                     </div>
+                    {(imageProvider === 'gpt' || imageProvider === 'gpt5') && imageSize !== '1:1' && (
+                      <p className="text-xs text-amber-600 mt-1.5">
+                        ⚠ GPT only supports 1024×1536 (2:3) for portrait — not true {imageSize}. Use Nano Banana 2 or Flux for exact {imageSize}.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

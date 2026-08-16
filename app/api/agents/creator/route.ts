@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const SYSTEM_PROMPT = ctx.systemPrompt('Content Creator') + `
 You are an expert copywriter specialising in ${brandIndustry} content.
 Write content that is warm, elegant, and aspirational. Always output ONLY the requested content — no preamble or meta-commentary.`
-  const imgQuality = ctx.imageQuality
+  const imgQuality = body.imageQualityOverride ?? ctx.imageQuality
   const driveEnabled = ctx.driveEnabled
   const driveFolderId = ctx.driveFolderId
 

@@ -149,6 +149,7 @@ export interface CreatorInput {
   videoProvider?: 'runway' | 'kling' | 'runway-ref' | 'image'
   imageProvider?: 'gpt' | 'flux' | 'gemini' | 'gpt5'
   imageSize?: '1:1' | '4:5' | '9:16'
+  imageQualityOverride?: 'medium' | 'high'
   referenceImageUrl?: string
   referenceImageUrls?: string[]
   campaignId?: string
