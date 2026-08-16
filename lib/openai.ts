@@ -53,6 +53,39 @@ export async function generateImageWithReference(
   return extractBase64Result(response.data)
 }
 
+export async function generateImageGPT5(
+  prompt: string,
+  size: '1024x1024' | '1024x1536' = '1024x1024',
+  referenceUrl?: string,
+): Promise<string> {
+  const client = getClient()
+  const sizeParam = size === '1024x1024' ? '1024x1024' : '1024x1536'
+
+  const input: object[] = referenceUrl
+    ? [
+        {
+          role: 'user',
+          content: [
+            { type: 'input_image', image_url: referenceUrl },
+            { type: 'input_text', text: prompt },
+          ],
+        },
+      ]
+    : [{ role: 'user', content: prompt }]
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response = await (client as any).responses.create({
+    model: 'gpt-5.6',
+    input,
+    tools: [{ type: 'image_generation', size: sizeParam }],
+  })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const imageOutput = (response.output as any[]).find((o: any) => o.type === 'image_generation_call')
+  if (!imageOutput?.result) throw new Error('GPT-5 returned no image')
+  return `data:image/png;base64,${imageOutput.result}`
+}
+
 export async function generateImageWithReferences(
   prompt: string,
   referenceUrls: string[],

@@ -1,7 +1,7 @@
 ﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
-import { generateImage, generateImageWithReference, generateImageWithReferences } from '@/lib/openai'
+import { generateImage, generateImageWithReference, generateImageWithReferences, generateImageGPT5 } from '@/lib/openai'
 import { generateImageFlux } from '@/lib/fal'
 import { generateImageGemini, generateImageGeminiWithReference } from '@/lib/gemini'
 import { runVirtualTryOn } from '@/lib/fashn'
@@ -175,7 +175,9 @@ Include:
         const gptSize: '1024x1024' | '1024x1536' = sizeKey === '1:1' ? '1024x1024' : '1024x1536'
 
         let imageUrl: string
-        if (provider === 'gemini') {
+        if (provider === 'gpt5') {
+          imageUrl = await generateImageGPT5(dallePrompt, gptSize, refImage ?? undefined)
+        } else if (provider === 'gemini') {
           imageUrl = refImage
             ? await generateImageGeminiWithReference(dallePrompt, refImage, sizeKey)
             : await generateImageGemini(dallePrompt, sizeKey)
