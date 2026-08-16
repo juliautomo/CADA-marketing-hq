@@ -51,14 +51,11 @@ export async function POST(req: NextRequest) {
   const langNote = LANG_INSTRUCTION[body.language ?? 'english']
   const lenNote  = LENGTH_INSTRUCTION[body.captionLength ?? 'standard']
 
-  const { data: run } = await db
-    .from('cada_agent_runs')
-    .insert({ agent: 'creator', status: 'running', input: body })
-    .select()
-    .single()
-
   const clientId = req.headers.get('x-client-id') ?? null
-  const ctx = await getBrandContext(clientId)
+  const [{ data: run }, ctx] = await Promise.all([
+    db.from('cada_agent_runs').insert({ agent: 'creator', status: 'running', input: body }).select().single(),
+    getBrandContext(clientId),
+  ])
   const brandName     = ctx.raw.brand_name || 'Your Brand'
   const brandSubject  = ctx.raw.brand_subject_description || ''
   const brandHashtags = ctx.raw.brand_hashtags || ''
@@ -227,8 +224,7 @@ Include:
         const productDesc = body.product ?? `${brandIndustry} product`
         const storyType = body.videoProvider === 'image' ? 'image' : 'video'
 
-        // Generate story caption (short, punchy, no hashtags)
-        const caption = await generateText(
+        const captionPromise = generateText(
           SYSTEM_PROMPT,
           `Write a very short Instagram Story text overlay for ${brandName}'s product: ${productDesc}.
 Tone: ${body.tone ?? 'elegant and aspirational'}.
@@ -244,11 +240,12 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           const imagePrompt = [ctx.imagePrompt, storyBase].filter(Boolean).join('. ')
           const storyRefImage = body.referenceImageUrl || ctx.referenceImageUrl
           const storyImgProvider = body.imageProvider ?? 'gpt'
-          const imageUrl = storyImgProvider === 'flux'
-            ? await generateImageFlux(imagePrompt, '9:16')
+          const imageGenPromise = storyImgProvider === 'flux'
+            ? generateImageFlux(imagePrompt, '9:16')
             : storyRefImage
-              ? await generateImageWithReference(imagePrompt, storyRefImage, '1024x1536', imgQuality)
-              : await generateImage(imagePrompt, '1024x1536', imgQuality)
+              ? generateImageWithReference(imagePrompt, storyRefImage, '1024x1536', imgQuality)
+              : generateImage(imagePrompt, '1024x1536', imgQuality)
+          const [caption, imageUrl] = await Promise.all([captionPromise, imageGenPromise])
           const storyImgDriveUrl = driveEnabled ? await uploadMediaToDrive(imageUrl, `cada-story-${Date.now()}.png`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
             .insert({ type: 'story', title: `Story: ${productDesc}`, image_url: imageUrl, drive_url: storyImgDriveUrl, body: caption, metadata: { prompt: imagePrompt, format: 'story_image' }, tags: ['story', 'instagram', 'cada'], client_id: clientId })
@@ -260,9 +257,10 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           const duration = body.videoLength ?? 5
           const provider = body.videoProvider === 'runway' ? 'runway' : 'kling'
           const refImage = body.referenceImageUrl || undefined
-          const videoUrl = provider === 'runway'
-            ? await generateVideoRunway(videoPrompt, duration, refImage, '720:1280')
-            : await generateVideoKling(videoPrompt, duration, refImage)
+          const videoGenPromise = provider === 'runway'
+            ? generateVideoRunway(videoPrompt, duration, refImage, '720:1280')
+            : generateVideoKling(videoPrompt, duration, refImage)
+          const [caption, videoUrl] = await Promise.all([captionPromise, videoGenPromise])
           const storyVidDriveUrl = driveEnabled ? await uploadMediaToDrive(videoUrl, `cada-story-video-${Date.now()}.mp4`, driveFolderId) : null
           const { data } = await db.from('cada_content_items')
             .insert({ type: 'story', title: `Story Video: ${productDesc}`, video_url: videoUrl, drive_url: storyVidDriveUrl, body: caption, metadata: { prompt: videoPrompt, duration, provider, format: 'story_video' }, tags: ['story', 'instagram', 'cada', provider], client_id: clientId })

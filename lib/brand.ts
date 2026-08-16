@@ -27,7 +27,14 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
   let query = db.from('cada_settings').select('key, value').in('key', KEYS)
   if (clientId) query = query.eq('client_id', clientId)
   else query = query.is('client_id', null)
-  const { data } = await query
+
+  let photoQuery = db.from('cada_brand_photos').select('url').order('created_at', { ascending: false }).limit(1)
+  if (clientId) photoQuery = photoQuery.eq('client_id', clientId)
+  else photoQuery = photoQuery.is('client_id', null)
+
+  const [{ data }, photoResult] = await Promise.all([query, photoQuery])
+  const libraryPhotos = photoResult?.data
+
   const raw: Record<string, string> = {}
   for (const row of data ?? []) {
     if (row.value && row.value !== 'null') {
@@ -55,13 +62,7 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
 
   // Use first library photo as style reference, fall back to manual uploads
   let referenceImageUrl: string | undefined = raw.brand_model_reference_url || undefined
-  try {
-    let photoQuery = db.from('cada_brand_photos').select('url').order('created_at', { ascending: false }).limit(1)
-    if (clientId) photoQuery = photoQuery.eq('client_id', clientId)
-    else photoQuery = photoQuery.is('client_id', null)
-    const { data: libraryPhotos } = await photoQuery
-    if (libraryPhotos?.[0]?.url) referenceImageUrl = libraryPhotos[0].url
-  } catch { /* fall back to manual reference */ }
+  if (libraryPhotos?.[0]?.url) referenceImageUrl = libraryPhotos[0].url
 
   return {
     systemPrompt: (agentRole: string) => getBrandSystemPrompt(agentRole, raw),
