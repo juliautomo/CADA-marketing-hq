@@ -297,7 +297,14 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
       }
     }
 
-    await db.from('cada_agent_runs').update({ status: 'completed', output: result, duration_ms: Date.now() - start }).eq('id', run!.id)
+    // Strip base64 image/video data before storing in run log — already saved in cada_content_items
+    const { imageUrl: _img, videoUrl: _vid, ...resultForLog } = result as Record<string, unknown>
+    const logOutput = {
+      ...resultForLog,
+      ...((_img as string)?.startsWith('data:') ? {} : { imageUrl: _img }),
+      ...((_vid as string)?.startsWith('data:') ? {} : { videoUrl: _vid }),
+    }
+    await db.from('cada_agent_runs').update({ status: 'completed', output: logOutput, duration_ms: Date.now() - start }).eq('id', run!.id)
     return NextResponse.json({ success: true, ...result })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'

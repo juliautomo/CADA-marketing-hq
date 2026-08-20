@@ -1,4 +1,5 @@
 import OpenAI, { toFile } from 'openai'
+import { createServiceClient } from './supabase'
 
 let _openai: OpenAI | null = null
 
@@ -7,6 +8,20 @@ function getClient() {
     _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
   }
   return _openai
+}
+
+export async function uploadBase64ToStorage(dataUrl: string): Promise<string> {
+  if (!dataUrl.startsWith('data:')) return dataUrl
+  const [header, b64] = dataUrl.split(',')
+  const mimeType = header.match(/:(.*?);/)?.[1] ?? 'image/png'
+  const ext = mimeType.includes('png') ? 'png' : 'jpg'
+  const path = `gpt/${Date.now()}.${ext}`
+  const buffer = Buffer.from(b64, 'base64')
+  const db = createServiceClient()
+  const { error } = await db.storage.from('product-images').upload(path, buffer, { contentType: mimeType, upsert: true })
+  if (error) throw new Error(`Storage upload failed: ${error.message}`)
+  const { data } = db.storage.from('product-images').getPublicUrl(path)
+  return data.publicUrl
 }
 
 function extractBase64Result(data: OpenAI.Images.Image[] | undefined): string {
@@ -29,7 +44,7 @@ export async function generateImage(
     size,
     quality,
   })
-  return extractBase64Result(response.data)
+  return uploadBase64ToStorage(extractBase64Result(response.data))
 }
 
 export async function generateImageWithReference(
@@ -50,7 +65,7 @@ export async function generateImageWithReference(
     n: 1,
     size,
   })
-  return extractBase64Result(response.data)
+  return uploadBase64ToStorage(extractBase64Result(response.data))
 }
 
 export async function generateImageGPT5(
@@ -92,7 +107,7 @@ export async function generateImageGPT5(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const imageOutput = (response.output as any[]).find((o: any) => o.type === 'image_generation_call')
   if (!imageOutput?.result) throw new Error('GPT-5 returned no image')
-  return `data:image/png;base64,${imageOutput.result}`
+  return uploadBase64ToStorage(`data:image/png;base64,${imageOutput.result}`)
 }
 
 export async function generateImageWithReferences(
@@ -118,5 +133,5 @@ export async function generateImageWithReferences(
     n: 1,
     size,
   })
-  return extractBase64Result(response.data)
+  return uploadBase64ToStorage(extractBase64Result(response.data))
 }
