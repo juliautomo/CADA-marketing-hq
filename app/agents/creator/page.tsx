@@ -184,7 +184,7 @@ function CreatorPageInner() {
   const [captionLength, setCaptionLen]  = useState<CreatorInput['captionLength']>('standard')
   const [videoLength, setVideoLength]   = useState<5 | 10>(5)
   const [videoProvider, setVideoProvider] = useState<'runway' | 'kling' | 'runway-ref'>('kling')
-  const [imageProvider, setImageProvider] = useState<'gpt' | 'flux' | 'gemini' | 'gpt5'>('flux')
+  const [imageProvider, setImageProvider] = useState<'gpt' | 'gemini' | 'gpt5'>('gpt')
   const [imageSize, setImageSize] = useState<'1:1' | '4:5' | '9:16'>('1:1')
   const [imageQuality, setImageQuality] = useState<'medium' | 'high'>('medium')
   const [storyFormat, setStoryFormat] = useState<'image' | 'kling' | 'runway'>('image')
@@ -297,7 +297,7 @@ function CreatorPageInner() {
       videoProvider:  task === 'video'   ? videoProvider : task === 'story' ? storyFormat : undefined,
       imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
       imageSize:      task === 'image' ? imageSize : undefined,
-      imageQualityOverride: task === 'image' && (imageProvider === 'gpt' || imageProvider === 'gpt5') ? imageQuality : undefined,
+      imageQualityOverride: (imageProvider === 'gpt' || imageProvider === 'gpt5') ? imageQuality : undefined,
       referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
       referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : (task === 'video') ? (refImageUrls.length > 0 ? refImageUrls : undefined) : undefined,
       prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
@@ -710,7 +710,6 @@ function CreatorPageInner() {
                   {([
                     { id: 'gpt5',   label: 'GPT-5 ✦',       sub: 'ChatGPT-quality layouts' },
                     { id: 'gemini', label: 'Nano Banana 2',  sub: 'Best text & infographics' },
-                    { id: 'flux',   label: 'Flux 1.1 Pro',   sub: 'Most photorealistic' },
                     { id: 'gpt',    label: 'GPT Image 1',    sub: 'Best with reference photo' },
                   ] as const).map((p) => (
                     <button key={p.id} onClick={() => setImageProvider(p.id)}

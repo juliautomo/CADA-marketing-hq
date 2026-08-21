@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage, generateImageWithReference, generateImageWithReferences, generateImageGPT5 } from '@/lib/openai'
-import { generateImageFlux } from '@/lib/fal'
 import { generateImageGemini, generateImageGeminiWithReference } from '@/lib/gemini'
 import { runVirtualTryOn } from '@/lib/fashn'
 import { uploadFileToDrive } from '@/lib/google'
@@ -178,8 +177,6 @@ Include:
           imageUrl = refImage
             ? await generateImageGeminiWithReference(dallePrompt, refImage, sizeKey)
             : await generateImageGemini(dallePrompt, sizeKey)
-        } else if (provider === 'flux') {
-          imageUrl = await generateImageFlux(dallePrompt, sizeKey)
         } else if (promptMentionsLogo && logoUrl && refImage) {
           imageUrl = await generateImageWithReferences(dallePrompt, [refImage, logoUrl], gptSize, imgQuality)
         } else if (promptMentionsLogo && logoUrl) {
@@ -240,9 +237,7 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
           const imagePrompt = [ctx.imagePrompt, storyBase].filter(Boolean).join('. ')
           const storyRefImage = body.referenceImageUrl || ctx.referenceImageUrl
           const storyImgProvider = body.imageProvider ?? 'gpt'
-          const imageGenPromise = storyImgProvider === 'flux'
-            ? generateImageFlux(imagePrompt, '9:16')
-            : storyRefImage
+          const imageGenPromise = storyRefImage
               ? generateImageWithReference(imagePrompt, storyRefImage, '1024x1536', imgQuality)
               : generateImage(imagePrompt, '1024x1536', imgQuality)
           const [caption, imageUrl] = await Promise.all([captionPromise, imageGenPromise])
