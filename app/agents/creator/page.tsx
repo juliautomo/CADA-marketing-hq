@@ -311,7 +311,8 @@ function CreatorPageInner() {
       const data = await res.json()
       if (!data.success) throw new Error(data.error ?? 'Generation failed')
       setResult(data)
-      fetchLibrary()
+      if (data.item) setLibrary(prev => [data.item as ContentItem, ...prev.slice(0, 49)])
+      else fetchLibrary()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {

@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase'
 export async function GET(req: NextRequest) {
   const clientId = req.headers.get('x-client-id')
   const db = createServiceClient()
-  let query = db.from('cada_products').select('*').order('created_at', { ascending: false })
+  let query = db.from('cada_products').select('*').order('created_at', { ascending: false }).limit(500)
   if (clientId) query = query.eq('client_id', clientId)
   else query = query.is('client_id', null)
   const { data, error } = await query
