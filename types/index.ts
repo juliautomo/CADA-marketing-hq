@@ -152,6 +152,8 @@ export interface CreatorInput {
   imageQualityOverride?: 'medium' | 'high'
   referenceImageUrl?: string
   referenceImageUrls?: string[]
+  isRevision?: boolean
+  revisionFeedback?: string
   campaignId?: string
   milestoneIndex?: number
 }

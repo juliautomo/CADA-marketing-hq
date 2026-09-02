@@ -157,7 +157,10 @@ Include:
         // Choose reference image: user upload > brand context ref (model → style)
         const refImage = body.referenceImageUrl || ctx.referenceImageUrl
 
-        const dallePrompt = body.referenceImageUrl
+        const dallePrompt = body.isRevision && body.revisionFeedback && body.referenceImageUrl
+          // Revision of an existing image — tight edit instruction, keep everything else identical
+          ? `Edit this image. Keep everything exactly the same except: ${body.revisionFeedback}. Do not change the composition, style, colors, or any other elements unless explicitly mentioned.`
+          : body.referenceImageUrl
           // Reference uploaded: user's prompt + reference image are the complete instruction — skip brand context injection
           ? basePrompt
           : isGraphic

@@ -305,10 +305,12 @@ function CreatorPageInner() {
       imageProvider:  ['image', 'story'].includes(task) ? imageProvider : undefined,
       imageSize:      task === 'image' ? imageSize : undefined,
       imageQualityOverride: (imageProvider === 'gpt' || imageProvider === 'gpt5') ? imageQuality : undefined,
-      referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : rawMediaUrl ?? undefined,
+      referenceImageUrl: isTryon ? rawMediaUrl ?? undefined : (rawMediaUrl ?? (task === 'image' && refImageUrls[0] ? refImageUrls[0] : undefined)) ?? undefined,
       referenceImageUrls: isTryon ? refImageUrls.filter(Boolean) : (task === 'video') ? (refImageUrls.length > 0 ? refImageUrls : undefined) : undefined,
       prompt:         customPrompt || (task === 'image' && imageAnalysis?.dallePrompt) || undefined,
       additionalContext: (productContext + imageContext + (captionNotes ? `\n\nADDITIONAL CAPTION NOTES: ${captionNotes}` : '') + (retryFeedback.trim() ? `\n\nREGENERATION FEEDBACK: The previous result wasn't right. Please change: ${retryFeedback}` : '')) || undefined,
+      isRevision: retryFeedback.trim() ? true : undefined,
+      revisionFeedback: retryFeedback.trim() || undefined,
       campaignId,
       milestoneIndex,
     }
