@@ -206,7 +206,7 @@ function CreatorPageInner() {
   const [library, setLibrary]         = useState<ContentItem[]>([])
   const [libraryLoading, setLibraryLoading] = useState(true)
   const [products, setProducts]       = useState<import('@/types').Product[]>([])
-  const [selectedProduct, setSelectedProduct] = useState<import('@/types').Product | null>(null)
+  const [selectedProducts, setSelectedProducts] = useState<import('@/types').Product[]>([])
 
   const [generatedCaption, setGeneratedCaption] = useState('')
   const [retryFeedback, setRetryFeedback] = useState('')
@@ -256,19 +256,19 @@ function CreatorPageInner() {
 
   // Auto-fill product details field when catalog item selected for image/video
   useEffect(() => {
-    if (needsPrompt && selectedProduct) {
-      const parts = [
-        selectedProduct.name,
-        selectedProduct.colors.length > 0 ? selectedProduct.colors.join(', ') : null,
-        selectedProduct.fabric ?? null,
-      ].filter(Boolean)
-      setProduct(parts.join(' · '))
+    if (needsPrompt && selectedProducts.length > 0) {
+      const parts = selectedProducts.map(p => [
+        p.name,
+        p.colors.length > 0 ? p.colors.join(', ') : null,
+        p.fabric ?? null,
+      ].filter(Boolean).join(' · '))
+      setProduct(parts.join(' | '))
     }
-  }, [selectedProduct, needsPrompt])
+  }, [selectedProducts, needsPrompt])
 
   // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
-    if (!product && !customPrompt && !imageAnalysis && !videoAnalysis && !selectedProduct && !rawMediaUrl) return
+    if (!product && !customPrompt && !imageAnalysis && !videoAnalysis && selectedProducts.length === 0 && !rawMediaUrl) return
     setLoading(true)
     setResult(null)
     setError(null)
@@ -276,8 +276,8 @@ function CreatorPageInner() {
     setResultMediaUrl(rawMediaUrl)
 
     // Build product context from catalog selection
-    const productContext = selectedProduct
-      ? `\n\nPRODUCT FROM CATALOG:\n- Name: ${selectedProduct.name}\n- Category: ${selectedProduct.category}\n- Price: ${selectedProduct.price ?? 'not specified'}\n- Colours: ${selectedProduct.colors.join(', ')}\n- Fabric: ${selectedProduct.fabric ?? 'not specified'}\n- Season: ${selectedProduct.season}\n- Description: ${selectedProduct.description ?? ''}\nUse these exact product details in the content.`
+    const productContext = selectedProducts.length > 0
+      ? `\n\nPRODUCTS FROM CATALOG:\n${selectedProducts.map(p => `- Name: ${p.name}\n  Category: ${p.category}\n  Price: ${p.price ?? 'not specified'}\n  Colours: ${p.colors.join(', ')}\n  Fabric: ${p.fabric ?? 'not specified'}\n  Season: ${p.season}\n  Description: ${p.description ?? ''}`).join('\n')}\nUse these exact product details in the content.`
       : ''
 
     const imageContext = imageAnalysis
@@ -288,7 +288,7 @@ function CreatorPageInner() {
 
     const body: CreatorInput = {
       task,
-      product:        product || selectedProduct?.name || undefined,
+      product:        product || (selectedProducts.length > 0 ? selectedProducts.map(p => p.name).join(', ') : undefined),
       platform,
       tone,
       language,
@@ -403,7 +403,7 @@ function CreatorPageInner() {
 
   const canGenerate  = isTryon
     ? !!(rawMediaUrl && refImageUrls[0])
-    : !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProduct || rawMediaUrl)
+    : !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProducts.length > 0 || rawMediaUrl)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
   const showCatalog  = products.length > 0
 
@@ -504,29 +504,36 @@ function CreatorPageInner() {
                   Pick from catalog <span className="text-zinc-400 font-normal">(optional)</span>
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {products.filter(p => p.active).map(p => (
-                    <button key={p.id} onClick={() => {
-                      setSelectedProduct(selectedProduct?.id === p.id ? null : p)
-                      if (selectedProduct?.id !== p.id) setProduct('')
-                    }}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
-                        selectedProduct?.id === p.id
-                          ? 'bg-violet-600 text-white border-violet-600'
-                          : 'bg-white text-zinc-600 border-zinc-200 hover:border-violet-300 hover:text-violet-700'
-                      )}>
-                      {p.name}
-                    </button>
-                  ))}
+                  {products.filter(p => p.active).map(p => {
+                    const isSelected = selectedProducts.some(s => s.id === p.id)
+                    return (
+                      <button key={p.id} onClick={() => {
+                        setSelectedProducts(prev => isSelected ? prev.filter(s => s.id !== p.id) : [...prev, p])
+                        if (!isSelected) setProduct('')
+                      }}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                          isSelected
+                            ? 'bg-violet-600 text-white border-violet-600'
+                            : 'bg-white text-zinc-600 border-zinc-200 hover:border-violet-300 hover:text-violet-700'
+                        )}>
+                        {p.name}
+                      </button>
+                    )
+                  })}
                 </div>
-                {selectedProduct && (
-                  <div className="mt-2 rounded-lg bg-violet-50 border border-violet-100 px-3 py-2 flex items-center justify-between">
-                    <p className="text-xs text-violet-700">
-                      ✓ <strong>{selectedProduct.name}</strong> — {selectedProduct.colors.join(', ')} · {selectedProduct.fabric}
-                    </p>
-                    <button onClick={() => setSelectedProduct(null)} className="text-violet-400 hover:text-violet-600 ml-2">
-                      <X className="w-3 h-3" />
-                    </button>
+                {selectedProducts.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {selectedProducts.map(p => (
+                      <div key={p.id} className="rounded-lg bg-violet-50 border border-violet-100 px-3 py-2 flex items-center justify-between">
+                        <p className="text-xs text-violet-700">
+                          ✓ <strong>{p.name}</strong> — {p.colors.join(', ')} · {p.fabric}
+                        </p>
+                        <button onClick={() => setSelectedProducts(prev => prev.filter(s => s.id !== p.id))} className="text-violet-400 hover:text-violet-600 ml-2">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -536,13 +543,13 @@ function CreatorPageInner() {
             {(needsProduct || task === 'canva') && (
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                  {selectedProduct ? 'Extra product notes' : task === 'email' ? 'Product or campaign name' : 'Product / subject'}
+                  {selectedProducts.length > 0 ? 'Extra product notes' : task === 'email' ? 'Product or campaign name' : 'Product / subject'}
                 </label>
                 <Input
                   value={product}
                   onChange={(e) => setProduct(e.target.value)}
                   placeholder={
-                    selectedProduct ? 'e.g. focus on the relaxed fit, style it with sandals…' :
+                    selectedProducts.length > 0 ? 'e.g. focus on the relaxed fit, style it with sandals…' :
                     task === 'email' ? 'e.g. New Collection launch' :
                     task === 'canva' ? 'e.g. Linen wide-leg pants' :
                     'e.g. silk slip dress in champagne'
@@ -562,7 +569,7 @@ function CreatorPageInner() {
                   <Input
                     value={product}
                     onChange={(e) => setProduct(e.target.value)}
-                    placeholder={selectedProduct ? 'e.g. focus on the signature shape, earthy tones…' : 'e.g. Navy linen trousers, relaxed fit, minimal style'}
+                    placeholder={selectedProducts.length > 0 ? 'e.g. focus on the signature shape, earthy tones…' : 'e.g. Navy linen trousers, relaxed fit, minimal style'}
                   />
                 </div>
                 {/* Scene / visual prompt */}
@@ -1115,7 +1122,7 @@ function CreatorPageInner() {
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-violet-700">Generated Caption</span>
                             <button
-                              onClick={() => { setCaptionGenerating(true); setGeneratedCaption(''); fetch('/api/agents/caption-from-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl: url, language, captionLength }) }).then(r => r.json()).then(d => setGeneratedCaption(d.caption ?? '')).finally(() => setCaptionGenerating(false)) }}
+                              onClick={() => { setCaptionGenerating(true); setGeneratedCaption(''); fetch('/api/agents/caption-from-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl: url, language, captionLength, direction: captionNotes, tone, platform, productNotes: product, selectedProducts }) }).then(r => r.json()).then(d => setGeneratedCaption(d.caption ?? '')).finally(() => setCaptionGenerating(false)) }}
                               className="text-[10px] text-violet-500 underline hover:text-violet-700"
                             >Regenerate</button>
                           </div>
@@ -1128,7 +1135,7 @@ function CreatorPageInner() {
                         </div>
                       ) : (
                         <button
-                          onClick={() => { setCaptionGenerating(true); fetch('/api/agents/caption-from-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl: url, language, captionLength }) }).then(r => r.json()).then(d => setGeneratedCaption(d.caption ?? '')).finally(() => setCaptionGenerating(false)) }}
+                          onClick={() => { setCaptionGenerating(true); fetch('/api/agents/caption-from-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl: url, language, captionLength, direction: captionNotes, tone, platform, productNotes: product, selectedProducts }) }).then(r => r.json()).then(d => setGeneratedCaption(d.caption ?? '')).finally(() => setCaptionGenerating(false)) }}
                           disabled={captionGenerating}
                           className="flex items-center justify-center gap-2 w-full rounded-xl border border-violet-200 bg-violet-50 text-violet-700 text-sm font-medium py-2.5 hover:bg-violet-100 disabled:opacity-50 transition-colors"
                         >

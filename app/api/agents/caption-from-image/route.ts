@@ -7,7 +7,16 @@ import Anthropic from '@anthropic-ai/sdk'
 const client = new Anthropic()
 
 export async function POST(req: NextRequest) {
-  const { imageUrl, language = 'english', captionLength = 'standard' } = await req.json()
+  const {
+    imageUrl,
+    language = 'english',
+    captionLength = 'standard',
+    direction = '',
+    tone = '',
+    platform = 'Instagram',
+    productNotes = '',
+    selectedProducts = [] as { name: string; colors: string[]; fabric?: string | null; category?: string; description?: string | null }[],
+  } = await req.json()
 
   if (!imageUrl) return NextResponse.json({ error: 'imageUrl required' }, { status: 400 })
 
@@ -33,9 +42,16 @@ export async function POST(req: NextRequest) {
 You are an expert copywriter specialising in ${brandIndustry} content for ${brandName}.
 Write content that matches the brand voice. Output ONLY the caption — no preamble or meta-commentary.`
 
-  const userPrompt = `Look at this image and write an Instagram caption for ${brandName}.
+  const productsLine = selectedProducts.length > 0
+    ? `\nProducts featured: ${selectedProducts.map((p: { name: string; colors: string[]; fabric?: string | null }) => [p.name, p.colors.join('/'), p.fabric].filter(Boolean).join(' · ')).join(' | ')}`
+    : ''
+
+  const userPrompt = `Look at this image and write a ${platform} caption for ${brandName}.
 ${LANG_INSTRUCTION[language] ?? LANG_INSTRUCTION['english']}
 ${LENGTH_INSTRUCTION[captionLength] ?? LENGTH_INSTRUCTION['standard']}
+${tone ? `Tone: ${tone}.` : ''}${productsLine}
+${productNotes ? `Extra notes: ${productNotes}` : ''}
+${direction ? `Caption direction / angle to follow:\n${direction}` : ''}
 Include relevant hashtags at the end (${brandHashtags}).`
 
   let imageData: { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'; data: string } | null = null
