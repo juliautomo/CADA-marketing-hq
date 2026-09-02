@@ -324,7 +324,7 @@ function CreatorPageInner() {
     setTask(t)
     setResult(null)
     setError(null)
-    setSelectedProduct(null)
+    setSelectedProducts([])
     if (t !== 'image') setImageAnalysis(null)
     setVideoAnalysis(null)
     setRawMediaUrl(null)
