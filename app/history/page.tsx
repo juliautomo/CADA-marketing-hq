@@ -256,8 +256,9 @@ function ContentRow({ item }: { item: ContentItem }) {
     if (!feedback.trim() || !item.image_url) return
     const params = new URLSearchParams({
       task: 'image',
-      prompt: feedback,
       refImg: refImg ?? item.image_url,
+      revision: '1',
+      feedback,
     })
     router.push(`/agents/creator?${params.toString()}`)
   }
