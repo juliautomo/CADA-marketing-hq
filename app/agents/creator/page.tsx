@@ -410,9 +410,10 @@ function CreatorPageInner() {
     window.open(url, '_blank')
   }
 
+  const isRevisionMode = !!(retryFeedback && refImageUrls.length > 0)
   const canGenerate  = isTryon
     ? !!(rawMediaUrl && refImageUrls[0])
-    : !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProducts.length > 0 || rawMediaUrl)
+    : isRevisionMode || !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProducts.length > 0 || rawMediaUrl)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
   const showCatalog  = products.length > 0
 
@@ -568,7 +569,7 @@ function CreatorPageInner() {
             )}
 
             {/* Visual scene — image / video */}
-            {needsPrompt && (
+            {needsPrompt && !isRevisionMode && (
               <div className="space-y-3">
                 {/* Product details */}
                 <div>
