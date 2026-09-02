@@ -7,8 +7,9 @@ import {
   TrendingUp, CalendarDays, BarChart3, FileText,
   Image, Palette, Layers, ExternalLink, ChevronDown,
   ChevronUp, Type, Mail, Video, Layout, LayoutGrid, ChevronLeft, ChevronRight,
-  RotateCcw,
+  RotateCcw, Upload, X,
 } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -230,14 +231,33 @@ function ContentRow({ item }: { item: ContentItem }) {
   const router = useRouter()
   const [retryOpen, setRetryOpen] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const [refImg, setRefImg] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const isImage = item.type === 'image' && !!item.image_url
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+
+  async function handleRefUpload(file: File) {
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `retry-refs/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+    if (!error) {
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+      setRefImg(data.publicUrl)
+    }
+    setUploading(false)
+  }
 
   function handleTryAgain() {
     if (!feedback.trim() || !item.image_url) return
     const params = new URLSearchParams({
       task: 'image',
       prompt: feedback,
-      refImg: item.image_url,
+      refImg: refImg ?? item.image_url,
     })
     router.push(`/agents/creator?${params.toString()}`)
   }
@@ -296,6 +316,24 @@ function ContentRow({ item }: { item: ContentItem }) {
             placeholder="e.g. brighter colors, remove the text, warmer lighting, different background…"
             className="w-full text-xs text-zinc-700 bg-white border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400"
           />
+          <div>
+            <p className="text-xs font-medium text-zinc-500 mb-1.5">Reference image <span className="text-zinc-400 font-normal">(optional)</span></p>
+            {refImg ? (
+              <div className="relative w-16 h-16">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={refImg} alt="ref" className="w-16 h-16 rounded-lg object-cover border border-zinc-200" />
+                <button onClick={() => setRefImg(null)} className="absolute -top-1 -right-1 bg-white rounded-full shadow p-0.5 border border-zinc-200">
+                  <X className="w-3 h-3 text-zinc-500" />
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-xs text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 transition-colors">
+                <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleRefUpload(f) }} />
+                <Upload className="w-3.5 h-3.5" />
+                {uploading ? 'Uploading…' : 'Upload reference'}
+              </label>
+            )}
+          </div>
           <button
             onClick={handleTryAgain}
             disabled={!feedback.trim()}
