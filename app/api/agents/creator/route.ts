@@ -154,6 +154,7 @@ Include:
         const industryContext = `Flat-design social media graphic for ${brandName} (${brandIndustry} brand). Design aesthetic and typography should feel appropriate for ${brandIndustry}. Include a small brand footer with "${brandHandle}".`
         const graphicBrandContext = [industryContext, colorContext].filter(Boolean).join(' ')
 
+        console.log('[image] isRevision:', body.isRevision, 'revisionFeedback:', body.revisionFeedback, 'referenceImageUrl:', body.referenceImageUrl)
         // Choose reference image: user upload > brand context ref (model → style)
         const refImage = body.referenceImageUrl || ctx.referenceImageUrl
 

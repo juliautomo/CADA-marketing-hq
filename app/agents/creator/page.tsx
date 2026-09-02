@@ -275,7 +275,7 @@ function CreatorPageInner() {
 
   // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
-    if (!product && !customPrompt && !imageAnalysis && !videoAnalysis && selectedProducts.length === 0 && !rawMediaUrl) return
+    if (!product && !customPrompt && !imageAnalysis && !videoAnalysis && selectedProducts.length === 0 && !rawMediaUrl && !retryFeedback && refImageUrls.length === 0) return
     setLoading(true)
     setResult(null)
     setError(null)
