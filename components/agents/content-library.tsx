@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime } from '@/lib/utils'
 import type { ContentItem, ContentType } from '@/types'
-import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check, BookImage, Download } from 'lucide-react'
+import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check, BookImage, Download, RotateCcw } from 'lucide-react'
 
 const typeConfig: Record<ContentType, { label: string; icon: typeof Image; color: string }> = {
   caption:        { label: 'Caption',     icon: Type,     color: 'bg-violet-50 text-violet-600' },
@@ -27,9 +28,12 @@ interface ContentLibraryProps {
 }
 
 export function ContentLibrary({ items }: ContentLibraryProps) {
-  const [page, setPage]       = useState(1)
+  const router = useRouter()
+  const [page, setPage]         = useState(1)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [copied, setCopied]     = useState<string | null>(null)
+  const [retryOpen, setRetryOpen]   = useState<string | null>(null)
+  const [retryText, setRetryText]   = useState<Record<string, string>>({})
 
   function toggleExpand(id: string) { setExpanded(prev => prev === id ? null : id) }
 
@@ -109,10 +113,41 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
                       <div className="mt-3 space-y-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.image_url} alt={item.title} className="w-full max-w-sm rounded-xl" />
-                        <button onClick={(e) => { e.stopPropagation(); downloadMedia(item.image_url!, `image-${new Date().toISOString().slice(0,10)}.png`) }}
-                          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800">
-                          <Download className="w-3.5 h-3.5" /> Download
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button onClick={(e) => { e.stopPropagation(); downloadMedia(item.image_url!, `image-${new Date().toISOString().slice(0,10)}.png`) }}
+                            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800">
+                            <Download className="w-3.5 h-3.5" /> Download
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); setRetryOpen(v => v === item.id ? null : item.id) }}
+                            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800">
+                            <RotateCcw className="w-3.5 h-3.5" /> Try Again
+                          </button>
+                        </div>
+                        {retryOpen === item.id && (
+                          <div className="rounded-xl border border-zinc-200 bg-white p-3 space-y-2" onClick={e => e.stopPropagation()}>
+                            <p className="text-xs font-medium text-zinc-500">What would you like to change?</p>
+                            <textarea
+                              value={retryText[item.id] ?? ''}
+                              onChange={e => setRetryText(prev => ({ ...prev, [item.id]: e.target.value }))}
+                              rows={2}
+                              autoFocus
+                              placeholder="e.g. brighter colors, remove the text, warmer lighting…"
+                              className="w-full text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                            />
+                            <button
+                              disabled={!(retryText[item.id] ?? '').trim()}
+                              onClick={() => {
+                                const feedback = (retryText[item.id] ?? '').trim()
+                                if (!feedback || !item.image_url) return
+                                const params = new URLSearchParams({ task: 'image', refImg: item.image_url, revision: '1', feedback })
+                                router.push(`/agents/creator?${params.toString()}`)
+                              }}
+                              className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-800 text-white text-xs font-medium py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors"
+                            >
+                              <RotateCcw className="w-3 h-3" /> Regenerate with changes
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                     {item.video_url && (
