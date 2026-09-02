@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime } from '@/lib/utils'
 import type { ContentItem, ContentType } from '@/types'
-import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check, BookImage, Download, RotateCcw } from 'lucide-react'
+import { Image, Video, Mail, Type, Layout, FileText, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Check, BookImage, Download, RotateCcw, Upload, X } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
 
 const typeConfig: Record<ContentType, { label: string; icon: typeof Image; color: string }> = {
   caption:        { label: 'Caption',     icon: Type,     color: 'bg-violet-50 text-violet-600' },
@@ -32,8 +33,27 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
   const [page, setPage]         = useState(1)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [copied, setCopied]     = useState<string | null>(null)
-  const [retryOpen, setRetryOpen]   = useState<string | null>(null)
-  const [retryText, setRetryText]   = useState<Record<string, string>>({})
+  const [retryOpen, setRetryOpen]     = useState<string | null>(null)
+  const [retryText, setRetryText]     = useState<Record<string, string>>({})
+  const [retryRefImg, setRetryRefImg] = useState<Record<string, string>>({})
+  const [uploading, setUploading]     = useState<string | null>(null)
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+
+  async function handleRefUpload(itemId: string, file: File) {
+    setUploading(itemId)
+    const ext = file.name.split('.').pop()
+    const path = `retry-refs/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+    if (!error) {
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+      setRetryRefImg(prev => ({ ...prev, [itemId]: data.publicUrl }))
+    }
+    setUploading(null)
+  }
 
   function toggleExpand(id: string) { setExpanded(prev => prev === id ? null : id) }
 
@@ -134,12 +154,31 @@ export function ContentLibrary({ items }: ContentLibraryProps) {
                               placeholder="e.g. brighter colors, remove the text, warmer lighting…"
                               className="w-full text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400"
                             />
+                            <div>
+                              <p className="text-xs font-medium text-zinc-500 mb-1.5">Reference image <span className="text-zinc-400 font-normal">(optional)</span></p>
+                              {retryRefImg[item.id] ? (
+                                <div className="relative w-16 h-16">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={retryRefImg[item.id]} alt="ref" className="w-16 h-16 rounded-lg object-cover border border-zinc-200" />
+                                  <button onClick={() => setRetryRefImg(prev => { const n = { ...prev }; delete n[item.id]; return n })}
+                                    className="absolute -top-1 -right-1 bg-white rounded-full shadow p-0.5 border border-zinc-200">
+                                    <X className="w-3 h-3 text-zinc-500" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-xs text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 transition-colors">
+                                  <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleRefUpload(item.id, f) }} />
+                                  <Upload className="w-3.5 h-3.5" />
+                                  {uploading === item.id ? 'Uploading…' : 'Upload reference'}
+                                </label>
+                              )}
+                            </div>
                             <button
                               disabled={!(retryText[item.id] ?? '').trim()}
                               onClick={() => {
                                 const feedback = (retryText[item.id] ?? '').trim()
                                 if (!feedback || !item.image_url) return
-                                const params = new URLSearchParams({ task: 'image', refImg: item.image_url, revision: '1', feedback })
+                                const params = new URLSearchParams({ task: 'image', refImg: retryRefImg[item.id] ?? item.image_url, revision: '1', feedback })
                                 router.push(`/agents/creator?${params.toString()}`)
                               }}
                               className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-800 text-white text-xs font-medium py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors"
