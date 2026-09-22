@@ -241,16 +241,9 @@ function CreatorPageInner() {
     const urlPlatform = searchParams.get('platform')
     const urlPrompt = searchParams.get('prompt')
     const urlRefImg = searchParams.get('refImg')
-    const urlRevision = searchParams.get('revision') === '1'
-    const urlFeedback = searchParams.get('feedback')
     if (urlTask && TASKS.find(t => t.id === urlTask)) setTask(urlTask)
     if (urlPlatform) setPlatform(urlPlatform)
-    if (urlRevision && urlFeedback) {
-      // Revision from history — feedback goes into retryFeedback, not the prompt field
-      setRetryFeedback(urlFeedback)
-    } else if (urlPrompt) {
-      setCustomPrompt(urlPrompt)
-    }
+    if (urlPrompt) setCustomPrompt(urlPrompt)
     if (urlRefImg) setRefImageUrls([urlRefImg])
     // Pre-fill from campaign milestone — visual_prompt > description > week theme
     if (milestoneTitle) setProduct(milestoneTitle)
@@ -275,7 +268,7 @@ function CreatorPageInner() {
 
   // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
-    if (!product && !customPrompt && !imageAnalysis && !videoAnalysis && selectedProducts.length === 0 && !rawMediaUrl && !retryFeedback && refImageUrls.length === 0) return
+    if (!product && !customPrompt && !imageAnalysis && !videoAnalysis && selectedProducts.length === 0 && !rawMediaUrl) return
     setLoading(true)
     setResult(null)
     setError(null)
@@ -410,10 +403,9 @@ function CreatorPageInner() {
     window.open(url, '_blank')
   }
 
-  const isRevisionMode = !!(retryFeedback && refImageUrls.length > 0)
   const canGenerate  = isTryon
     ? !!(rawMediaUrl && refImageUrls[0])
-    : isRevisionMode || !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProducts.length > 0 || rawMediaUrl)
+    : !!(product || customPrompt || imageAnalysis || videoAnalysis || selectedProducts.length > 0 || rawMediaUrl)
   const needsProduct = ['caption', 'description', 'email'].includes(task)
   const showCatalog  = products.length > 0
 
@@ -569,7 +561,7 @@ function CreatorPageInner() {
             )}
 
             {/* Visual scene — image / video */}
-            {needsPrompt && !isRevisionMode && (
+            {needsPrompt && (
               <div className="space-y-3">
                 {/* Product details */}
                 <div>
@@ -946,20 +938,6 @@ function CreatorPageInner() {
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Revision feedback — shown when arriving from history Try Again */}
-            {retryFeedback && !result && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1.5">
-                <p className="text-xs font-medium text-amber-700">Revision instructions</p>
-                <textarea
-                  value={retryFeedback}
-                  onChange={e => setRetryFeedback(e.target.value)}
-                  rows={2}
-                  className="w-full text-xs text-zinc-700 bg-white border border-amber-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-amber-400"
-                />
-                <p className="text-[10px] text-amber-600">These changes will be applied on top of the reference image.</p>
               </div>
             )}
 

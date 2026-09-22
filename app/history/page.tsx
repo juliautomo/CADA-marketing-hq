@@ -1,15 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   TrendingUp, CalendarDays, BarChart3, FileText,
   Image, Palette, Layers, ExternalLink, ChevronDown,
   ChevronUp, Type, Mail, Video, Layout, LayoutGrid, ChevronLeft, ChevronRight,
-  RotateCcw, Upload, X,
+  RotateCcw,
 } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -228,39 +226,26 @@ function Pagination({ page, totalPages, total, pageSize, onChange }: { page: num
 function ContentRow({ item }: { item: ContentItem }) {
   const meta = CONTENT_TYPE_META[item.type] ?? { label: item.type, color: 'bg-zinc-500', icon: FileText }
   const Icon = meta.icon
-  const router = useRouter()
-  const [retryOpen, setRetryOpen] = useState(false)
+  const [reviseOpen, setReviseOpen] = useState(false)
   const [feedback, setFeedback] = useState('')
-  const [refImg, setRefImg] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
+  const [revising, setRevising] = useState(false)
+  const [revisedUrl, setRevisedUrl] = useState<string | null>(null)
   const isImage = item.type === 'image' && !!item.image_url
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
-
-  async function handleRefUpload(file: File) {
-    setUploading(true)
-    const ext = file.name.split('.').pop()
-    const path = `retry-refs/${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
-    if (!error) {
-      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
-      setRefImg(data.publicUrl)
-    }
-    setUploading(false)
-  }
-
-  function handleTryAgain() {
+  async function handleRevise() {
     if (!feedback.trim() || !item.image_url) return
-    const params = new URLSearchParams({
-      task: 'image',
-      refImg: refImg ?? item.image_url,
-      revision: '1',
-      feedback,
-    })
-    router.push(`/agents/creator?${params.toString()}`)
+    setRevising(true)
+    try {
+      const res = await fetch('/api/agents/revise-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: item.image_url, feedback }),
+      })
+      const data = await res.json()
+      if (data.imageUrl) setRevisedUrl(data.imageUrl)
+    } finally {
+      setRevising(false)
+    }
   }
 
   return (
@@ -278,7 +263,7 @@ function ContentRow({ item }: { item: ContentItem }) {
             </div>
           )}
         </div>
-        {item.image_url && <img src={item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
+        {item.image_url && <img src={revisedUrl ?? item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
         {item.video_url && <video src={item.video_url} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />}
         <div className="flex-shrink-0 flex flex-col items-end gap-1">
           <span className="text-xs text-zinc-400 whitespace-nowrap">{formatRelativeTime(item.created_at)}</span>
@@ -289,16 +274,16 @@ function ContentRow({ item }: { item: ContentItem }) {
           )}
           {isImage && (
             <button
-              onClick={() => setRetryOpen(v => !v)}
+              onClick={() => { setReviseOpen(v => !v); setRevisedUrl(null) }}
               className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
             >
-              <RotateCcw className="w-3 h-3" /> Try Again
+              <RotateCcw className="w-3 h-3" /> Revise
             </button>
           )}
           {(item.image_url || item.video_url) && (
             <ScheduleButton
               platform="instagram"
-              mediaUrl={(item.image_url || item.video_url)!}
+              mediaUrl={(revisedUrl ?? item.image_url ?? item.video_url)!}
               mediaType={item.video_url ? 'REELS' : 'IMAGE'}
               caption={item.body ?? ''}
               label="Schedule"
@@ -306,42 +291,44 @@ function ContentRow({ item }: { item: ContentItem }) {
           )}
         </div>
       </div>
-      {retryOpen && isImage && (
+      {reviseOpen && isImage && (
         <div className="mx-4 mb-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 space-y-2">
-          <p className="text-xs font-medium text-zinc-500">What would you like to change?</p>
-          <textarea
-            value={feedback}
-            onChange={e => setFeedback(e.target.value)}
-            rows={2}
-            autoFocus
-            placeholder="e.g. brighter colors, remove the text, warmer lighting, different background…"
-            className="w-full text-xs text-zinc-700 bg-white border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400"
-          />
-          <div>
-            <p className="text-xs font-medium text-zinc-500 mb-1.5">Reference image <span className="text-zinc-400 font-normal">(optional)</span></p>
-            {refImg ? (
-              <div className="relative w-16 h-16">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={refImg} alt="ref" className="w-16 h-16 rounded-lg object-cover border border-zinc-200" />
-                <button onClick={() => setRefImg(null)} className="absolute -top-1 -right-1 bg-white rounded-full shadow p-0.5 border border-zinc-200">
-                  <X className="w-3 h-3 text-zinc-500" />
+          {revisedUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={revisedUrl} alt="Revised" className="w-full rounded-xl" />
+              <div className="flex gap-2">
+                <button onClick={() => { setRevisedUrl(null); setFeedback('') }}
+                  className="flex-1 text-xs text-zinc-500 border border-zinc-200 rounded-lg py-2 hover:bg-white transition-colors">
+                  Revise again
+                </button>
+                <button onClick={() => setReviseOpen(false)}
+                  className="flex-1 text-xs text-zinc-700 bg-white border border-zinc-200 rounded-lg py-2 hover:bg-zinc-100 transition-colors">
+                  Done
                 </button>
               </div>
-            ) : (
-              <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-xs text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 transition-colors">
-                <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleRefUpload(f) }} />
-                <Upload className="w-3.5 h-3.5" />
-                {uploading ? 'Uploading…' : 'Upload reference'}
-              </label>
-            )}
-          </div>
-          <button
-            onClick={handleTryAgain}
-            disabled={!feedback.trim()}
-            className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-800 text-white text-sm font-medium py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Regenerate in Creator
-          </button>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-medium text-zinc-500">What would you like to change?</p>
+              <textarea
+                value={feedback}
+                onChange={e => setFeedback(e.target.value)}
+                rows={2}
+                autoFocus
+                placeholder="e.g. remove the text, make the background white, warmer lighting…"
+                className="w-full text-xs text-zinc-700 bg-white border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              />
+              <button
+                onClick={handleRevise}
+                disabled={!feedback.trim() || revising}
+                className="flex items-center justify-center gap-2 w-full rounded-xl bg-zinc-800 text-white text-sm font-medium py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                {revising ? 'Applying changes…' : 'Apply changes'}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
