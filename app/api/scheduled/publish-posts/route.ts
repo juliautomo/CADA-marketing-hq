@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     .eq('status', 'approved')
     .lte('scheduled_at', new Date(Date.now() + 30 * 60 * 1000).toISOString()) // due within 30 min
     .order('scheduled_at', { ascending: true })
-    .limit(5)
+    .limit(2)
 
   const { data: approvedPosts } = await approvedQuery
 

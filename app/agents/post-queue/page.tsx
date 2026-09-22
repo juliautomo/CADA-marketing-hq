@@ -311,6 +311,7 @@ function PostCard({
           </div>
         </div>
         {post.media_url && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={post.media_url} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
         )}
       </div>
