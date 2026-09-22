@@ -1,10 +1,5 @@
-import { headers } from 'next/headers'
 import Link from 'next/link'
 import { AgentCard } from '@/components/dashboard/agent-card'
-import { StatsCard } from '@/components/dashboard/stats-card'
-import { RecentRuns } from '@/components/dashboard/recent-runs'
-import { createServiceClient } from '@/lib/supabase'
-import type { AgentRun } from '@/types'
 
 const agents = [
   {
@@ -76,50 +71,13 @@ const HOW_IT_WORKS = [
   },
 ]
 
-async function getDashboardData(clientId: string | null) {
-  try {
-    const db = createServiceClient()
-    const cid = clientId
-    const [runsRes, contentRes, campaignsRes, trendsRes] = await Promise.all([
-      cid ? db.from('cada_agent_runs').select('*').eq('client_id', cid).order('created_at', { ascending: false }).limit(8)
-          : db.from('cada_agent_runs').select('*').is('client_id', null).order('created_at', { ascending: false }).limit(8),
-      cid ? db.from('cada_content_items').select('id', { count: 'exact', head: true }).eq('client_id', cid)
-          : db.from('cada_content_items').select('id', { count: 'exact', head: true }).is('client_id', null),
-      cid ? db.from('cada_campaigns').select('id', { count: 'exact', head: true }).eq('client_id', cid)
-          : db.from('cada_campaigns').select('id', { count: 'exact', head: true }).is('client_id', null),
-      cid ? db.from('cada_trend_reports').select('id', { count: 'exact', head: true }).eq('client_id', cid)
-          : db.from('cada_trend_reports').select('id', { count: 'exact', head: true }).is('client_id', null),
-    ])
-    return {
-      runs: (runsRes.data ?? []) as AgentRun[],
-      contentCount: contentRes.count ?? 0,
-      campaignCount: campaignsRes.count ?? 0,
-      trendCount: trendsRes.count ?? 0,
-    }
-  } catch {
-    return { runs: [], contentCount: 0, campaignCount: 0, trendCount: 0 }
-  }
-}
-
 export default async function DashboardPage() {
-  const clientId = (await headers()).get('x-client-id')
-  const { runs, contentCount, campaignCount, trendCount } = await getDashboardData(clientId)
-  const completedRuns = runs.filter((r) => r.status === 'completed').length
-
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-zinc-900">Marketing HQ</h1>
         <p className="text-sm text-zinc-500 mt-1">Your AI-powered marketing command centre</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard label="Content Items" value={contentCount} sub="in library"    iconName="Image"     color="bg-violet-500" index={0} />
-        <StatsCard label="Campaigns"     value={campaignCount} sub="planned"      iconName="Layers"    color="bg-blue-500"   index={1} />
-        <StatsCard label="Trend Reports" value={trendCount}   sub="generated"     iconName="TrendingUp" color="bg-emerald-500" index={2} />
-        <StatsCard label="Agent Runs"    value={completedRuns} sub="completed"    iconName="FileText"  color="bg-amber-500"  index={3} />
       </div>
 
       {/* How it works — automation flow */}
@@ -153,8 +111,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent runs */}
-      <RecentRuns runs={runs} />
     </div>
   )
 }
