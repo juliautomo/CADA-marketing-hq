@@ -16,6 +16,7 @@ import {
   Package,
   Settings,
   CalendarClock,
+  Send,
   LogOut,
 } from 'lucide-react'
 
@@ -27,6 +28,7 @@ const SECTIONS = [
       { label: 'Content Creator',      href: '/agents/creator',       icon: Sparkles },
       { label: 'Trend Analyst',        href: '/agents/trend',         icon: TrendingUp },
       { label: 'Campaign Planner',     href: '/agents/campaign',      icon: CalendarDays },
+      { label: 'Post Queue',           href: '/agents/post-queue',    icon: Send },
       { label: 'Performance Reviewer', href: '/agents/performance',   icon: BarChart3 },
     ],
   },

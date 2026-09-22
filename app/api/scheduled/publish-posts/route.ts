@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { generateImage } from '@/lib/openai'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cada-marketing-hq.vercel.app'
 
@@ -11,7 +12,40 @@ export async function GET(req: Request) {
 
   const supabase = createServiceClient()
 
-  // Fetch pending posts — force mode ignores time check, post_id targets a single post
+  // Step 1: generate images for approved posts that are due
+  const approvedQuery = supabase
+    .from('cada_scheduled_posts')
+    .select('*')
+    .eq('status', 'approved')
+    .lte('scheduled_at', new Date(Date.now() + 30 * 60 * 1000).toISOString()) // due within 30 min
+    .order('scheduled_at', { ascending: true })
+    .limit(5)
+
+  const { data: approvedPosts } = await approvedQuery
+
+  if (approvedPosts && approvedPosts.length > 0) {
+    for (const post of approvedPosts) {
+      if (!post.image_concept) {
+        // No concept — skip image gen, move straight to pending
+        await supabase.from('cada_scheduled_posts').update({ status: 'pending' }).eq('id', post.id)
+        continue
+      }
+      await supabase.from('cada_scheduled_posts').update({ status: 'generating' }).eq('id', post.id)
+      try {
+        const mediaUrl = await generateImage(post.image_concept, '1024x1024', 'medium')
+        await supabase.from('cada_scheduled_posts')
+          .update({ status: 'pending', media_url: mediaUrl })
+          .eq('id', post.id)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        await supabase.from('cada_scheduled_posts')
+          .update({ status: 'failed', error_message: `Image generation failed: ${msg}` })
+          .eq('id', post.id)
+      }
+    }
+  }
+
+  // Step 2: Fetch pending posts — force mode ignores time check, post_id targets a single post
   let query = supabase.from('cada_scheduled_posts').select('*').eq('status', 'pending')
   if (postId) {
     query = query.eq('id', postId)
