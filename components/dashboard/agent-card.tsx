@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Sparkles, TrendingUp, CalendarDays, BarChart3 } from 'lucide-react'
+import { Sparkles, TrendingUp, CalendarDays, BarChart3, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Map string icon names to components — avoids passing functions from Server → Client
@@ -13,6 +13,7 @@ const iconMap = {
   TrendingUp,
   CalendarDays,
   BarChart3,
+  Zap,
 } as const
 
 export type AgentIconName = keyof typeof iconMap

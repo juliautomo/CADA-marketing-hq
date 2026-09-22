@@ -4,8 +4,9 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap, ArrowRight, CheckCircle2, Circle, AlertCircle,
-  Loader2, ExternalLink, CalendarDays, Hash, Copy, Check,
+  Loader2, ExternalLink, CalendarDays, Hash, Copy, Check, Send,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -69,6 +70,7 @@ export default function FullCampaignPage() {
   const [duration, setDuration] = useState<number | null>(null)
   const [copied, setCopied] = useState<number | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const router = useRouter()
 
   function updateStep(incoming: Step) {
     setSteps((prev) => {
@@ -420,13 +422,22 @@ export default function FullCampaignPage() {
             </div>
           </div>
 
-          {/* Run again */}
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => { setSteps([]); setSummary(null); setPrompt('') }} className="flex-1">
-              ← Start New Campaign
+          {/* Actions */}
+          <div className="flex gap-3 flex-wrap">
+            <Button
+              onClick={() => {
+                const params = new URLSearchParams({
+                  topic: summary.campaignName + (summary.theme ? ' — ' + summary.theme : ''),
+                  startDate: summary.startDate,
+                })
+                router.push('/posts?' + params.toString())
+              }}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white border-0 gap-2"
+            >
+              <Send className="w-4 h-4" /> Schedule these posts →
             </Button>
-            <Button variant="secondary" onClick={() => window.open('/history', '_self')} className="flex-1">
-              View in History →
+            <Button variant="secondary" onClick={() => { setSteps([]); setSummary(null); setPrompt('') }} className="flex-1">
+              ← New Campaign
             </Button>
           </div>
         </motion.div>

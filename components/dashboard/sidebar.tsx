@@ -8,43 +8,40 @@ import {
   LayoutDashboard,
   Sparkles,
   TrendingUp,
-  CalendarDays,
+  Zap,
+  Send,
   BarChart3,
   Layers,
   History,
-  Zap,
   Package,
   Settings,
-  CalendarClock,
-  Send,
   LogOut,
 } from 'lucide-react'
 
 const SECTIONS = [
   {
-    label: 'Agents',
+    label: 'Automate',
     items: [
-      { label: 'Dashboard',            href: '/',                     icon: LayoutDashboard },
-      { label: 'Content Creator',      href: '/agents/creator',       icon: Sparkles },
-      { label: 'Trend Analyst',        href: '/agents/trend',         icon: TrendingUp },
-      { label: 'Campaign Planner',     href: '/agents/campaign',      icon: CalendarDays },
-      { label: 'Post Queue',           href: '/agents/post-queue',    icon: Send },
-      { label: 'Performance Reviewer', href: '/agents/performance',   icon: BarChart3 },
+      { label: 'Dashboard',        href: '/',                       icon: LayoutDashboard },
+      { label: 'Campaign Planner', href: '/agents/full-campaign',   icon: Zap },
+      { label: 'Posts',            href: '/posts',                  icon: Send },
+    ],
+  },
+  {
+    label: 'Create',
+    items: [
+      { label: 'Content Creator',      href: '/agents/creator',     icon: Sparkles },
+      { label: 'Trend Analyst',        href: '/agents/trend',       icon: TrendingUp },
+      { label: 'Performance Reviewer', href: '/agents/performance', icon: BarChart3 },
     ],
   },
   {
     label: 'Manage',
     items: [
-      { label: 'Product Catalog',  href: '/products',   icon: Package },
-      { label: 'Post Scheduler',   href: '/scheduler',  icon: CalendarClock },
-      { label: 'Automations',      href: '/automations', icon: Zap },
-      { label: 'History',          href: '/history',    icon: History },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { label: 'Settings',  href: '/settings',  icon: Settings },
+      { label: 'Products',     href: '/products',    icon: Package },
+      { label: 'History',      href: '/history',     icon: History },
+      { label: 'Automations',  href: '/automations', icon: Layers },
+      { label: 'Settings',     href: '/settings',    icon: Settings },
     ],
   },
 ]
