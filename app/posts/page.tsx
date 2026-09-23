@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle, XCircle, Edit2, CalendarClock, ImageIcon,
   Send, RotateCcw, Clock, Play, Trash2, RefreshCw, Zap,
-  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, Copy, Check,
+  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, Copy, Check, History, ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +44,28 @@ interface ContentDay {
   hook: string
   imagePrompt?: string
   cta?: string
+}
+
+interface HistoryPost {
+  id: string
+  title: string | null
+  caption: string
+  platform: string
+  scheduled_at: string
+  status: string
+  image_concept: string | null
+  media_url: string | null
+}
+
+interface PlanHistory {
+  id: string
+  name: string
+  description: string | null
+  start_date: string
+  end_date: string | null
+  created_at: string
+  google_drive_url: string | null
+  posts: HistoryPost[]
 }
 
 interface PlanSummary {
@@ -113,6 +135,10 @@ function PostsPageInner() {
   const [copied, setCopied]       = useState<number | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Past plans
+  const [plans, setPlans]           = useState<PlanHistory[]>([])
+  const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
+
   const loadPosts = useCallback(async () => {
     setLoading(true)
     try {
@@ -124,7 +150,13 @@ function PostsPageInner() {
     }
   }, [])
 
-  useEffect(() => { loadPosts() }, [loadPosts])
+  useEffect(() => {
+    loadPosts()
+    fetch('/api/agents/plan-history')
+      .then(r => r.json())
+      .then(d => setPlans(d.plans ?? []))
+      .catch(() => {})
+  }, [loadPosts])
 
   // ── Queue actions ──────────────────────────────────────────────────────────
 
@@ -560,6 +592,84 @@ function PostsPageInner() {
         <p className="text-center text-sm text-zinc-400 py-12">No posts yet — plan your content above to get started.</p>
       )}
       {loading && <p className="text-center text-sm text-zinc-400 py-8">Loading…</p>}
+
+      {/* ── Past Plans ── */}
+      {plans.length > 0 && (
+        <section className="space-y-3 pt-2">
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-zinc-400" />
+            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Past plans ({plans.length})</h2>
+          </div>
+          <div className="space-y-2">
+            {plans.map(plan => {
+              const isOpen = expandedPlan === plan.id
+              const approved = plan.posts.filter(p => ['approved','generating','pending','published'].includes(p.status)).length
+              const pending  = plan.posts.filter(p => ['draft','pending_approval'].includes(p.status)).length
+              return (
+                <div key={plan.id} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+                  <button
+                    onClick={() => setExpandedPlan(isOpen ? null : plan.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-zinc-50 transition-colors text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-zinc-800 truncate">{plan.name}</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">
+                        {new Date(plan.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {plan.start_date && ` · starts ${new Date(plan.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                        {' · '}{plan.posts.length} posts
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {pending > 0 && <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">{pending} pending</span>}
+                      {approved > 0 && <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5">{approved} approved</span>}
+                      {plan.google_drive_url && (
+                        <a href={plan.google_drive_url} target="_blank" rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-zinc-400 hover:text-blue-500 transition-colors">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      <ChevronDown className={cn('w-4 h-4 text-zinc-400 transition-transform', isOpen && 'rotate-180')} />
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="border-t border-zinc-100 divide-y divide-zinc-100">
+                      {plan.posts.length === 0 && (
+                        <p className="text-xs text-zinc-400 px-4 py-3">No posts saved for this plan.</p>
+                      )}
+                      {plan.posts.map(post => (
+                        <div key={post.id} className="px-4 py-3 flex gap-3">
+                          {post.media_url && (
+                            <img src={post.media_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-zinc-100" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-medium text-zinc-600">{post.platform}</span>
+                              <span className="text-xs text-zinc-400">
+                                {post.scheduled_at ? new Date(post.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                              </span>
+                              <span className={cn('text-xs border rounded-full px-2 py-0.5', STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200')}>
+                                {post.status === 'pending_approval' ? 'awaiting approval' : post.status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-zinc-600 line-clamp-2">{post.caption}</p>
+                            {post.image_concept && !post.media_url && (
+                              <p className="text-xs text-zinc-400 italic mt-1 line-clamp-1">
+                                <ImageIcon className="w-3 h-3 inline mr-1" />{post.image_concept}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
