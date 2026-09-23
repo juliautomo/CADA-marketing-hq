@@ -92,6 +92,7 @@ function PostsPageInner() {
   const [editConcept, setEditConcept]   = useState('')
   const [editDate, setEditDate]         = useState('')
   const [saving, setSaving]             = useState<string | null>(null)
+  const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [runResult, setRunResult]       = useState<string | null>(null)
   const [running, setRunning]           = useState(false)
   const [publishingId, setPublishingId] = useState<string | null>(null)
@@ -126,6 +127,18 @@ function PostsPageInner() {
   // ── Queue actions ──────────────────────────────────────────────────────────
 
   async function handleAction(id: string, action: 'approve' | 'reject') {
+    if (action === 'approve') {
+      setGeneratingId(id)
+      try {
+        await fetch('/api/agents/post-queue/approve-and-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+        await loadPosts()
+      } finally { setGeneratingId(null) }
+      return
+    }
     setSaving(id)
     try {
       await fetch('/api/agents/post-queue', {
@@ -480,6 +493,7 @@ function PostsPageInner() {
               editCaption={editCaption} editConcept={editConcept} editDate={editDate}
               setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
               onApprove={() => handleAction(post.id, 'approve')}
+              generatingImage={generatingId === post.id}
               onRemove={() => handleDelete(post.id)}
               onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
           ))}
@@ -536,7 +550,7 @@ function PostCard({
   post, saving, editingId,
   editCaption, editConcept, editDate,
   setEditCaption, setEditConcept, setEditDate,
-  onApprove, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
+  onApprove, generatingImage, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
 }: {
   post: QueuedPost
   saving: boolean
@@ -548,6 +562,7 @@ function PostCard({
   setEditConcept: (v: string) => void
   setEditDate: (v: string) => void
   onApprove?: () => void
+  generatingImage?: boolean
   onRemove?: () => void
   onEdit?: () => void
   onSaveEdit?: () => void
@@ -629,9 +644,12 @@ function PostCard({
           {(onApprove || onRemove || onEdit || onPublishNow) && (
             <div className="flex gap-2 pt-1">
               {onApprove && (
-                <button onClick={onApprove} disabled={saving}
+                <button onClick={onApprove} disabled={saving || generatingImage}
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-emerald-600 text-white rounded-xl py-2 hover:bg-emerald-500 disabled:opacity-40 transition-colors">
-                  <Send className="w-3 h-3" /> Approve &amp; schedule
+                  {generatingImage
+                    ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating image…</>
+                    : <><Send className="w-3 h-3" /> Approve &amp; schedule</>
+                  }
                 </button>
               )}
               {onPublishNow && (
