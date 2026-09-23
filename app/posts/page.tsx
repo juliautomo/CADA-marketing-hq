@@ -42,6 +42,8 @@ interface ContentDay {
   caption: string
   contentType: string
   hook: string
+  imagePrompt?: string
+  cta?: string
 }
 
 interface PlanSummary {
@@ -438,7 +440,7 @@ function PostsPageInner() {
                   </div>
                 )}
 
-                {/* Calendar preview after planning */}
+                {/* Post preview after planning */}
                 {planSummary && allStepsDone && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
@@ -446,34 +448,60 @@ function PostsPageInner() {
                       <button onClick={resetPlanner} className="text-xs text-zinc-400 hover:text-zinc-600 underline">Plan again</button>
                     </div>
 
-                    {/* Calendar grid */}
-                    <div className={cn('grid gap-1.5', planSummary.contentDays.length <= 7 ? 'grid-cols-7' : planSummary.contentDays.length <= 10 ? 'grid-cols-5' : 'grid-cols-7')}>
+                    <div className="space-y-3">
                       {planSummary.contentDays.map(day => {
                         const dateObj = new Date(day.date + 'T00:00:00')
                         const isTikTok = day.platform?.toLowerCase().includes('tiktok')
                         return (
-                          <div key={day.day} className="group relative rounded-xl border border-zinc-100 bg-zinc-50 hover:border-violet-200 hover:bg-white transition-all overflow-hidden">
-                            <div className={cn('px-1 py-1.5 text-center', isTikTok ? 'bg-zinc-900' : 'bg-gradient-to-br from-violet-500 to-pink-500')}>
-                              <p className="text-xs text-white/70 leading-none">{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                              <p className="text-base font-bold text-white leading-tight">{dateObj.getDate()}</p>
-                              <p className="text-xs text-white/70 leading-none">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</p>
+                          <div key={day.day} className="rounded-xl border border-zinc-200 bg-zinc-50 overflow-hidden">
+                            {/* Date + platform header */}
+                            <div className={cn('flex items-center gap-3 px-4 py-2.5', isTikTok ? 'bg-zinc-900' : 'bg-gradient-to-r from-violet-500 to-pink-500')}>
+                              <div className="text-center min-w-[2.5rem]">
+                                <p className="text-[10px] text-white/70 leading-none uppercase">{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                                <p className="text-lg font-bold text-white leading-tight">{dateObj.getDate()}</p>
+                                <p className="text-[10px] text-white/70 leading-none">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</p>
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-xs font-semibold text-white">{day.platform} · {day.contentType}</p>
+                                {day.hook && <p className="text-xs text-white/80 mt-0.5 italic">&ldquo;{day.hook}&rdquo;</p>}
+                              </div>
+                              <button
+                                onClick={() => copyCaption(day.caption, day.day)}
+                                className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+                                title="Copy caption"
+                              >
+                                {copied === day.day ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
                             </div>
-                            <div className="p-1.5">
-                              <p className="text-xs text-zinc-500 line-clamp-3 leading-snug">{day.caption.slice(0, 80)}</p>
+
+                            {/* Caption */}
+                            <div className="px-4 py-3 space-y-2.5">
+                              <div>
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Caption</p>
+                                <p className="text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed">{day.caption}</p>
+                              </div>
+
+                              {day.imagePrompt && (
+                                <div>
+                                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Image prompt</p>
+                                  <p className="text-xs text-zinc-500 italic">{day.imagePrompt}</p>
+                                </div>
+                              )}
+
+                              {day.cta && (
+                                <div className="flex items-center gap-1.5">
+                                  <Send className="w-3 h-3 text-zinc-400 flex-shrink-0" />
+                                  <p className="text-xs text-zinc-500">{day.cta}</p>
+                                </div>
+                              )}
                             </div>
-                            <button
-                              onClick={() => copyCaption(day.caption, day.day)}
-                              className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-white/90 text-zinc-400 hover:text-zinc-700 transition-all"
-                            >
-                              {copied === day.day ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                            </button>
                           </div>
                         )
                       })}
                     </div>
 
-                    <p className="text-xs text-zinc-400 text-center">
-                      {planSummary.contentDays.length} posts added to your queue below — approve them to schedule.
+                    <p className="text-xs text-zinc-400 text-center pt-1">
+                      {planSummary.contentDays.length} posts added to your queue below — scroll down to approve.
                     </p>
                   </motion.div>
                 )}
