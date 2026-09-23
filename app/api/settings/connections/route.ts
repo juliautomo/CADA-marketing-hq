@@ -16,6 +16,8 @@ const KEYS = [
   'tiktok_open_id',
   'drive_media_folder_id',
   'drive_media_upload_enabled',
+  'google_refresh_token',
+  'google_email',
 ]
 
 export async function GET(req: NextRequest) {

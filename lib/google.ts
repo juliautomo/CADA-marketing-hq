@@ -3,14 +3,14 @@
 
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
-async function getAccessToken(): Promise<string> {
+async function getAccessToken(refreshToken?: string): Promise<string> {
   const res = await fetch(OAUTH_TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN!,
+      refresh_token: refreshToken ?? process.env.GOOGLE_REFRESH_TOKEN!,
       grant_type: 'refresh_token',
     }),
   })
@@ -24,8 +24,9 @@ export async function uploadTextToDrive(params: {
   fileName: string
   content: string
   mimeType?: string
+  refreshToken?: string
 }): Promise<string> {
-  const token    = await getAccessToken()
+  const token    = await getAccessToken(params.refreshToken)
   const mime     = params.mimeType ?? 'text/plain'
   const boundary = 'cada_boundary_xyz123'
 
@@ -119,8 +120,9 @@ export async function createCalendarEvent(params: {
   description?: string
   startDate: string
   endDate: string
+  refreshToken?: string
 }): Promise<string> {
-  const token = await getAccessToken()
+  const token = await getAccessToken(params.refreshToken)
   const calendarId = process.env.GOOGLE_CALENDAR_ID ?? 'primary'
 
   const res = await fetch(

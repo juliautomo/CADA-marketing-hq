@@ -57,6 +57,8 @@ interface ConnectionSettings {
   tiktok_username: string
   drive_media_folder_id: string
   drive_media_upload_enabled: string
+  google_refresh_token: string
+  google_email: string
 }
 
 const BRAND_DEFAULTS: BrandSettings = {
@@ -104,6 +106,8 @@ const CONNECTION_DEFAULTS: ConnectionSettings = {
   tiktok_username: '',
   drive_media_folder_id: '',
   drive_media_upload_enabled: 'false',
+  google_refresh_token: '',
+  google_email: '',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -648,6 +652,10 @@ function SettingsContent() {
     searchParams.get('success') === 'instagram' ? 'success' :
     searchParams.get('error')?.startsWith('instagram') ? 'error' : null
   )
+  const [googleStatus, setGoogleStatus] = useState<'success' | 'error' | null>(
+    searchParams.get('success') === 'google' ? 'success' :
+    searchParams.get('error')?.startsWith('google') ? 'error' : null
+  )
 
   useEffect(() => {
     Promise.all([
@@ -663,12 +671,12 @@ function SettingsContent() {
 
   // Re-fetch connections after successful OAuth so the connected badge shows immediately
   useEffect(() => {
-    if (instagramStatus === 'success') {
+    if (instagramStatus === 'success' || googleStatus === 'success') {
       fetch('/api/settings/connections').then(r => r.json()).then(c => {
         setConnections(prev => ({ ...prev, ...c }))
       }).catch(() => {})
     }
-  }, [instagramStatus])
+  }, [instagramStatus, googleStatus])
 
   async function handleSave() {
     setSaving(true)
@@ -1373,6 +1381,73 @@ function SettingsContent() {
                     className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 font-mono focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Google Calendar */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs font-bold">GC</div>
+                <div>
+                  <CardTitle className="text-base">Google Calendar & Drive</CardTitle>
+                  <CardDescription className="mt-0.5">Connect this client&apos;s Google account to block content dates and export plans to Drive.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {googleStatus === 'success' && (
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2 text-sm text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  Google account connected! Calendar & Drive will now use this client&apos;s account.
+                </div>
+              )}
+              {googleStatus === 'error' && (
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                  Google connection failed or was denied. Please try again.
+                </div>
+              )}
+
+              {connections.google_refresh_token ? (
+                <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-700">Google connected</p>
+                      {connections.google_email && (
+                        <p className="text-xs text-emerald-600">{connections.google_email}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={async () => {
+                        await fetch('/api/settings/connections', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ google_refresh_token: '', google_email: '' }),
+                        })
+                        setConnections(c => ({ ...c, google_refresh_token: '', google_email: '' }))
+                        setGoogleStatus(null)
+                      }}
+                      className="text-xs text-red-500 underline hover:text-red-700"
+                    >
+                      Disconnect
+                    </button>
+                    <a href="/api/auth/google" className="text-xs text-zinc-500 underline hover:text-zinc-700">
+                      Reconnect
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <a
+                  href="/api/auth/google"
+                  className="flex items-center justify-center gap-2 w-full rounded-xl bg-blue-600 text-white text-sm font-semibold py-2.5 hover:bg-blue-700 transition-colors"
+                >
+                  <div className="w-4 h-4 rounded-sm bg-white/20 flex items-center justify-center text-[10px] font-bold">G</div>
+                  Connect with Google
+                </a>
               )}
             </CardContent>
           </Card>

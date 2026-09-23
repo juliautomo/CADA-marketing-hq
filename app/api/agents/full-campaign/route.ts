@@ -30,6 +30,16 @@ export async function POST(req: NextRequest) {
   const db = createServiceClient()
   const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
+  // Load client's Google refresh token (falls back to env var inside lib/google.ts)
+  const { data: googleTokenRow } = await db
+    .from('cada_settings')
+    .select('value')
+    .eq('key', 'google_refresh_token')
+    .eq('client_id', clientId ?? null)
+    .maybeSingle()
+  const googleRefreshToken = googleTokenRow?.value && googleTokenRow.value !== 'null'
+    ? googleTokenRow.value : undefined
+
   const ctx = await getBrandContext(clientId)
   const BASE = ctx.systemPrompt('Content Planner')
   const brandName      = ctx.raw.brand_name || 'Your Brand'
@@ -228,6 +238,7 @@ Make each post different. Use the trend insights for hooks and angles. Rotate pr
             description: `Campaign week ${w + 1}. Theme: ${parsed.theme}`,
             startDate: format(addDays(new Date(parsed.startDate), w * 7), 'yyyy-MM-dd'),
             endDate: format(addDays(new Date(parsed.startDate), w * 7 + 6), 'yyyy-MM-dd'),
+            refreshToken: googleRefreshToken,
           })
           calendarEventIds.push(eventId)
         }
@@ -267,6 +278,7 @@ Make each post different. Use the trend insights for hooks and angles. Rotate pr
         driveUrl = await uploadTextToDrive({
           fileName: `${brandName} Content Plan — ${parsed.name}.txt`,
           content: driveContent,
+          refreshToken: googleRefreshToken,
         })
         send({ step: 6, status: 'done', label: 'Content plan exported to Google Drive', data: { driveUrl } })
       } catch {
