@@ -23,14 +23,14 @@ const SECTIONS = [
     label: 'Automate',
     items: [
       { label: 'Dashboard',       href: '/',             icon: LayoutDashboard },
-      { label: 'Content Planner', href: '/posts',        icon: Zap },
-      { label: 'Trend Analyst',   href: '/agents/trend', icon: TrendingUp },
+      { label: 'Content Planner', href: '/posts', icon: Zap },
     ],
   },
   {
-    label: 'Create',
+    label: 'Features',
     items: [
       { label: 'Content Creator',      href: '/agents/creator',     icon: Sparkles },
+      { label: 'Trend Analyst',        href: '/agents/trend',       icon: TrendingUp },
       { label: 'Performance Reviewer', href: '/agents/performance', icon: BarChart3 },
     ],
   },
