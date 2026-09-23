@@ -43,20 +43,19 @@ interface Summary {
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
 const STEP_DEFS = [
-  { n: 1, label: 'Parse campaign brief',         icon: '📋' },
+  { n: 1, label: 'Parse content plan',           icon: '📋' },
   { n: 2, label: 'Research trends',              icon: '📈' },
-  { n: 3, label: 'Write campaign brief',         icon: '✍️' },
-  { n: 4, label: 'Generate 7-day content',       icon: '📱' },
-  { n: 5, label: 'Save to post queue',           icon: '💾' },
-  { n: 6, label: 'Block Google Calendar',        icon: '📅' },
-  { n: 7, label: 'Export to Google Drive',       icon: '📂' },
+  { n: 3, label: 'Generate 7-day content',       icon: '📱' },
+  { n: 4, label: 'Save to post queue',           icon: '💾' },
+  { n: 5, label: 'Block Google Calendar',        icon: '📅' },
+  { n: 6, label: 'Export to Google Drive',       icon: '📂' },
 ]
 
 const EXAMPLES = [
-  'Launch our new collection on the 1st of next month targeting our core audience',
-  'Run a mid-year sale campaign starting next Monday across Instagram and TikTok',
-  'Promote our hero product for the Singapore market in July',
-  'Create a seasonal campaign for TikTok and Instagram starting next week',
+  'Post about our new linen collection starting next Monday',
+  'Plan 7 days of content for our mid-year sale next week',
+  'Promote our hero product across Instagram and TikTok starting October 1st',
+  'Create content around a seasonal theme for next week',
 ]
 
 export default function FullCampaignPage() {
@@ -146,11 +145,11 @@ export default function FullCampaignPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-zinc-900">Full Campaign Agent</h1>
-            <Badge variant="info">Level 3 · Multi-Step</Badge>
+            <h1 className="text-2xl font-bold text-zinc-900">Content Planner</h1>
+            <Badge variant="info">AI · Multi-Step</Badge>
           </div>
           <p className="text-sm text-zinc-500">
-            One sentence → trends + brief + 7-day calendar + post queue + Google Calendar + Drive.
+            Tell us what to post about → get 7 ready-to-approve posts, trend-inspired, scheduled automatically.
           </p>
         </div>
       </div>
@@ -162,7 +161,7 @@ export default function FullCampaignPage() {
             <CardContent className="pt-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-2">
-                  Describe your campaign in one sentence
+                  What do you want to post about?
                 </label>
                 <textarea
                   ref={textareaRef}
@@ -170,7 +169,7 @@ export default function FullCampaignPage() {
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleLaunch() } }}
                   rows={3}
-                  placeholder='e.g. "Launch our new collection on June 1st targeting our core audience"'
+                  placeholder='e.g. "Post about our new linen collection starting next Monday"'
                   className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                 />
               </div>
@@ -194,11 +193,11 @@ export default function FullCampaignPage() {
                 size="lg"
                 className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white border-0"
               >
-                <Zap className="w-4 h-4" /> Launch Campaign Agent <ArrowRight className="w-4 h-4" />
+                <Zap className="w-4 h-4" /> Plan my content <ArrowRight className="w-4 h-4" />
               </Button>
 
               <p className="text-xs text-zinc-400 text-center">
-                Press Enter or click Launch · Takes ~30–60 seconds · Chains 8 AI steps automatically
+                Press Enter or click Plan · Takes ~20–40 seconds · Researches trends then writes 7 posts
               </p>
             </CardContent>
           </Card>
@@ -214,7 +213,7 @@ export default function FullCampaignPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Zap className="w-4 h-4 text-violet-500" />
-                    Agent Running
+                    Planning content…
                   </CardTitle>
                   {duration && (
                     <Badge variant="success">Completed in {duration}s</Badge>
@@ -314,7 +313,7 @@ export default function FullCampaignPage() {
                     <CalendarDays className="w-3 h-3" /> Starts {summary.startDate}
                   </p>
                 </div>
-                <Badge variant="success" className="text-sm px-3 py-1">✨ Launched</Badge>
+                <Badge variant="success" className="text-sm px-3 py-1">✨ Ready</Badge>
               </div>
 
               {/* Integration status */}

@@ -3,8 +3,8 @@ import { AgentCard } from '@/components/dashboard/agent-card'
 
 const agents = [
   {
-    title: 'Campaign Planner',
-    description: 'Describe your campaign in one sentence. Get a full content calendar, post queue, Google Calendar blocks, and a Drive brief — automatically.',
+    title: 'Content Planner',
+    description: 'Tell us what to post about. Get 7 trend-inspired posts sent to your Post Queue, Google Calendar blocked, and a Drive export — automatically.',
     href: '/agents/full-campaign',
     iconName: 'Zap' as const,
     color: 'bg-violet-500',
@@ -39,8 +39,8 @@ const agents = [
 const HOW_IT_WORKS = [
   {
     step: '1',
-    label: 'Plan your campaign',
-    desc: 'Describe your campaign in one sentence. The AI builds a full content calendar, brief, and calendar events.',
+    label: 'Plan your content',
+    desc: 'Tell us what to post about. AI researches trends and builds 7 ready-to-approve posts with captions.',
     href: '/agents/full-campaign',
     color: 'bg-violet-500',
     arrow: true,

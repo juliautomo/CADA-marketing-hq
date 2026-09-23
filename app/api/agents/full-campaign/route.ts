@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
   const ctx = await getBrandContext(clientId)
-  const BASE = ctx.systemPrompt('Full Campaign Agent')
+  const BASE = ctx.systemPrompt('Content Planner')
   const brandName      = ctx.raw.brand_name || 'Your Brand'
   const brandHashtags  = ctx.raw.brand_hashtags || ''
   const brandEcommerce = ctx.raw.brand_ecommerce_platform || ''
@@ -44,17 +44,17 @@ export async function POST(req: NextRequest) {
 
     try {
       // â”€â”€ STEP 1: Parse the campaign prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 1, status: 'running', label: 'Parsing your campaign briefâ€¦' })
+      send({ step: 1, status: 'running', label: 'Parsing your content plan…' })
 
       const parseResult = await generateText(
-        BASE + '\nExtract campaign details from the user prompt and return ONLY valid JSON, no markdown.',
-        `Extract these fields from the campaign prompt: "${prompt}"
+        BASE + '\nExtract content plan details from the user prompt and return ONLY valid JSON, no markdown.',
+        `Extract these fields from the content plan request: "${prompt}"
 Today's date is ${format(new Date(), 'yyyy-MM-dd')}. Use it to resolve relative dates like "next Monday" or "next month".
 
 Return ONLY this JSON (no markdown, no explanation):
 {
-  "name": "campaign name",
-  "theme": "campaign theme/concept",
+  "name": "short content plan name",
+  "theme": "content theme/topic",
   "startDate": "YYYY-MM-DD (if mentioned, else next Monday from today's date)",
   "durationDays": 28,
   "channels": ["TikTok", "Instagram"],
@@ -101,55 +101,30 @@ Return ONLY this JSON (no markdown, no explanation):
       })
 
       // â”€â”€ STEP 2: Trend Research â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 2, status: 'running', label: 'Researching trends for this campaignâ€¦' })
+      send({ step: 2, status: 'running', label: 'Researching trends for inspiration…' })
 
       const trendText = await generateText(
         BASE + '\nYou are a trend analyst. Be specific and actionable.',
-        `Research the most relevant ${brandIndustry} trends for a ${brandName} campaign themed: "${parsed.theme}".
-Focus on what the target audience is wearing and engaging with right now.
+        `Research the most relevant ${brandIndustry} trends to inspire content for ${brandName}, themed: “${parsed.theme}”.
+Focus on what the target audience is engaging with right now.
 
 List:
-- 5 trending colors relevant to this campaign theme
+- 5 trending colors or aesthetics relevant to this theme
 - 4 trending content styles on TikTok/Instagram for ${brandIndustry}
-- 3 specific content hooks that are performing well right now`
+- 3 specific content hooks or angles that are performing well right now`
       )
 
-      send({ step: 2, status: 'done', label: 'Trends researched', data: { trends: trendText.slice(0, 300) + 'â€¦' } })
+      send({ step: 2, status: 'done', label: 'Trends researched', data: { trends: trendText.slice(0, 300) + '…' } })
 
-      // â”€â”€ STEP 3: Campaign Brief â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 3, status: 'running', label: 'Writing campaign concept & briefâ€¦' })
-
-      const briefText = await generateText(
-        BASE + '\nYou are a campaign strategist. Write compelling, specific copy.',
-        `Write a complete campaign brief for ${brandName} based on:
-Campaign: "${parsed.name}"
-Theme: "${parsed.theme}"
-Start date: ${parsed.startDate}
-Channels: ${parsed.channels.join(', ')}
-Key message: "${parsed.keyMessage}"
-Trend insights: ${trendText.slice(0, 500)}
-
-Include:
-1. Campaign Tagline (punchy, 5-8 words)
-2. Campaign Concept (2 paragraphs)
-3. Target Audience Profile
-4. Key Visual Direction (colors, mood, styling)
-5. Channel Strategy (what goes on each channel)
-6. KPIs (3 measurable goals)
-7. Week-by-week breakdown (4 weeks)`
-      )
-
-      send({ step: 3, status: 'done', label: 'Campaign brief written' })
-
-      // â”€â”€ STEP 4: Generate 7 Days of Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 4, status: 'running', label: 'Generating 7 days of contentâ€¦' })
+      // ── STEP 3: Generate 7 Days of Content ──────────────────────────────────
+      send({ step: 3, status: 'running', label: 'Generating 7 days of content…' })
 
       const contentText = await generateText(
         BASE + '\nYou are a social media copywriter. Write ready-to-post content.',
-        `Generate 7 days of social content for ${brandName}'s campaign: “${parsed.name}”
-Theme: ${parsed.theme}
+        `Generate 7 days of social content for ${brandName} on the theme: “${parsed.theme}”
 Starting: ${parsed.startDate}
 Products to feature: ${brandProducts}
+Trend inspiration: ${trendText.slice(0, 400)}
 
 For each day provide:
 DAY [N] — [Date] — [Platform: TikTok or Instagram]
@@ -159,7 +134,7 @@ Hook: [opening line for video]
 CTA: [call to action]
 ---
 
-Make each day different. Rotate products. Mix TikTok and Instagram. Include ${brandHashtags} hashtags.`
+Make each day different. Use the trend insights for hooks and angles. Rotate products. Mix TikTok and Instagram. Include ${brandHashtags} hashtags.`
       )
 
       // Parse days into structured array
@@ -188,7 +163,7 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
       })
 
       // â”€â”€ STEP 5: Save content to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 5, status: 'running', label: 'Saving campaign & content to databaseâ€¦' })
+      send({ step: 4, status: 'running', label: 'Saving to post queue…' })
 
       // Save campaign
       const { data: campaign } = await db.from('cada_campaigns').insert({
@@ -199,8 +174,6 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
         status: 'draft',
         client_id: clientId,
         brief: {
-          tagline: briefText.match(/Tagline[:\s]+(.+)/i)?.[1]?.trim() ?? '',
-          concept: briefText,
           trends: trendText,
           keyMessage: parsed.keyMessage,
           channels: parsed.channels,
@@ -242,10 +215,9 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
         await db.from('cada_scheduled_posts').insert(scheduledInserts)
       }
 
-      send({ step: 5, status: 'done', label: 'Saved to database & post queue' })
+      send({ step: 4, status: 'done', label: 'Saved to database & post queue' })
 
-      // â”€â”€ STEP 7: Google Calendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 6, status: 'running', label: 'Blocking campaign dates in Google Calendarâ€¦' })
+      send({ step: 5, status: 'running', label: 'Blocking dates in Google Calendar…' })
 
       const calendarEventIds: string[] = []
       try {
@@ -258,20 +230,19 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
           })
           calendarEventIds.push(eventId)
         }
-        send({ step: 6, status: 'done', label: '4 weeks blocked in Google Calendar' })
+        send({ step: 5, status: 'done', label: '4 weeks blocked in Google Calendar' })
       } catch {
-        send({ step: 6, status: 'skipped', label: 'Calendar skipped (API key not set)' })
+        send({ step: 5, status: 'skipped', label: 'Calendar skipped (API key not set)' })
       }
 
-      // â”€â”€ STEP 8: Google Drive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 7, status: 'running', label: 'Exporting full brief to Google Driveâ€¦' })
+      send({ step: 6, status: 'running', label: 'Exporting content plan to Google Drive…' })
 
       let driveUrl = ''
       try {
         const driveContent = [
-          `${brandName.toUpperCase()} CAMPAIGN BRIEF`,
+          `${brandName.toUpperCase()} CONTENT PLAN`,
           `===================`,
-          `Campaign: ${parsed.name}`,
+          `Plan: ${parsed.name}`,
           `Theme: ${parsed.theme}`,
           `Start: ${parsed.startDate}`,
           `Channels: ${parsed.channels.join(', ')}`,
@@ -280,10 +251,6 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
           `TREND INSIGHTS`,
           `--------------`,
           trendText,
-          ``,
-          `CAMPAIGN BRIEF`,
-          `--------------`,
-          briefText,
           ``,
           `7-DAY CONTENT CALENDAR`,
           `----------------------`,
@@ -297,12 +264,12 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
         ].join('\n')
 
         driveUrl = await uploadTextToDrive({
-          fileName: `${brandName} Campaign — ${parsed.name}.txt`,
+          fileName: `${brandName} Content Plan — ${parsed.name}.txt`,
           content: driveContent,
         })
-        send({ step: 7, status: 'done', label: 'Brief exported to Google Drive', data: { driveUrl } })
+        send({ step: 6, status: 'done', label: 'Content plan exported to Google Drive', data: { driveUrl } })
       } catch {
-        send({ step: 7, status: 'skipped', label: 'Drive skipped (API key not set)' })
+        send({ step: 6, status: 'skipped', label: 'Drive skipped (API key not set)' })
       }
 
       // â”€â”€ STEP 9: Finalise DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -316,8 +283,8 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
 
       // â”€â”€ DONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       send({
-        step: 8, status: 'done',
-        label: 'Campaign fully launched!',
+        step: 7, status: 'done',
+        label: 'Content plan ready!',
         complete: true,
         duration: Math.round((Date.now() - start) / 1000),
         summary: {
