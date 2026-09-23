@@ -4,7 +4,7 @@ import { AgentCard } from '@/components/dashboard/agent-card'
 const agents = [
   {
     title: 'Campaign Planner',
-    description: 'Describe your campaign in one sentence. Get a full content calendar, Todoist tasks, Google Calendar blocks, and a Drive brief — automatically.',
+    description: 'Describe your campaign in one sentence. Get a full content calendar, post queue, Google Calendar blocks, and a Drive brief — automatically.',
     href: '/agents/full-campaign',
     iconName: 'Zap' as const,
     color: 'bg-violet-500',

@@ -1,7 +1,6 @@
 ﻿export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { generateText } from '@/lib/anthropic'
-import { createProject, createTask } from '@/lib/todoist'
 import { createCalendarEvent, uploadTextToDrive } from '@/lib/google'
 import { createServiceClient } from '@/lib/supabase'
 import { getBrandContext } from '@/lib/brand'
@@ -50,12 +49,13 @@ export async function POST(req: NextRequest) {
       const parseResult = await generateText(
         BASE + '\nExtract campaign details from the user prompt and return ONLY valid JSON, no markdown.',
         `Extract these fields from the campaign prompt: "${prompt}"
+Today's date is ${format(new Date(), 'yyyy-MM-dd')}. Use it to resolve relative dates like "next Monday" or "next month".
 
 Return ONLY this JSON (no markdown, no explanation):
 {
   "name": "campaign name",
   "theme": "campaign theme/concept",
-  "startDate": "YYYY-MM-DD (if mentioned, else use next Monday)",
+  "startDate": "YYYY-MM-DD (if mentioned, else next Monday from today's date)",
   "durationDays": 28,
   "channels": ["TikTok", "Instagram"],
   "targetAudience": "description",
@@ -227,66 +227,25 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
 
       await db.from('cada_content_items').insert(contentInserts)
 
-      send({ step: 5, status: 'done', label: 'Saved to database' })
-
-      // â”€â”€ STEP 6: Todoist tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 6, status: 'running', label: 'Creating Todoist tasksâ€¦' })
-
-      let todoistProjectId = ''
-      const milestoneRows: Array<{
-        campaign_id: string
-        title: string
-        due_date: string
-        week_number: number
-        todoist_task_id: string | null
-      }> = []
-
-      try {
-        todoistProjectId = await createProject(`${brandName} — ${parsed.name}`)
-
-        const milestones = [
-          { title: 'ðŸ“¸ Shoot & prepare all campaign assets', offset: 0, week: 1 },
-          { title: 'ðŸ“ Finalise all 7-day captions & hooks', offset: 1, week: 1 },
-          { title: 'ðŸš€ Day 1 post goes live', offset: 0, week: 1 },
-          { title: 'ðŸ“Š Week 1 engagement check', offset: 7, week: 2 },
-          { title: 'ðŸŽ¬ Week 2 TikTok push', offset: 7, week: 2 },
-          { title: 'ðŸ’¥ Mid-campaign promo / discount drop', offset: 14, week: 3 },
-          { title: 'ðŸ“Š Week 3 performance review', offset: 21, week: 4 },
-          { title: 'ðŸ Campaign wrap-up & report', offset: 27, week: 4 },
-        ]
-
-        for (const m of milestones) {
-          const dueDate = format(addDays(new Date(parsed.startDate), m.offset), 'yyyy-MM-dd')
-          const taskId = await createTask({
-            content: m.title,
-            projectId: todoistProjectId,
-            dueDate,
-            description: `${brandName} Campaign: ${parsed.name} · ${parsed.theme}`,
-            priority: m.week === 1 ? 4 : 3,
-          })
-          if (campaign) {
-            milestoneRows.push({ campaign_id: campaign.id, title: m.title, due_date: dueDate, week_number: m.week, todoist_task_id: taskId })
-          }
-        }
-
-        // Add one task per content day
-        for (const day of contentDays) {
-          await createTask({
-            content: `ðŸ“± Post Day ${day.day} â€” ${day.platform} (${day.contentType})`,
-            projectId: todoistProjectId,
-            dueDate: day.date,
-            description: day.caption.slice(0, 200),
-            priority: 3,
-          })
-        }
-
-        send({ step: 6, status: 'done', label: `Todoist project created with ${milestones.length + contentDays.length} tasks` })
-      } catch {
-        send({ step: 6, status: 'skipped', label: 'Todoist skipped (API key not set)' })
+      // Add to post queue so they appear in Posts for approval
+      if (campaign) {
+        const scheduledInserts = contentDays.map((day) => ({
+          caption: day.caption,
+          scheduled_for: new Date(day.date + 'T09:00:00').toISOString(),
+          status: 'pending_approval',
+          platform: day.platform,
+          title: `Day ${day.day} — ${day.platform}`,
+          image_concept: day.hook || '',
+          campaign_id: campaign.id,
+          client_id: clientId,
+        }))
+        await db.from('cada_scheduled_posts').insert(scheduledInserts)
       }
 
+      send({ step: 5, status: 'done', label: 'Saved to database & post queue' })
+
       // â”€â”€ STEP 7: Google Calendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 7, status: 'running', label: 'Blocking campaign dates in Google Calendarâ€¦' })
+      send({ step: 6, status: 'running', label: 'Blocking campaign dates in Google Calendarâ€¦' })
 
       const calendarEventIds: string[] = []
       try {
@@ -299,13 +258,13 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
           })
           calendarEventIds.push(eventId)
         }
-        send({ step: 7, status: 'done', label: '4 weeks blocked in Google Calendar' })
+        send({ step: 6, status: 'done', label: '4 weeks blocked in Google Calendar' })
       } catch {
-        send({ step: 7, status: 'skipped', label: 'Calendar skipped (API key not set)' })
+        send({ step: 6, status: 'skipped', label: 'Calendar skipped (API key not set)' })
       }
 
       // â”€â”€ STEP 8: Google Drive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      send({ step: 8, status: 'running', label: 'Exporting full brief to Google Driveâ€¦' })
+      send({ step: 7, status: 'running', label: 'Exporting full brief to Google Driveâ€¦' })
 
       let driveUrl = ''
       try {
@@ -341,27 +300,23 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
           fileName: `${brandName} Campaign — ${parsed.name}.txt`,
           content: driveContent,
         })
-        send({ step: 8, status: 'done', label: 'Brief exported to Google Drive', data: { driveUrl } })
+        send({ step: 7, status: 'done', label: 'Brief exported to Google Drive', data: { driveUrl } })
       } catch {
-        send({ step: 8, status: 'skipped', label: 'Drive skipped (API key not set)' })
+        send({ step: 7, status: 'skipped', label: 'Drive skipped (API key not set)' })
       }
 
       // â”€â”€ STEP 9: Finalise DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (campaign) {
         await db.from('cada_campaigns').update({
-          todoist_project_id: todoistProjectId || null,
           calendar_event_ids: calendarEventIds,
           google_drive_url: driveUrl || null,
         }).eq('id', campaign.id)
 
-        if (milestoneRows.length > 0) {
-          await db.from('cada_campaign_milestones').insert(milestoneRows)
-        }
       }
 
       // â”€â”€ DONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       send({
-        step: 9, status: 'done',
+        step: 8, status: 'done',
         label: 'Campaign fully launched!',
         complete: true,
         duration: Math.round((Date.now() - start) / 1000),
@@ -371,7 +326,6 @@ Make each day different. Rotate products. Mix TikTok and Instagram. Include ${br
           theme: parsed.theme,
           startDate: parsed.startDate,
           contentDaysCount: contentDays.length,
-          todoist: !!todoistProjectId,
           calendar: calendarEventIds.length > 0,
           drive: !!driveUrl,
           driveUrl,

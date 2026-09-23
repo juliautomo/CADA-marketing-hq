@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap, ArrowRight, CheckCircle2, Circle, AlertCircle,
-  Loader2, ExternalLink, CalendarDays, Hash, Copy, Check, Send,
+  Loader2, ExternalLink, CalendarDays, Copy, Check, Send,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -35,7 +35,6 @@ interface Summary {
   theme: string
   startDate: string
   contentDays: ContentDay[]
-  todoist: boolean
   calendar: boolean
   drive: boolean
   driveUrl: string
@@ -48,10 +47,9 @@ const STEP_DEFS = [
   { n: 2, label: 'Research trends',              icon: '📈' },
   { n: 3, label: 'Write campaign brief',         icon: '✍️' },
   { n: 4, label: 'Generate 7-day content',       icon: '📱' },
-  { n: 5, label: 'Save to database',             icon: '💾' },
-  { n: 6, label: 'Create Todoist tasks',         icon: '✅' },
-  { n: 7, label: 'Block Google Calendar',        icon: '📅' },
-  { n: 8, label: 'Export to Google Drive',       icon: '📂' },
+  { n: 5, label: 'Save to post queue',           icon: '💾' },
+  { n: 6, label: 'Block Google Calendar',        icon: '📅' },
+  { n: 7, label: 'Export to Google Drive',       icon: '📂' },
 ]
 
 const EXAMPLES = [
@@ -152,7 +150,7 @@ export default function FullCampaignPage() {
             <Badge variant="info">Level 3 · Multi-Step</Badge>
           </div>
           <p className="text-sm text-zinc-500">
-            One sentence → trends + brief + 7-day content + Todoist + Calendar + Drive. Fully automated.
+            One sentence → trends + brief + 7-day calendar + post queue + Google Calendar + Drive.
           </p>
         </div>
       </div>
@@ -320,12 +318,7 @@ export default function FullCampaignPage() {
               </div>
 
               {/* Integration status */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className={cn('rounded-xl p-3 text-center', summary.todoist ? 'bg-white' : 'bg-zinc-100 opacity-50')}>
-                  <p className="text-lg">✅</p>
-                  <p className="text-xs font-medium text-zinc-700 mt-1">Todoist</p>
-                  <p className="text-xs text-zinc-400">{summary.todoist ? 'Tasks created' : 'Not connected'}</p>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div className={cn('rounded-xl p-3 text-center', summary.calendar ? 'bg-white' : 'bg-zinc-100 opacity-50')}>
                   <p className="text-lg">📅</p>
                   <p className="text-xs font-medium text-zinc-700 mt-1">Calendar</p>
@@ -347,79 +340,78 @@ export default function FullCampaignPage() {
             </CardContent>
           </Card>
 
-          {/* 7-day content calendar */}
+          {/* 7-day content calendar — grid view */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-zinc-800">
-                📱 7-Day Content Calendar
-              </h3>
+              <h3 className="text-base font-semibold text-zinc-800">📅 7-Day Content Calendar</h3>
               <Badge variant="default">{summary.contentDays.length} posts ready</Badge>
             </div>
 
-            <div className="space-y-3">
-              {summary.contentDays.map((day) => (
-                <motion.div
-                  key={day.day}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: day.day * 0.06 }}
-                >
-                  <Card className="hover:shadow-sm transition-shadow">
-                    <CardContent className="pt-4 pb-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          {/* Day badge */}
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 text-white flex flex-col items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold leading-none">D{day.day}</span>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <span className={cn(
-                                'text-xs font-bold px-2 py-0.5 rounded-full',
-                                day.platform?.toLowerCase() === 'tiktok' ? 'bg-zinc-900 text-white' : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                              )}>
-                                {day.platform}
-                              </span>
-                              <span className="text-xs text-zinc-400">{day.date}</span>
-                              <span className="text-xs text-zinc-400">· {day.contentType}</span>
-                            </div>
-
-                            {day.hook && (
-                              <p className="text-xs font-medium text-violet-700 mb-1">
-                                🎬 Hook: {day.hook}
-                              </p>
-                            )}
-
-                            <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap line-clamp-3">
-                              {day.caption}
-                            </p>
-
-                            {day.cta && (
-                              <p className="text-xs text-zinc-500 mt-1.5 flex items-center gap-1">
-                                <Hash className="w-3 h-3" /> CTA: {day.cta}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Copy button */}
-                        <button
-                          onClick={() => copyCaption(day.caption, day.day)}
-                          className="flex-shrink-0 p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors"
-                          title="Copy caption"
-                        >
-                          {copied === day.day
-                            ? <Check className="w-4 h-4 text-emerald-500" />
-                            : <Copy className="w-4 h-4" />
-                          }
-                        </button>
+            <div className="grid grid-cols-7 gap-1.5">
+              {summary.contentDays.map((day) => {
+                const dateObj = new Date(day.date + 'T00:00:00')
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' })
+                const dayNum = dateObj.getDate()
+                const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' })
+                const isTikTok = day.platform?.toLowerCase().includes('tiktok')
+                return (
+                  <motion.div
+                    key={day.day}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: day.day * 0.04 }}
+                    className="group relative"
+                  >
+                    <div className="rounded-xl border border-zinc-100 bg-white hover:border-violet-200 hover:shadow-sm transition-all cursor-default overflow-hidden">
+                      {/* Date header */}
+                      <div className={cn(
+                        'px-2 py-1.5 text-center border-b border-zinc-100',
+                        isTikTok ? 'bg-zinc-900' : 'bg-gradient-to-br from-violet-500 to-pink-500'
+                      )}>
+                        <p className="text-xs text-white/70 font-medium leading-none">{dayName}</p>
+                        <p className="text-lg font-bold text-white leading-tight">{dayNum}</p>
+                        <p className="text-xs text-white/70 leading-none">{monthName}</p>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+
+                      {/* Content */}
+                      <div className="p-2">
+                        <span className={cn(
+                          'text-xs font-semibold px-1.5 py-0.5 rounded-full mb-1.5 inline-block',
+                          isTikTok ? 'bg-zinc-100 text-zinc-700' : 'bg-purple-50 text-purple-700'
+                        )}>
+                          {day.platform}
+                        </span>
+                        <p className="text-xs text-zinc-500 leading-snug mb-1">{day.contentType}</p>
+                        {day.hook && (
+                          <p className="text-xs text-violet-700 font-medium line-clamp-2 leading-snug">
+                            {day.hook}
+                          </p>
+                        )}
+                        <p className="text-xs text-zinc-600 line-clamp-3 leading-snug mt-1">
+                          {day.caption.slice(0, 120)}
+                        </p>
+                      </div>
+
+                      {/* Copy button */}
+                      <button
+                        onClick={() => copyCaption(day.caption, day.day)}
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 rounded bg-white/90 text-zinc-400 hover:text-zinc-700 transition-all"
+                        title="Copy caption"
+                      >
+                        {copied === day.day
+                          ? <Check className="w-3 h-3 text-emerald-500" />
+                          : <Copy className="w-3 h-3" />
+                        }
+                      </button>
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
+
+            <p className="text-xs text-zinc-400 mt-2 text-center">
+              All 7 posts added to your Post Queue — go there to approve and schedule them.
+            </p>
           </div>
 
           {/* Actions */}
