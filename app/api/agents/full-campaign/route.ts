@@ -26,7 +26,7 @@ function createSSE() {
 
 // â”€â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function POST(req: NextRequest) {
-  const { prompt } = await req.json()
+  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1 } = await req.json()
   const db = createServiceClient()
   const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
@@ -49,13 +49,13 @@ export async function POST(req: NextRequest) {
       const parseResult = await generateText(
         BASE + '\nExtract content plan details from the user prompt and return ONLY valid JSON, no markdown.',
         `Extract these fields from the content plan request: "${prompt}"
-Today's date is ${format(new Date(), 'yyyy-MM-dd')}. Use it to resolve relative dates like "next Monday" or "next month".
+Today's date is ${format(new Date(), 'yyyy-MM-dd')}.${explicitStartDate ? ` The user has chosen start date: ${explicitStartDate}.` : ' Use today\'s date to resolve relative dates like "next Monday".'}
 
 Return ONLY this JSON (no markdown, no explanation):
 {
   "name": "short content plan name",
   "theme": "content theme/topic",
-  "startDate": "YYYY-MM-DD (if mentioned, else next Monday from today's date)",
+  "startDate": "${explicitStartDate || 'YYYY-MM-DD (next Monday from today)'}",
   "durationDays": 28,
   "channels": ["TikTok", "Instagram"],
   "targetAudience": "description",
@@ -121,12 +121,13 @@ List:
 
       const contentText = await generateText(
         BASE + '\nYou are a social media copywriter. Write ready-to-post content.',
-        `Generate 7 days of social content for ${brandName} on the theme: “${parsed.theme}”
+        `Generate ${numPosts} social media posts for ${brandName} on the theme: “${parsed.theme}”
 Starting: ${parsed.startDate}
+Duration: ${weeks} week${weeks > 1 ? 's' : ''} (spread posts evenly across this period)
 Products to feature: ${brandProducts}
 Trend inspiration: ${trendText.slice(0, 400)}
 
-For each day provide:
+For each post provide:
 DAY [N] — [Date] — [Platform: TikTok or Instagram]
 Caption: [full ready-to-post caption with hashtags]
 Content Type: [Reel/TikTok/Carousel/Static]
@@ -134,12 +135,12 @@ Hook: [opening line for video]
 CTA: [call to action]
 ---
 
-Make each day different. Use the trend insights for hooks and angles. Rotate products. Mix TikTok and Instagram. Include ${brandHashtags} hashtags.`
+Make each post different. Use the trend insights for hooks and angles. Rotate products. Mix TikTok and Instagram. Include ${brandHashtags} hashtags.`
       )
 
       // Parse days into structured array
       const dayBlocks = contentText.split(/---+/).filter((b) => b.trim())
-      const contentDays = dayBlocks.slice(0, 7).map((block, i) => {
+      const contentDays = dayBlocks.slice(0, numPosts).map((block, i) => {
         const dayMatch = block.match(/DAY\s+(\d+)[^â€”\n]*â€”[^â€”\n]*â€”\s*(.+)/i)
         const captionMatch = block.match(/Caption:\s*([\s\S]+?)(?=Content Type:|Hook:|CTA:|$)/i)
         const typeMatch = block.match(/Content Type:\s*(.+)/i)
@@ -221,7 +222,7 @@ Make each day different. Use the trend insights for hooks and angles. Rotate pro
 
       const calendarEventIds: string[] = []
       try {
-        for (let w = 0; w < 4; w++) {
+        for (let w = 0; w < weeks; w++) {
           const eventId = await createCalendarEvent({
             summary: `${brandName} — ${parsed.name} · Week ${w + 1}`,
             description: `Campaign week ${w + 1}. Theme: ${parsed.theme}`,
@@ -230,7 +231,7 @@ Make each day different. Use the trend insights for hooks and angles. Rotate pro
           })
           calendarEventIds.push(eventId)
         }
-        send({ step: 5, status: 'done', label: '4 weeks blocked in Google Calendar' })
+        send({ step: 5, status: 'done', label: `${weeks} week${weeks > 1 ? 's' : ''} blocked in Google Calendar` })
       } catch {
         send({ step: 5, status: 'skipped', label: 'Calendar skipped (API key not set)' })
       }

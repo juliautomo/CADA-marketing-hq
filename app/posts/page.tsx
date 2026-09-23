@@ -99,6 +99,9 @@ function PostsPageInner() {
   // Planner state
   const [planOpen, setPlanOpen]   = useState(!searchParams.get('topic'))
   const [prompt, setPrompt]       = useState(searchParams.get('topic') ?? '')
+  const [startDate, setStartDate] = useState(searchParams.get('startDate') ?? '')
+  const [weeks, setWeeks]         = useState('1')
+  const [postsPerWeek, setPostsPerWeek] = useState('7')
   const [planning, setPlanning]   = useState(false)
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([])
   const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null)
@@ -205,10 +208,11 @@ function PostsPageInner() {
     setPlanDone(false)
 
     try {
+      const numPosts = Math.min(parseInt(weeks) * parseInt(postsPerWeek), 14)
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks) }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -249,7 +253,7 @@ function PostsPageInner() {
   }
 
   function resetPlanner() {
-    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt('')
+    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7')
   }
 
   const pendingPosts    = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
@@ -263,7 +267,7 @@ function PostsPageInner() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Posts</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">Content Planner</h1>
           <p className="text-sm text-zinc-500 mt-1">Plan content, approve posts, and auto-publish.</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -326,6 +330,37 @@ function PostsPageInner() {
                         placeholder='e.g. "Post about our new linen collection starting next Monday"'
                         className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                       />
+                    </div>
+
+                    {/* Period & frequency */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-zinc-500 block mb-1.5">Start date</label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={e => setStartDate(e.target.value)}
+                          className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-zinc-500 block mb-1.5">Duration</label>
+                        <select value={weeks} onChange={e => setWeeks(e.target.value)}
+                          className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                          <option value="1">1 week</option>
+                          <option value="2">2 weeks</option>
+                          <option value="4">4 weeks</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-zinc-500 block mb-1.5">Frequency</label>
+                        <select value={postsPerWeek} onChange={e => setPostsPerWeek(e.target.value)}
+                          className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                          <option value="3">3× / week</option>
+                          <option value="5">5× / week</option>
+                          <option value="7">Daily</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -398,8 +433,8 @@ function PostsPageInner() {
                       <button onClick={resetPlanner} className="text-xs text-zinc-400 hover:text-zinc-600 underline">Plan again</button>
                     </div>
 
-                    {/* 7-day grid */}
-                    <div className="grid grid-cols-7 gap-1">
+                    {/* Calendar grid */}
+                    <div className={cn('grid gap-1.5', planSummary.contentDays.length <= 7 ? 'grid-cols-7' : planSummary.contentDays.length <= 10 ? 'grid-cols-5' : 'grid-cols-7')}>
                       {planSummary.contentDays.map(day => {
                         const dateObj = new Date(day.date + 'T00:00:00')
                         const isTikTok = day.platform?.toLowerCase().includes('tiktok')
