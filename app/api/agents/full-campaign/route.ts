@@ -117,7 +117,7 @@ List:
       send({ step: 2, status: 'done', label: 'Trends researched', data: { trends: trendText.slice(0, 300) + '…' } })
 
       // ── STEP 3: Generate 7 Days of Content ──────────────────────────────────
-      send({ step: 3, status: 'running', label: 'Generating 7 days of content…' })
+      send({ step: 3, status: 'running', label: `Generating ${numPosts} posts…` })
 
       const contentText = await generateText(
         BASE + '\nYou are a social media copywriter. Write ready-to-post content.',

@@ -67,7 +67,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STEP_DEFS = [
   { n: 1, label: 'Parse content plan',     icon: '📋' },
   { n: 2, label: 'Research trends',        icon: '📈' },
-  { n: 3, label: 'Generate 7-day content', icon: '📱' },
+  { n: 3, label: 'Generate content',        icon: '📱' },
   { n: 4, label: 'Save to post queue',     icon: '💾' },
   { n: 5, label: 'Google Calendar',        icon: '📅' },
   { n: 6, label: 'Google Drive export',    icon: '📂' },
