@@ -168,12 +168,12 @@ Make each post different. Use the trend insights for hooks and angles. Rotate pr
       })
 
       send({
-        step: 4, status: 'done',
-        label: `${contentDays.length} days of content generated`,
+        step: 3, status: 'done',
+        label: `${contentDays.length} posts generated`,
         data: { days: contentDays.length },
       })
 
-      // â”€â”€ STEP 5: Save content to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── STEP 4: Save content to DB ────────────────────────────────────────────
       send({ step: 4, status: 'running', label: 'Saving to post queue…' })
 
       // Save campaign
