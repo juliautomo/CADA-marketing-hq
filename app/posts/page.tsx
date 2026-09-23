@@ -638,30 +638,49 @@ function PostsPageInner() {
                       {plan.posts.length === 0 && (
                         <p className="text-xs text-zinc-400 px-4 py-3">No posts saved for this plan.</p>
                       )}
-                      {plan.posts.map(post => (
-                        <div key={post.id} className="px-4 py-3 flex gap-3">
-                          {post.media_url && (
-                            <img src={post.media_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-zinc-100" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-medium text-zinc-600">{post.platform}</span>
-                              <span className="text-xs text-zinc-400">
-                                {post.scheduled_at ? new Date(post.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
-                              </span>
-                              <span className={cn('text-xs border rounded-full px-2 py-0.5', STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200')}>
+                      {plan.posts.map(post => {
+                        const isTikTok = post.platform?.toLowerCase().includes('tiktok')
+                        const dateObj = post.scheduled_at ? new Date(post.scheduled_at) : null
+                        return (
+                          <div key={post.id} className="rounded-xl border border-zinc-200 bg-zinc-50 overflow-hidden mx-4 my-3">
+                            {/* Header */}
+                            <div className={cn('flex items-center gap-3 px-4 py-2.5', isTikTok ? 'bg-zinc-900' : 'bg-gradient-to-r from-violet-500 to-pink-500')}>
+                              {dateObj && (
+                                <div className="text-center min-w-[2.5rem]">
+                                  <p className="text-[10px] text-white/70 leading-none uppercase">{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                                  <p className="text-lg font-bold text-white leading-tight">{dateObj.getDate()}</p>
+                                  <p className="text-[10px] text-white/70 leading-none">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</p>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-white">{post.platform}</p>
+                                {post.title && <p className="text-xs text-white/70 truncate">{post.title}</p>}
+                              </div>
+                              <span className={cn('text-xs border rounded-full px-2 py-0.5 flex-shrink-0', STATUS_COLORS[post.status] ?? 'bg-white/20 text-white border-white/30')}>
                                 {post.status === 'pending_approval' ? 'awaiting approval' : post.status}
                               </span>
                             </div>
-                            <p className="text-xs text-zinc-600 line-clamp-2">{post.caption}</p>
-                            {post.image_concept && !post.media_url && (
-                              <p className="text-xs text-zinc-400 italic mt-1 line-clamp-1">
-                                <ImageIcon className="w-3 h-3 inline mr-1" />{post.image_concept}
-                              </p>
-                            )}
+
+                            <div className="flex gap-3 p-4">
+                              {post.media_url && (
+                                <img src={post.media_url} alt="" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-zinc-200" />
+                              )}
+                              <div className="flex-1 min-w-0 space-y-2.5">
+                                <div>
+                                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Caption</p>
+                                  <p className="text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed">{post.caption}</p>
+                                </div>
+                                {post.image_concept && (
+                                  <div>
+                                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Image prompt</p>
+                                    <p className="text-xs text-zinc-500 italic">{post.image_concept}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
