@@ -460,7 +460,7 @@ function PostsPageInner() {
                     </div>
 
                     <p className="text-xs text-zinc-400 text-center">
-                      7 posts added to your queue below — approve them to schedule.
+                      {planSummary.contentDays.length} posts added to your queue below — approve them to schedule.
                     </p>
                   </motion.div>
                 )}

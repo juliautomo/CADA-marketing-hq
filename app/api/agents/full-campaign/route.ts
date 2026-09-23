@@ -130,40 +130,60 @@ List:
       send({ step: 3, status: 'running', label: `Generating ${numPosts} posts…` })
 
       const contentText = await generateText(
-        BASE + '\nYou are a social media copywriter. Write ready-to-post content.',
-        `Generate ${numPosts} social media posts for ${brandName} on the theme: “${parsed.theme}”
+        BASE + '\nYou are a social media copywriter. Write ready-to-post content. Use EXACTLY the format below — no deviations.',
+        `Generate exactly ${numPosts} social media posts for ${brandName} on the theme: “${parsed.theme}”
 Starting: ${parsed.startDate}
-Duration: ${weeks} week${weeks > 1 ? 's' : ''} (spread posts evenly across this period)
+Duration: ${weeks} week${weeks > 1 ? 's' : ''} — spread posts evenly, one per scheduled day
 Products to feature: ${brandProducts}
 Trend inspiration: ${trendText.slice(0, 400)}
 
-For each post provide:
-DAY [N] — [Date] — [Platform: TikTok or Instagram]
-Caption: [full ready-to-post caption with hashtags]
-Content Type: [Reel/TikTok/Carousel/Static]
-Hook: [opening line for video]
-CTA: [call to action]
+Use EXACTLY this format for EVERY post, separated by ---:
+
+DAY [N] | [YYYY-MM-DD] | [TikTok or Instagram]
+Caption: [full ready-to-post caption — plain text only, NO asterisks, NO markdown, NO hashtag symbols in middle of text. End with hashtags on a new line.]
+Content Type: [Reel / TikTok Video / Carousel / Static Photo]
+Hook: [punchy 1-line video opening or caption hook]
+CTA: [specific call to action e.g. “Link in bio to shop” or “Comment YES if you want this”]
+Image Prompt: [detailed visual description for AI image generation — describe the scene, lighting, model, product placement, mood, colors. Be specific: e.g. “A Southeast Asian woman in her 30s wearing a flowy cream linen dress, standing in a sunlit minimalist studio, holding a woven bag, soft natural light, editorial fashion photography, warm tones”]
 ---
 
-Make each post different. Use the trend insights for hooks and angles. Rotate products. Mix TikTok and Instagram. Include ${brandHashtags} hashtags.`
+Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. Mix TikTok and Instagram. Rotate products. Use brand hashtags: ${brandHashtags}`
       )
 
-      // Parse days into structured array
-      const dayBlocks = contentText.split(/---+/).filter((b) => b.trim())
-      const contentDays = dayBlocks.slice(0, numPosts).map((block, i) => {
-        const dayMatch = block.match(/DAY\s+(\d+)[^â€”\n]*â€”[^â€”\n]*â€”\s*(.+)/i)
-        const captionMatch = block.match(/Caption:\s*([\s\S]+?)(?=Content Type:|Hook:|CTA:|$)/i)
-        const typeMatch = block.match(/Content Type:\s*(.+)/i)
-        const hookMatch = block.match(/Hook:\s*(.+)/i)
-        const ctaMatch = block.match(/CTA:\s*(.+)/i)
+      // Parse days — split on --- then match each block
+      function stripMarkdown(text: string): string {
+        return text
+          .replace(/\*\*(.+?)\*\*/g, '$1')
+          .replace(/\*(.+?)\*/g, '$1')
+          .replace(/__(.+?)__/g, '$1')
+          .replace(/_(.+?)_/g, '$1')
+          .replace(/^#+\s+/gm, '')
+          .replace(/^[-*]\s+/gm, '')
+          .trim()
+      }
+
+      const rawBlocks = contentText.split(/\n---+\n?/).filter(b => b.trim())
+      const contentDays = rawBlocks.slice(0, numPosts).map((block, i) => {
+        const headerMatch = block.match(/DAY\s+\d+\s*[|—-]\s*(\d{4}-\d{2}-\d{2})\s*[|—-]\s*(.+)/i)
+        const captionMatch = block.match(/Caption:\s*([\s\S]+?)(?=Content Type:|Hook:|CTA:|Image Prompt:|$)/i)
+        const typeMatch    = block.match(/Content Type:\s*(.+)/i)
+        const hookMatch    = block.match(/Hook:\s*(.+)/i)
+        const ctaMatch     = block.match(/CTA:\s*(.+)/i)
+        const imageMatch   = block.match(/Image Prompt:\s*([\s\S]+?)(?=---|$)/i)
+
+        const daysApart = Math.round((i / Math.max(numPosts - 1, 1)) * (weeks * 7 - 1))
+        const dateStr = headerMatch?.[1] ?? format(addDays(new Date(parsed.startDate), daysApart), 'yyyy-MM-dd')
+        const platform = headerMatch?.[2]?.trim().replace(/[^a-zA-Z]/g, '') ?? (i % 2 === 0 ? 'TikTok' : 'Instagram')
+
         return {
           day: i + 1,
-          date: format(addDays(new Date(parsed.startDate), i), 'yyyy-MM-dd'),
-          platform: dayMatch?.[2]?.trim() ?? (i % 2 === 0 ? 'TikTok' : 'Instagram'),
-          caption: captionMatch?.[1]?.trim() ?? block.trim().slice(0, 300),
+          date: dateStr,
+          platform: platform.toLowerCase().includes('tiktok') ? 'TikTok' : 'Instagram',
+          caption: stripMarkdown(captionMatch?.[1] ?? block.slice(0, 400)),
           contentType: typeMatch?.[1]?.trim() ?? 'Reel',
           hook: hookMatch?.[1]?.trim() ?? '',
-          cta: ctaMatch?.[1]?.trim() ?? `Shop now at our ${brandEcommerce} store!`,
+          cta: ctaMatch?.[1]?.trim() ?? `Shop at ${brandEcommerce || 'our store'}`,
+          imagePrompt: imageMatch?.[1]?.trim() ?? '',
         }
       })
 
@@ -203,6 +223,7 @@ Make each post different. Use the trend insights for hooks and angles. Rotate pr
           contentType: day.contentType,
           hook: day.hook,
           cta: day.cta,
+          imagePrompt: day.imagePrompt,
           campaign_id: campaign?.id,
         },
         tags: ['campaign', parsed.name.toLowerCase().replace(/\s+/g, '-'), day.platform.toLowerCase(), 'cada'],
@@ -215,11 +236,11 @@ Make each post different. Use the trend insights for hooks and angles. Rotate pr
       if (campaign) {
         const scheduledInserts = contentDays.map((day) => ({
           caption: day.caption,
-          scheduled_for: new Date(day.date + 'T09:00:00').toISOString(),
+          scheduled_at: new Date(day.date + 'T09:00:00').toISOString(),
           status: 'pending_approval',
           platform: day.platform,
           title: `Day ${day.day} — ${day.platform}`,
-          image_concept: day.hook || '',
+          image_concept: day.imagePrompt || day.hook || '',
           campaign_id: campaign.id,
           client_id: clientId,
         }))

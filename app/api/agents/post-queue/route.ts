@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   let query = db
     .from('cada_scheduled_posts')
     .select('*')
-    .in('status', ['draft', 'approved', 'generating', 'pending', 'published', 'failed'])
+    .in('status', ['draft', 'pending_approval', 'approved', 'generating', 'pending', 'published', 'failed'])
     .order('scheduled_at', { ascending: true })
 
   if (clientId) query = query.eq('client_id', clientId)
