@@ -3,12 +3,12 @@ import { AgentCard } from '@/components/dashboard/agent-card'
 
 const agents = [
   {
-    title: 'Content Planner',
-    description: 'Tell us what to post about. Get 7 trend-inspired posts sent to your Post Queue, Google Calendar blocked, and a Drive export — automatically.',
-    href: '/agents/full-campaign',
+    title: 'Posts',
+    description: 'Tell us what to post about. Get 7 trend-inspired posts, approve them, and they auto-publish to Instagram or TikTok on schedule.',
+    href: '/posts',
     iconName: 'Zap' as const,
     color: 'bg-violet-500',
-    capabilities: ['7-Day Calendar', 'Todoist Tasks', 'Google Calendar', 'Drive Brief'],
+    capabilities: ['AI Content Plan', 'Post Queue', 'Google Calendar', 'Auto-publish'],
   },
   {
     title: 'Content Creator',
@@ -41,7 +41,7 @@ const HOW_IT_WORKS = [
     step: '1',
     label: 'Plan your content',
     desc: 'Tell us what to post about. AI researches trends and builds 7 ready-to-approve posts with captions.',
-    href: '/agents/full-campaign',
+    href: '/posts',
     color: 'bg-violet-500',
     arrow: true,
   },

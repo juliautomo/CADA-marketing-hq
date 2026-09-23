@@ -22,9 +22,8 @@ const SECTIONS = [
   {
     label: 'Automate',
     items: [
-      { label: 'Dashboard',        href: '/',                       icon: LayoutDashboard },
-      { label: 'Content Planner',  href: '/agents/full-campaign',   icon: Zap },
-      { label: 'Posts',            href: '/posts',                  icon: Send },
+      { label: 'Dashboard',  href: '/',       icon: LayoutDashboard },
+      { label: 'Posts',      href: '/posts',  icon: Send },
     ],
   },
   {

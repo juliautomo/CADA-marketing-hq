@@ -1,13 +1,19 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  CheckCircle, XCircle, Edit2, Wand2, CalendarClock, ImageIcon,
+  CheckCircle, XCircle, Edit2, CalendarClock, ImageIcon,
   Send, RotateCcw, Clock, Play, Trash2, RefreshCw, Zap,
+  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, Copy, Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface QueuedPost {
   id: string
@@ -22,40 +28,84 @@ interface QueuedPost {
   error_message: string | null
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  draft:      'bg-amber-50 text-amber-700 border-amber-200',
-  approved:   'bg-emerald-50 text-emerald-700 border-emerald-200',
-  generating: 'bg-blue-50 text-blue-700 border-blue-200',
-  pending:    'bg-violet-50 text-violet-700 border-violet-200',
-  published:  'bg-zinc-100 text-zinc-500 border-zinc-200',
-  failed:     'bg-red-50 text-red-700 border-red-200',
+interface PlanStep {
+  step: number
+  status: 'pending' | 'running' | 'done' | 'skipped' | 'error'
+  label: string
+  data?: Record<string, unknown>
 }
+
+interface ContentDay {
+  day: number
+  date: string
+  platform: string
+  caption: string
+  contentType: string
+  hook: string
+}
+
+interface PlanSummary {
+  campaignName: string
+  theme: string
+  startDate: string
+  contentDays: ContentDay[]
+  calendar: boolean
+  drive: boolean
+  driveUrl: string
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  draft:            'bg-amber-50 text-amber-700 border-amber-200',
+  pending_approval: 'bg-amber-50 text-amber-700 border-amber-200',
+  approved:         'bg-emerald-50 text-emerald-700 border-emerald-200',
+  generating:       'bg-blue-50 text-blue-700 border-blue-200',
+  pending:          'bg-violet-50 text-violet-700 border-violet-200',
+  published:        'bg-zinc-100 text-zinc-500 border-zinc-200',
+  failed:           'bg-red-50 text-red-700 border-red-200',
+}
+
+const STEP_DEFS = [
+  { n: 1, label: 'Parse content plan',     icon: '📋' },
+  { n: 2, label: 'Research trends',        icon: '📈' },
+  { n: 3, label: 'Generate 7-day content', icon: '📱' },
+  { n: 4, label: 'Save to post queue',     icon: '💾' },
+  { n: 5, label: 'Google Calendar',        icon: '📅' },
+  { n: 6, label: 'Google Drive export',    icon: '📂' },
+]
+
+const EXAMPLES = [
+  'Post about our new linen collection starting next Monday',
+  'Plan 7 days of content for our mid-year sale next week',
+  'Promote our hero product across Instagram and TikTok starting October 1st',
+]
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 function PostsPageInner() {
   const searchParams = useSearchParams()
 
-  const [posts, setPosts]         = useState<QueuedPost[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  // Queue state
+  const [posts, setPosts]               = useState<QueuedPost[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [editingId, setEditingId]       = useState<string | null>(null)
   const [editCaption, setEditCaption]   = useState('')
   const [editConcept, setEditConcept]   = useState('')
   const [editDate, setEditDate]         = useState('')
-  const [saving, setSaving]       = useState<string | null>(null)
-  const [runResult, setRunResult] = useState<string | null>(null)
-  const [running, setRunning]     = useState(false)
+  const [saving, setSaving]             = useState<string | null>(null)
+  const [runResult, setRunResult]       = useState<string | null>(null)
+  const [running, setRunning]           = useState(false)
   const [publishingId, setPublishingId] = useState<string | null>(null)
 
-  // Brief form — pre-fill from URL params (e.g. coming from Full Campaign)
-  const [topic, setTopic]       = useState(searchParams.get('topic') ?? '')
-  const [numPosts, setNumPosts] = useState(3)
-  const [startDate, setStartDate] = useState(searchParams.get('startDate') ?? '')
-  const [endDate, setEndDate]   = useState('')
-  const [platform, setPlatform] = useState('instagram')
-  const [tone, setTone]         = useState('')
-  const [products, setProducts] = useState('')
-  const [planning, setPlanning] = useState(false)
-  const [planError, setPlanError] = useState('')
-  const [formOpen, setFormOpen] = useState(true)
+  // Planner state
+  const [planOpen, setPlanOpen]   = useState(!searchParams.get('topic'))
+  const [prompt, setPrompt]       = useState(searchParams.get('topic') ?? '')
+  const [planning, setPlanning]   = useState(false)
+  const [planSteps, setPlanSteps] = useState<PlanStep[]>([])
+  const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null)
+  const [planError, setPlanError] = useState<string | null>(null)
+  const [planDone, setPlanDone]   = useState(false)
+  const [copied, setCopied]       = useState<number | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const loadPosts = useCallback(async () => {
     setLoading(true)
@@ -70,6 +120,8 @@ function PostsPageInner() {
 
   useEffect(() => { loadPosts() }, [loadPosts])
 
+  // ── Queue actions ──────────────────────────────────────────────────────────
+
   async function handleAction(id: string, action: 'approve' | 'reject') {
     setSaving(id)
     try {
@@ -79,9 +131,7 @@ function PostsPageInner() {
         body: JSON.stringify({ id, action }),
       })
       await loadPosts()
-    } finally {
-      setSaving(null)
-    }
+    } finally { setSaving(null) }
   }
 
   async function handleDelete(id: string) {
@@ -93,41 +143,27 @@ function PostsPageInner() {
         body: JSON.stringify({ id }),
       })
       await loadPosts()
-    } finally {
-      setSaving(null)
-    }
+    } finally { setSaving(null) }
   }
 
   async function publishNow(id: string) {
-    setPublishingId(id)
-    setRunResult(null)
+    setPublishingId(id); setRunResult(null)
     try {
       const res = await fetch(`/api/scheduled/publish-posts?post_id=${id}`)
       const data = await res.json()
-      if (data.results?.[0]?.ok) {
-        setRunResult('Post published successfully!')
-      } else {
-        setRunResult(`Failed: ${data.results?.[0]?.error ?? 'Unknown error'}`)
-      }
+      setRunResult(data.results?.[0]?.ok ? 'Post published!' : `Failed: ${data.results?.[0]?.error ?? 'Unknown error'}`)
       await loadPosts()
-    } finally {
-      setPublishingId(null)
-    }
+    } finally { setPublishingId(null) }
   }
 
   async function runScheduler() {
-    setRunning(true)
-    setRunResult(null)
+    setRunning(true); setRunResult(null)
     try {
       const res = await fetch('/api/scheduled/publish-posts?force=true')
       const data = await res.json()
-      setRunResult(data.published === 0
-        ? 'No pending posts to publish.'
-        : `Published ${data.published} post${data.published !== 1 ? 's' : ''} successfully!`)
+      setRunResult(data.published === 0 ? 'No pending posts to publish.' : `Published ${data.published} post${data.published !== 1 ? 's' : ''}!`)
       await loadPosts()
-    } finally {
-      setRunning(false)
-    }
+    } finally { setRunning(false) }
   }
 
   function startEdit(post: QueuedPost) {
@@ -143,56 +179,96 @@ function PostsPageInner() {
       await fetch('/api/agents/post-queue', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id, action: 'edit',
-          caption: editCaption,
-          image_concept: editConcept,
-          scheduled_at: editDate ? new Date(editDate).toISOString() : undefined,
-        }),
+        body: JSON.stringify({ id, action: 'edit', caption: editCaption, image_concept: editConcept, scheduled_at: editDate ? new Date(editDate).toISOString() : undefined }),
       })
       setEditingId(null)
       await loadPosts()
-    } finally {
-      setSaving(null)
-    }
+    } finally { setSaving(null) }
   }
 
-  async function handleGeneratePlan(e: React.FormEvent) {
-    e.preventDefault()
-    if (!topic || !startDate || !endDate) return
+  // ── Content Planner ────────────────────────────────────────────────────────
+
+  function updateStep(incoming: PlanStep) {
+    setPlanSteps(prev => {
+      const idx = prev.findIndex(s => s.step === incoming.step)
+      if (idx >= 0) { const next = [...prev]; next[idx] = incoming; return next }
+      return [...prev, incoming]
+    })
+  }
+
+  async function handlePlan() {
+    if (!prompt.trim() || planning) return
     setPlanning(true)
-    setPlanError('')
+    setPlanSteps([])
+    setPlanSummary(null)
+    setPlanError(null)
+    setPlanDone(false)
+
     try {
-      const res = await fetch('/api/agents/post-planner', {
+      const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, numPosts, startDate, endDate, platform, tone, products }),
+        body: JSON.stringify({ prompt }),
       })
-      const data = await res.json()
-      if (!res.ok) { setPlanError(data.error ?? 'Failed to generate plan'); return }
-      setFormOpen(false)
-      await loadPosts()
+      if (!res.body) throw new Error('No stream')
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const event = JSON.parse(line.slice(6))
+            if (event.error) { setPlanError(event.error); break }
+            updateStep(event as PlanStep)
+            if (event.complete) {
+              setPlanSummary(event.summary as PlanSummary)
+              setPlanDone(true)
+              await loadPosts()
+            }
+          } catch { /* malformed chunk */ }
+        }
+      }
+    } catch (e) {
+      setPlanError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
       setPlanning(false)
     }
   }
 
-  const draftPosts   = posts.filter(p => p.status === 'draft')
-  const activePosts  = posts.filter(p => ['approved', 'generating', 'pending'].includes(p.status))
-  const donePosts    = posts.filter(p => ['published', 'failed'].includes(p.status))
+  function copyCaption(caption: string, day: number) {
+    navigator.clipboard.writeText(caption)
+    setCopied(day)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  function resetPlanner() {
+    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt('')
+  }
+
+  const pendingPosts    = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
+  const scheduledPosts  = posts.filter(p => ['approved', 'generating', 'pending'].includes(p.status))
+  const donePosts       = posts.filter(p => ['published', 'failed'].includes(p.status))
+  const allStepsDone    = planSteps.length > 0 && planSteps.every(s => s.status === 'done' || s.status === 'skipped')
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
+    <div className="max-w-3xl mx-auto space-y-6">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Posts</h1>
-          <p className="text-sm text-zinc-500 mt-1">Plan, approve, and auto-publish to Instagram or TikTok.</p>
+          <p className="text-sm text-zinc-500 mt-1">Plan content, approve posts, and auto-publish.</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button variant="secondary" size="sm" onClick={loadPosts} disabled={loading} className="gap-1.5">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
           </Button>
           <Button size="sm" onClick={runScheduler} disabled={running} className="gap-1.5">
             <Zap className="w-3.5 h-3.5" /> {running ? 'Running…' : 'Publish now'}
@@ -201,85 +277,170 @@ function PostsPageInner() {
       </div>
 
       {runResult && (
-        <div className={`rounded-xl px-4 py-3 text-sm font-medium ${runResult.includes('Failed') || runResult.includes('No pending') ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+        <div className={cn('rounded-xl px-4 py-3 text-sm font-medium border', runResult.includes('Failed') || runResult.includes('No pending') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')}>
           {runResult}
         </div>
       )}
 
-      {/* Brief generator */}
-      <section className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+      {/* ── Content Planner ── */}
+      <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+
+        {/* Collapse toggle */}
         <button
-          className="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-50 transition-colors"
-          onClick={() => setFormOpen(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50 transition-colors"
+          onClick={() => { if (!planning) setPlanOpen(v => !v) }}
         >
           <span className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
-            <Wand2 className="w-4 h-4 text-violet-500" /> Generate post plan with AI
+            <Zap className="w-4 h-4 text-violet-500" />
+            {planDone ? 'Content planned ✓' : 'Plan content with AI'}
           </span>
-          <span className="text-xs text-zinc-400">{formOpen ? '▲ collapse' : '▼ expand'}</span>
+          {!planning && (
+            <ChevronDown className={cn('w-4 h-4 text-zinc-400 transition-transform', planOpen && 'rotate-180')} />
+          )}
         </button>
 
-        {formOpen && (
-          <form onSubmit={handleGeneratePlan} className="px-6 pb-6 space-y-4 border-t border-zinc-100">
-            <div className="pt-4">
-              <label className="text-xs font-medium text-zinc-500 block mb-1">Topic / campaign idea</label>
-              <input
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                placeholder="e.g. Ramadan bundle launch — showcase the rabokki set"
-                className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-zinc-500 block mb-1">Start date</label>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                  className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-400" required />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-zinc-500 block mb-1">End date</label>
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                  className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-400" required />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-medium text-zinc-500 block mb-1">Number of posts</label>
-                <input type="number" min={1} max={10} value={numPosts} onChange={e => setNumPosts(parseInt(e.target.value) || 1)}
-                  className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-400" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-zinc-500 block mb-1">Platform</label>
-                <select value={platform} onChange={e => setPlatform(e.target.value)}
-                  className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-400">
-                  <option value="instagram">Instagram</option>
-                  <option value="tiktok">TikTok</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-zinc-500 block mb-1">Tone</label>
-                <input value={tone} onChange={e => setTone(e.target.value)} placeholder="playful, elegant…"
-                  className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-400" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-zinc-500 block mb-1">Products to feature</label>
-              <input value={products} onChange={e => setProducts(e.target.value)} placeholder="Rabokki Set, Kimchi Bundle…"
-                className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-400" />
-            </div>
-            {planError && <p className="text-xs text-red-500">{planError}</p>}
-            <Button type="submit" variant="primary" disabled={planning} className="w-full">
-              {planning ? 'Generating plan…' : 'Generate plan'}
-            </Button>
-          </form>
-        )}
-      </section>
+        <AnimatePresence>
+          {planOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-zinc-100"
+            >
+              <div className="px-5 py-5 space-y-4">
 
-      {/* Draft — awaiting approval */}
-      {draftPosts.length > 0 && (
+                {/* Input — hide once planning starts */}
+                {!planning && !planDone && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">
+                        What do you want to post about?
+                      </label>
+                      <textarea
+                        ref={textareaRef}
+                        value={prompt}
+                        onChange={e => setPrompt(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePlan() } }}
+                        rows={2}
+                        placeholder='e.g. "Post about our new linen collection starting next Monday"'
+                        className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {EXAMPLES.map(ex => (
+                        <button key={ex} onClick={() => setPrompt(ex)}
+                          className="text-xs px-3 py-1.5 rounded-full border border-zinc-200 text-zinc-500 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors text-left">
+                          {ex}
+                        </button>
+                      ))}
+                    </div>
+
+                    <Button onClick={handlePlan} disabled={!prompt.trim()} className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white border-0">
+                      <Zap className="w-4 h-4" /> Plan my content
+                    </Button>
+                  </>
+                )}
+
+                {/* Progress steps */}
+                {(planning || planSteps.length > 0) && (
+                  <div className="space-y-2">
+                    {STEP_DEFS.map(def => {
+                      const step = planSteps.find(s => s.step === def.n)
+                      const status = step?.status ?? 'pending'
+                      return (
+                        <div key={def.n} className={cn('flex items-center gap-3 transition-opacity', status === 'pending' && 'opacity-40')}>
+                          <div className={cn('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs',
+                            status === 'done'    && 'bg-emerald-100',
+                            status === 'running' && 'bg-violet-100',
+                            status === 'skipped' && 'bg-zinc-100',
+                            status === 'error'   && 'bg-red-100',
+                            status === 'pending' && 'bg-zinc-50',
+                          )}>
+                            {status === 'done'    && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                            {status === 'running' && <Loader2 className="w-3.5 h-3.5 text-violet-500 animate-spin" />}
+                            {status === 'skipped' && <Circle className="w-3.5 h-3.5 text-zinc-300" />}
+                            {status === 'error'   && <AlertCircle className="w-3.5 h-3.5 text-red-500" />}
+                            {status === 'pending' && <span className="text-zinc-300 font-bold">{def.n}</span>}
+                          </div>
+                          <p className={cn('text-sm',
+                            status === 'done'    && 'text-zinc-700',
+                            status === 'running' && 'text-violet-700 font-medium',
+                            status === 'skipped' && 'text-zinc-400',
+                            status === 'pending' && 'text-zinc-400',
+                          )}>
+                            {def.icon} {step?.label ?? def.label}
+                          </p>
+                          {status !== 'pending' && (
+                            <Badge variant={status === 'done' ? 'success' : status === 'running' ? 'info' : status === 'skipped' ? 'default' : 'error'} className="ml-auto text-xs">
+                              {status}
+                            </Badge>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {planError && (
+                  <div className="rounded-xl bg-red-50 border border-red-100 p-3">
+                    <p className="text-sm text-red-700">{planError}</p>
+                    <button onClick={resetPlanner} className="text-xs text-red-500 underline mt-1">Try again</button>
+                  </div>
+                )}
+
+                {/* Calendar preview after planning */}
+                {planSummary && allStepsDone && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-zinc-800">📅 {planSummary.campaignName}</p>
+                      <button onClick={resetPlanner} className="text-xs text-zinc-400 hover:text-zinc-600 underline">Plan again</button>
+                    </div>
+
+                    {/* 7-day grid */}
+                    <div className="grid grid-cols-7 gap-1">
+                      {planSummary.contentDays.map(day => {
+                        const dateObj = new Date(day.date + 'T00:00:00')
+                        const isTikTok = day.platform?.toLowerCase().includes('tiktok')
+                        return (
+                          <div key={day.day} className="group relative rounded-xl border border-zinc-100 bg-zinc-50 hover:border-violet-200 hover:bg-white transition-all overflow-hidden">
+                            <div className={cn('px-1 py-1.5 text-center', isTikTok ? 'bg-zinc-900' : 'bg-gradient-to-br from-violet-500 to-pink-500')}>
+                              <p className="text-xs text-white/70 leading-none">{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                              <p className="text-base font-bold text-white leading-tight">{dateObj.getDate()}</p>
+                              <p className="text-xs text-white/70 leading-none">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</p>
+                            </div>
+                            <div className="p-1.5">
+                              <p className="text-xs text-zinc-500 line-clamp-3 leading-snug">{day.caption.slice(0, 80)}</p>
+                            </div>
+                            <button
+                              onClick={() => copyCaption(day.caption, day.day)}
+                              className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-white/90 text-zinc-400 hover:text-zinc-700 transition-all"
+                            >
+                              {copied === day.day ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <p className="text-xs text-zinc-400 text-center">
+                      7 posts added to your queue below — approve them to schedule.
+                    </p>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Post Queue ── */}
+
+      {pendingPosts.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Awaiting approval ({draftPosts.length})</h2>
-          {draftPosts.map(post => (
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Awaiting approval ({pendingPosts.length})</h2>
+          {pendingPosts.map(post => (
             <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
               editCaption={editCaption} editConcept={editConcept} editDate={editDate}
               setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
@@ -290,11 +451,10 @@ function PostsPageInner() {
         </section>
       )}
 
-      {/* Scheduled — approved / generating / pending */}
-      {activePosts.length > 0 && (
+      {scheduledPosts.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Scheduled ({activePosts.length})</h2>
-          {activePosts.map(post => (
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Scheduled ({scheduledPosts.length})</h2>
+          {scheduledPosts.map(post => (
             <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
               editCaption={editCaption} editConcept={editConcept} editDate={editDate}
               setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
@@ -307,7 +467,6 @@ function PostsPageInner() {
         </section>
       )}
 
-      {/* Done — published / failed */}
       {donePosts.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Done ({donePosts.length})</h2>
@@ -320,10 +479,10 @@ function PostsPageInner() {
         </section>
       )}
 
-      {!loading && posts.length === 0 && (
-        <p className="text-center text-sm text-zinc-400 py-12">No posts yet — generate a plan above.</p>
+      {!loading && posts.length === 0 && !planning && (
+        <p className="text-center text-sm text-zinc-400 py-12">No posts yet — plan your content above to get started.</p>
       )}
-      {loading && <p className="text-center text-sm text-zinc-400 py-12">Loading…</p>}
+      {loading && <p className="text-center text-sm text-zinc-400 py-8">Loading…</p>}
     </div>
   )
 }
@@ -366,7 +525,6 @@ function PostCard({
 
   return (
     <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
-      {/* Top row */}
       <div className="flex items-start gap-3">
         {post.media_url && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -376,12 +534,12 @@ function PostCard({
           <p className="text-sm font-semibold text-zinc-800 truncate">{post.title ?? 'Untitled post'}</p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className={`inline-flex items-center gap-1 text-xs border rounded-full px-2 py-0.5 ${statusCls}`}>
-              {post.status === 'generating' && <RotateCcw className="w-3 h-3 animate-spin" />}
-              {post.status === 'published'  && <CheckCircle className="w-3 h-3" />}
-              {post.status === 'failed'     && <XCircle className="w-3 h-3" />}
-              {post.status === 'approved'   && <CheckCircle className="w-3 h-3" />}
-              {post.status === 'pending'    && <Clock className="w-3 h-3" />}
-              {post.status}
+              {post.status === 'generating'       && <RotateCcw className="w-3 h-3 animate-spin" />}
+              {post.status === 'published'        && <CheckCircle className="w-3 h-3" />}
+              {post.status === 'failed'           && <XCircle className="w-3 h-3" />}
+              {post.status === 'approved'         && <CheckCircle className="w-3 h-3" />}
+              {post.status === 'pending'          && <Clock className="w-3 h-3" />}
+              {post.status === 'pending_approval' ? 'awaiting approval' : post.status}
             </span>
             <span className="text-xs text-zinc-400 flex items-center gap-1">
               <CalendarClock className="w-3 h-3" />
@@ -392,7 +550,6 @@ function PostCard({
         </div>
       </div>
 
-      {/* Edit form */}
       {isEditing ? (
         <div className="space-y-2">
           <div>
@@ -412,13 +569,9 @@ function PostCard({
           </div>
           <div className="flex gap-2">
             <button onClick={onSaveEdit} disabled={saving}
-              className="flex-1 text-xs font-medium bg-zinc-800 text-white rounded-xl py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors">
-              Save
-            </button>
+              className="flex-1 text-xs font-medium bg-zinc-800 text-white rounded-xl py-2 hover:bg-zinc-700 disabled:opacity-40 transition-colors">Save</button>
             <button onClick={onCancelEdit}
-              className="flex-1 text-xs text-zinc-500 border border-zinc-200 rounded-xl py-2 hover:bg-zinc-50 transition-colors">
-              Cancel
-            </button>
+              className="flex-1 text-xs text-zinc-500 border border-zinc-200 rounded-xl py-2 hover:bg-zinc-50 transition-colors">Cancel</button>
           </div>
         </div>
       ) : (
@@ -438,7 +591,6 @@ function PostCard({
             </p>
           )}
 
-          {/* Action buttons */}
           {(onApprove || onRemove || onEdit || onPublishNow) && (
             <div className="flex gap-2 pt-1">
               {onApprove && (
