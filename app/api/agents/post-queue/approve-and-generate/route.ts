@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
   const imagePrompt = post.image_concept as string | null
 
   if (!imagePrompt) {
-    // No image concept — just approve
+    // No image concept — skip to image_review so user can still schedule
     const { data } = await db
       .from('cada_scheduled_posts')
-      .update({ status: 'approved' })
+      .update({ status: 'image_review' })
       .eq('id', id)
       .select()
       .single()
@@ -57,18 +57,18 @@ export async function POST(req: NextRequest) {
 
     const { data } = await db
       .from('cada_scheduled_posts')
-      .update({ status: 'approved', media_url: mediaUrl, media_type: 'image' })
+      .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })
       .eq('id', id)
       .select()
       .single()
 
     return NextResponse.json({ post: data })
   } catch (err) {
-    // Image generation failed — still approve, just without image
+    // Image generation failed — move to image_review without image so user can still approve
     const { data } = await db
       .from('cada_scheduled_posts')
       .update({
-        status: 'approved',
+        status: 'image_review',
         error_message: `Image generation failed: ${err instanceof Error ? err.message : String(err)}`,
       })
       .eq('id', id)

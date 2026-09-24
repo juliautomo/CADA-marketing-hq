@@ -81,11 +81,23 @@ interface PlanSummary {
 const STATUS_COLORS: Record<string, string> = {
   draft:            'bg-amber-50 text-amber-700 border-amber-200',
   pending_approval: 'bg-amber-50 text-amber-700 border-amber-200',
-  approved:         'bg-emerald-50 text-emerald-700 border-emerald-200',
   generating:       'bg-blue-50 text-blue-700 border-blue-200',
-  pending:          'bg-violet-50 text-violet-700 border-violet-200',
+  image_review:     'bg-violet-50 text-violet-700 border-violet-200',
+  approved:         'bg-emerald-50 text-emerald-700 border-emerald-200',
+  pending:          'bg-emerald-50 text-emerald-700 border-emerald-200',
   published:        'bg-zinc-100 text-zinc-500 border-zinc-200',
   failed:           'bg-red-50 text-red-700 border-red-200',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending_approval: 'Review content',
+  generating:       'Generating image…',
+  image_review:     'Review image',
+  approved:         'Scheduled',
+  pending:          'Scheduled',
+  published:        'Published',
+  failed:           'Failed',
+  draft:            'Draft',
 }
 
 const STEP_DEFS = [
@@ -160,8 +172,9 @@ function PostsPageInner() {
 
   // ── Queue actions ──────────────────────────────────────────────────────────
 
-  async function handleAction(id: string, action: 'approve' | 'reject') {
+  async function handleAction(id: string, action: 'approve' | 'reject' | 'schedule') {
     if (action === 'approve') {
+      // Step 1: approve content → triggers image generation → lands in image_review
       setGeneratingId(id)
       try {
         await fetch('/api/agents/post-queue/approve-and-generate', {
@@ -170,7 +183,21 @@ function PostsPageInner() {
           body: JSON.stringify({ id }),
         })
         await loadPosts()
+        setTimeout(() => loadPosts(), 2000)
       } finally { setGeneratingId(null) }
+      return
+    }
+    if (action === 'schedule') {
+      // Step 2: approve image → schedule post
+      setSaving(id)
+      try {
+        await fetch('/api/agents/post-queue', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, action: 'approve' }),
+        })
+        await loadPosts()
+      } finally { setSaving(null) }
       return
     }
     setSaving(id)
@@ -305,9 +332,11 @@ function PostsPageInner() {
     setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7')
   }
 
-  const pendingPosts    = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
-  const scheduledPosts  = posts.filter(p => ['approved', 'generating', 'pending'].includes(p.status))
-  const donePosts       = posts.filter(p => ['published', 'failed'].includes(p.status))
+  const contentReviewPosts = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
+  const generatingPosts    = posts.filter(p => p.status === 'generating')
+  const imageReviewPosts   = posts.filter(p => p.status === 'image_review')
+  const scheduledPosts     = posts.filter(p => ['approved', 'pending'].includes(p.status))
+  const donePosts          = posts.filter(p => ['published', 'failed'].includes(p.status))
   const allStepsDone    = planSteps.length > 0 && planSteps.every(s => s.status === 'done' || s.status === 'skipped')
   const queueRef = useRef<HTMLElement>(null)
 
@@ -318,15 +347,17 @@ function PostsPageInner() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Content Planner</h1>
-          <p className="text-sm text-zinc-500 mt-1">Plan content, approve posts, and auto-publish.</p>
+          <p className="text-sm text-zinc-500 mt-1">Plan → approve content → approve image → publish.</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Button variant="secondary" size="sm" onClick={loadPosts} disabled={loading} className="gap-1.5">
-            <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
-          </Button>
-          <Button size="sm" onClick={runScheduler} disabled={running} className="gap-1.5">
-            <Zap className="w-3.5 h-3.5" /> {running ? 'Running…' : 'Publish now'}
-          </Button>
+          <button onClick={loadPosts} disabled={loading} title="Refresh" className="p-2 rounded-xl border border-zinc-200 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors">
+            <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
+          </button>
+          {scheduledPosts.some(p => p.status === 'pending') && (
+            <Button size="sm" onClick={runScheduler} disabled={running} className="gap-1.5">
+              <Zap className="w-3.5 h-3.5" /> {running ? 'Publishing…' : 'Publish now'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -551,10 +582,13 @@ function PostsPageInner() {
 
       {/* ── Post Queue ── */}
 
-      {pendingPosts.length > 0 && (
+      {/* Step 1: Review content */}
+      {contentReviewPosts.length > 0 && (
         <section ref={queueRef} className="space-y-3">
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Awaiting approval ({pendingPosts.length})</h2>
-          {pendingPosts.map(post => (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Step 1 — Review content ({contentReviewPosts.length})</span>
+          </div>
+          {contentReviewPosts.map(post => (
             <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
               editCaption={editCaption} editConcept={editConcept} editDate={editDate}
               setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
@@ -566,25 +600,54 @@ function PostsPageInner() {
         </section>
       )}
 
+      {/* Generating images */}
+      {generatingPosts.length > 0 && (
+        <section className="space-y-3">
+          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Generating images ({generatingPosts.length})</span>
+          {generatingPosts.map(post => (
+            <PostCard key={post.id} post={post} saving={false} editingId={editingId}
+              editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+              setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate} />
+          ))}
+        </section>
+      )}
+
+      {/* Step 2: Review image */}
+      {imageReviewPosts.length > 0 && (
+        <section className="space-y-3">
+          <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Step 2 — Review image ({imageReviewPosts.length})</span>
+          {imageReviewPosts.map(post => (
+            <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+              editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+              setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+              onSchedule={() => handleAction(post.id, 'schedule')}
+              onReject={() => handleAction(post.id, 'reject')}
+              onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+          ))}
+        </section>
+      )}
+
+      {/* Scheduled */}
       {scheduledPosts.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Scheduled ({scheduledPosts.length})</h2>
+          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Scheduled ({scheduledPosts.length})</span>
           {scheduledPosts.map(post => (
             <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
               editCaption={editCaption} editConcept={editConcept} editDate={editDate}
               setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-              onEdit={post.status === 'approved' ? () => startEdit(post) : undefined}
+              onEdit={() => startEdit(post)}
               onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
               onPublishNow={post.status === 'pending' ? () => publishNow(post.id) : undefined}
-              onRemove={post.status === 'pending' ? () => handleDelete(post.id) : undefined}
+              onRemove={() => handleDelete(post.id)}
               publishingNow={publishingId === post.id} />
           ))}
         </section>
       )}
 
+      {/* Done */}
       {donePosts.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Done ({donePosts.length})</h2>
+          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Done ({donePosts.length})</span>
           {donePosts.map(post => (
             <PostCard key={post.id} post={post} saving={false} editingId={editingId}
               editCaption={editCaption} editConcept={editConcept} editDate={editDate}
@@ -713,7 +776,7 @@ function PostCard({
   post, saving, editingId,
   editCaption, editConcept, editDate,
   setEditCaption, setEditConcept, setEditDate,
-  onApprove, generatingImage, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
+  onApprove, generatingImage, onSchedule, onReject, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
 }: {
   post: QueuedPost
   saving: boolean
@@ -726,6 +789,8 @@ function PostCard({
   setEditDate: (v: string) => void
   onApprove?: () => void
   generatingImage?: boolean
+  onSchedule?: () => void
+  onReject?: () => void
   onRemove?: () => void
   onEdit?: () => void
   onSaveEdit?: () => void
@@ -735,24 +800,22 @@ function PostCard({
 }) {
   const isEditing = editingId === post.id
   const statusCls = STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200'
+  const statusLabel = STATUS_LABELS[post.status] ?? post.status
+  const isImageReview = post.status === 'image_review'
 
   return (
     <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
       <div className="flex items-start gap-3">
-        {post.media_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.media_url} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-zinc-100" />
-        )}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-zinc-800 truncate">{post.title ?? 'Untitled post'}</p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className={`inline-flex items-center gap-1 text-xs border rounded-full px-2 py-0.5 ${statusCls}`}>
-              {post.status === 'generating'       && <RotateCcw className="w-3 h-3 animate-spin" />}
-              {post.status === 'published'        && <CheckCircle className="w-3 h-3" />}
-              {post.status === 'failed'           && <XCircle className="w-3 h-3" />}
-              {post.status === 'approved'         && <CheckCircle className="w-3 h-3" />}
-              {post.status === 'pending'          && <Clock className="w-3 h-3" />}
-              {post.status === 'pending_approval' ? 'awaiting approval' : post.status}
+              {post.status === 'generating'   && <RotateCcw className="w-3 h-3 animate-spin" />}
+              {post.status === 'published'    && <CheckCircle className="w-3 h-3" />}
+              {post.status === 'failed'       && <XCircle className="w-3 h-3" />}
+              {post.status === 'approved'     && <CheckCircle className="w-3 h-3" />}
+              {post.status === 'pending'      && <Clock className="w-3 h-3" />}
+              {statusLabel}
             </span>
             <span className="text-xs text-zinc-400 flex items-center gap-1">
               <CalendarClock className="w-3 h-3" />
@@ -763,6 +826,12 @@ function PostCard({
         </div>
       </div>
 
+      {/* Image shown prominently for image_review step */}
+      {isImageReview && post.media_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={post.media_url} alt="Generated image" className="w-full rounded-xl object-cover border border-zinc-100 max-h-80" />
+      )}
+
       {isEditing ? (
         <div className="space-y-2">
           <div>
@@ -771,7 +840,7 @@ function PostCard({
               className="w-full mt-1 text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400" />
           </div>
           <div>
-            <label className="text-xs text-zinc-500 font-medium flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Image concept</label>
+            <label className="text-xs text-zinc-500 font-medium flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Image prompt</label>
             <textarea value={editConcept} onChange={e => setEditConcept(e.target.value)} rows={2}
               className="w-full mt-1 text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400" />
           </div>
@@ -798,21 +867,41 @@ function PostCard({
             </p>
           )}
 
+          {/* Small thumbnail for non-image-review posts that have an image */}
+          {!isImageReview && post.media_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={post.media_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-zinc-100" />
+          )}
+
           {post.error_message && (
             <p className="text-xs text-red-500 flex items-center gap-1">
               <XCircle className="w-3 h-3" /> {post.error_message}
             </p>
           )}
 
-          {(onApprove || onRemove || onEdit || onPublishNow) && (
+          {(onApprove || onSchedule || onReject || onRemove || onEdit || onPublishNow) && (
             <div className="flex gap-2 pt-1">
+              {/* Step 1: approve content → generate image */}
               {onApprove && (
                 <button onClick={onApprove} disabled={saving || generatingImage}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-emerald-600 text-white rounded-xl py-2 hover:bg-emerald-500 disabled:opacity-40 transition-colors">
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-amber-500 text-white rounded-xl py-2 hover:bg-amber-400 disabled:opacity-40 transition-colors">
                   {generatingImage
                     ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating image…</>
-                    : <><Send className="w-3 h-3" /> Approve &amp; schedule</>
+                    : <><CheckCircle2 className="w-3 h-3" /> Approve content</>
                   }
+                </button>
+              )}
+              {/* Step 2: approve image → schedule */}
+              {onSchedule && (
+                <button onClick={onSchedule} disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-emerald-600 text-white rounded-xl py-2 hover:bg-emerald-500 disabled:opacity-40 transition-colors">
+                  <Send className="w-3 h-3" /> Approve &amp; schedule
+                </button>
+              )}
+              {onReject && (
+                <button onClick={onReject} disabled={saving}
+                  className="flex items-center justify-center gap-1.5 px-3 text-xs text-red-500 border border-red-200 rounded-xl py-2 hover:bg-red-50 disabled:opacity-40 transition-colors">
+                  <XCircle className="w-3 h-3" /> Reject
                 </button>
               )}
               {onPublishNow && (
