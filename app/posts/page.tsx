@@ -282,6 +282,8 @@ function PostsPageInner() {
               setPlanSummary(event.summary as PlanSummary)
               setPlanDone(true)
               await loadPosts()
+              // Retry after short delay to catch any DB propagation lag
+              setTimeout(() => loadPosts(), 1500)
             }
           } catch { /* malformed chunk */ }
         }
@@ -307,6 +309,7 @@ function PostsPageInner() {
   const scheduledPosts  = posts.filter(p => ['approved', 'generating', 'pending'].includes(p.status))
   const donePosts       = posts.filter(p => ['published', 'failed'].includes(p.status))
   const allStepsDone    = planSteps.length > 0 && planSteps.every(s => s.status === 'done' || s.status === 'skipped')
+  const queueRef = useRef<HTMLElement>(null)
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -532,9 +535,12 @@ function PostsPageInner() {
                       })}
                     </div>
 
-                    <p className="text-xs text-zinc-400 text-center pt-1">
-                      {planSummary.contentDays.length} posts added to your queue below — scroll down to approve.
-                    </p>
+                    <button
+                      onClick={() => queueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      className="w-full text-xs text-violet-600 font-medium text-center pt-1 hover:underline"
+                    >
+                      {planSummary.contentDays.length} posts added to your queue ↓ Click to review &amp; approve
+                    </button>
                   </motion.div>
                 )}
               </div>
@@ -546,7 +552,7 @@ function PostsPageInner() {
       {/* ── Post Queue ── */}
 
       {pendingPosts.length > 0 && (
-        <section className="space-y-3">
+        <section ref={queueRef} className="space-y-3">
           <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Awaiting approval ({pendingPosts.length})</h2>
           {pendingPosts.map(post => (
             <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
