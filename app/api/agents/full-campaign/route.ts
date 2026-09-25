@@ -26,7 +26,7 @@ function createSSE() {
 
 // â”€â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function POST(req: NextRequest) {
-  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1, trendHints = '' } = await req.json()
+  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1 } = await req.json()
   const db = createServiceClient()
   const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
@@ -116,7 +116,7 @@ Return ONLY this JSON (no markdown, no explanation):
       const trendText = await generateText(
         BASE + '\nYou are a trend analyst. Be specific and actionable.',
         `Research the most relevant ${brandIndustry} trends to inspire content for ${brandName}, themed: “${parsed.theme}”.
-Focus on what the target audience is engaging with right now.${trendHints ? `\n\nThe client has flagged these specific trends, aesthetics, or references to explore: ${trendHints}` : ''}
+Focus on what the target audience is engaging with right now.
 
 List:
 - 5 trending colors or aesthetics relevant to this theme

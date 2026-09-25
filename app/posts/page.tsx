@@ -57,6 +57,18 @@ interface HistoryPost {
   media_url: string | null
 }
 
+interface TrendReport {
+  id: string
+  title: string
+  summary: string
+  colors: string[]
+  styles: string[]
+  trending_hashtags: { tag: string; platform: string; description: string }[]
+  trending_creators: { handle: string; platform: string; followers: string; reason: string; url: string }[]
+  trending_content: { format: string; idea: string; why: string }[]
+  created_at: string
+}
+
 interface PlanHistory {
   id: string
   name: string
@@ -136,7 +148,6 @@ function PostsPageInner() {
   // Planner state
   const [planOpen, setPlanOpen]   = useState(!searchParams.get('topic'))
   const [prompt, setPrompt]       = useState(searchParams.get('topic') ?? '')
-  const [trendHints, setTrendHints] = useState('')
   const [startDate, setStartDate] = useState(searchParams.get('startDate') ?? '')
   const [weeks, setWeeks]         = useState('1')
   const [postsPerWeek, setPostsPerWeek] = useState('7')
@@ -152,6 +163,14 @@ function PostsPageInner() {
   const [plans, setPlans]           = useState<PlanHistory[]>([])
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
 
+  // Trend research
+  const [trendOpen, setTrendOpen]       = useState(false)
+  const [trendReports, setTrendReports] = useState<TrendReport[]>([])
+  const [trendFocus, setTrendFocus]     = useState('')
+  const [trendRunning, setTrendRunning] = useState(false)
+  const [trendError, setTrendError]     = useState<string | null>(null)
+  const [expandedReport, setExpandedReport] = useState<string | null>(null)
+
   const loadPosts = useCallback(async () => {
     setLoading(true)
     try {
@@ -163,13 +182,42 @@ function PostsPageInner() {
     }
   }, [])
 
+  const loadTrendReports = useCallback(async () => {
+    const res = await fetch('/api/agents/trend/reports')
+    const data = await res.json()
+    setTrendReports(data.reports ?? [])
+  }, [])
+
   useEffect(() => {
     loadPosts()
     fetch('/api/agents/plan-history')
       .then(r => r.json())
       .then(d => setPlans(d.plans ?? []))
       .catch(() => {})
-  }, [loadPosts])
+    loadTrendReports()
+  }, [loadPosts, loadTrendReports])
+
+  async function runTrendResearch() {
+    if (trendRunning) return
+    setTrendRunning(true)
+    setTrendError(null)
+    try {
+      const res = await fetch('/api/agents/trend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ focus: trendFocus.trim() || undefined }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error ?? 'Trend research failed')
+      await loadTrendReports()
+      setExpandedReport(data.report?.id ?? null)
+      setTrendFocus('')
+    } catch (e) {
+      setTrendError(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setTrendRunning(false)
+    }
+  }
 
   // ── Queue actions ──────────────────────────────────────────────────────────
 
@@ -287,7 +335,7 @@ function PostsPageInner() {
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), trendHints: trendHints.trim() || undefined }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks) }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -330,7 +378,7 @@ function PostsPageInner() {
   }
 
   function resetPlanner() {
-    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setTrendHints(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7')
+    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7')
   }
 
   const contentReviewPosts = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
@@ -412,20 +460,6 @@ function PostsPageInner() {
                         placeholder='e.g. "Post about our new linen collection starting next Monday"'
                         className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                       />
-                    </div>
-
-                    {/* Trend hints */}
-                    <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-2">
-                        Trends to explore <span className="text-zinc-400 font-normal">(optional)</span>
-                      </label>
-                      <input
-                        value={trendHints}
-                        onChange={e => setTrendHints(e.target.value)}
-                        placeholder='e.g. quiet luxury, #cottagecore, Toteme aesthetic, @competitor'
-                        className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                      />
-                      <p className="text-xs text-zinc-400 mt-1">Add hashtags, aesthetics, or competitor handles to guide the research step</p>
                     </div>
 
                     {/* Period & frequency */}
@@ -595,6 +629,151 @@ function PostsPageInner() {
                     </button>
                   </motion.div>
                 )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Trend Research ── */}
+      <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50 transition-colors"
+          onClick={() => setTrendOpen(v => !v)}
+        >
+          <span className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
+            <span className="text-base">📈</span>
+            Trend Research
+            {trendReports.length > 0 && (
+              <span className="text-xs font-normal text-zinc-400">· {trendReports.length} saved report{trendReports.length !== 1 ? 's' : ''}</span>
+            )}
+          </span>
+          <ChevronDown className={cn('w-4 h-4 text-zinc-400 transition-transform', trendOpen && 'rotate-180')} />
+        </button>
+
+        <AnimatePresence>
+          {trendOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-zinc-100"
+            >
+              <div className="px-5 py-5 space-y-4">
+                {/* Run new research */}
+                <div className="flex gap-2">
+                  <input
+                    value={trendFocus}
+                    onChange={e => setTrendFocus(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') runTrendResearch() }}
+                    placeholder='Focus area e.g. "linen dresses", "quiet luxury", "Ramadan collection"'
+                    className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                  <Button onClick={runTrendResearch} disabled={trendRunning} className="gap-1.5 flex-shrink-0">
+                    {trendRunning ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Researching…</> : <><Zap className="w-3.5 h-3.5" /> Research</>}
+                  </Button>
+                </div>
+
+                {trendError && (
+                  <p className="text-xs text-red-500">{trendError}</p>
+                )}
+
+                {/* Saved reports */}
+                {trendReports.length === 0 && !trendRunning && (
+                  <p className="text-xs text-zinc-400 text-center py-4">No trend reports yet — run your first research above.</p>
+                )}
+
+                <div className="space-y-2">
+                  {trendReports.map(report => {
+                    const isOpen = expandedReport === report.id
+                    return (
+                      <div key={report.id} className="rounded-xl border border-zinc-200 overflow-hidden">
+                        <button
+                          onClick={() => setExpandedReport(isOpen ? null : report.id)}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors text-left"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-zinc-800 truncate">{report.title}</p>
+                            <p className="text-xs text-zinc-400 mt-0.5">
+                              {new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {report.styles?.length > 0 && ` · ${report.styles.slice(0, 2).join(', ')}`}
+                            </p>
+                          </div>
+                          <ChevronDown className={cn('w-4 h-4 text-zinc-400 flex-shrink-0 transition-transform', isOpen && 'rotate-180')} />
+                        </button>
+
+                        {isOpen && (
+                          <div className="border-t border-zinc-100 px-4 py-4 space-y-4">
+                            {/* Colors + Styles */}
+                            <div className="grid grid-cols-2 gap-4">
+                              {report.colors?.length > 0 && (
+                                <div>
+                                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Trending Colors</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {report.colors.map(c => (
+                                      <span key={c} className="text-xs bg-zinc-100 text-zinc-600 rounded-full px-2.5 py-1">{c}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {report.styles?.length > 0 && (
+                                <div>
+                                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Trending Styles</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {report.styles.map(s => (
+                                      <span key={s} className="text-xs bg-violet-50 text-violet-700 rounded-full px-2.5 py-1">{s}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Hashtags */}
+                            {report.trending_hashtags?.length > 0 && (
+                              <div>
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Trending Hashtags</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {report.trending_hashtags.map(h => (
+                                    <a key={h.tag} href={h.platform === 'tiktok' ? `https://www.tiktok.com/tag/${h.tag}` : `https://www.instagram.com/explore/tags/${h.tag}`}
+                                      target="_blank" rel="noopener noreferrer"
+                                      className="text-xs bg-blue-50 text-blue-600 rounded-full px-2.5 py-1 hover:bg-blue-100 transition-colors flex items-center gap-1">
+                                      #{h.tag}
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Content ideas */}
+                            {report.trending_content?.length > 0 && (
+                              <div>
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Content Ideas</p>
+                                <div className="space-y-1.5">
+                                  {report.trending_content.map((c, i) => (
+                                    <div key={i} className="text-xs text-zinc-600 bg-zinc-50 rounded-lg px-3 py-2">
+                                      <span className="font-medium text-zinc-800">{c.format}</span>
+                                      {c.idea && <> — {c.idea}</>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Summary */}
+                            {report.summary && (
+                              <div>
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Analysis</p>
+                                <p className="text-xs text-zinc-600 leading-relaxed line-clamp-6">{report.summary}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </motion.div>
           )}
