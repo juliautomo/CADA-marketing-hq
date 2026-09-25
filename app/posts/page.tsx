@@ -494,15 +494,6 @@ function PostsPageInner() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {EXAMPLES.map(ex => (
-                        <button key={ex} onClick={() => setPrompt(ex)}
-                          className="text-xs px-3 py-1.5 rounded-full border border-zinc-200 text-zinc-500 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors text-left">
-                          {ex}
-                        </button>
-                      ))}
-                    </div>
-
                     <Button onClick={handlePlan} disabled={!prompt.trim()} className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white border-0">
                       <Zap className="w-4 h-4" /> Plan my content
                     </Button>
