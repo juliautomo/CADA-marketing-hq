@@ -136,6 +136,7 @@ function PostsPageInner() {
   // Planner state
   const [planOpen, setPlanOpen]   = useState(!searchParams.get('topic'))
   const [prompt, setPrompt]       = useState(searchParams.get('topic') ?? '')
+  const [trendHints, setTrendHints] = useState('')
   const [startDate, setStartDate] = useState(searchParams.get('startDate') ?? '')
   const [weeks, setWeeks]         = useState('1')
   const [postsPerWeek, setPostsPerWeek] = useState('7')
@@ -286,7 +287,7 @@ function PostsPageInner() {
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks) }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), trendHints: trendHints.trim() || undefined }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -329,7 +330,7 @@ function PostsPageInner() {
   }
 
   function resetPlanner() {
-    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7')
+    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setTrendHints(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7')
   }
 
   const contentReviewPosts = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
@@ -411,6 +412,20 @@ function PostsPageInner() {
                         placeholder='e.g. "Post about our new linen collection starting next Monday"'
                         className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                       />
+                    </div>
+
+                    {/* Trend hints */}
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">
+                        Trends to explore <span className="text-zinc-400 font-normal">(optional)</span>
+                      </label>
+                      <input
+                        value={trendHints}
+                        onChange={e => setTrendHints(e.target.value)}
+                        placeholder='e.g. quiet luxury, #cottagecore, Toteme aesthetic, @competitor'
+                        className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-zinc-400 mt-1">Add hashtags, aesthetics, or competitor handles to guide the research step</p>
                     </div>
 
                     {/* Period & frequency */}
