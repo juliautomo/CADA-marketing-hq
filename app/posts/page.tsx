@@ -567,7 +567,13 @@ function PostsPageInner() {
                     </div>
 
                     <button
-                      onClick={() => queueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      onClick={() => {
+                        if (queueRef.current) {
+                          queueRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        } else {
+                          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+                        }
+                      }}
                       className="w-full text-xs text-violet-600 font-medium text-center pt-1 hover:underline"
                     >
                       {planSummary.contentDays.length} posts added to your queue ↓ Click to review &amp; approve
@@ -638,7 +644,7 @@ function PostsPageInner() {
               onEdit={() => startEdit(post)}
               onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
               onPublishNow={post.status === 'pending' ? () => publishNow(post.id) : undefined}
-              onRemove={() => handleDelete(post.id)}
+              onRemove={post.status === 'pending' ? () => handleDelete(post.id) : undefined}
               publishingNow={publishingId === post.id} />
           ))}
         </section>
@@ -726,7 +732,7 @@ function PostsPageInner() {
                                 {post.title && <p className="text-xs text-white/70 truncate">{post.title}</p>}
                               </div>
                               <span className={cn('text-xs border rounded-full px-2 py-0.5 flex-shrink-0', STATUS_COLORS[post.status] ?? 'bg-white/20 text-white border-white/30')}>
-                                {post.status === 'pending_approval' ? 'awaiting approval' : post.status}
+                                {STATUS_LABELS[post.status] ?? post.status}
                               </span>
                             </div>
 
