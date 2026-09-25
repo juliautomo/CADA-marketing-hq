@@ -814,7 +814,7 @@ function PostsPageInner() {
           </div>
         </section>
       )}
-    </div>{/* end left col */}
+    </div>
 
       {/* ── Right sidebar: Trend Analyst ── */}
       <div className="hidden lg:block">
@@ -939,8 +939,8 @@ function PostsPageInner() {
         </div>
       </div>
 
-    </div>{/* end grid */}
-    </div>{/* end max-w wrapper */}
+    </div>
+    </div>
   )
 }
 
