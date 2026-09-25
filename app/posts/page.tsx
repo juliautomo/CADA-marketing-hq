@@ -357,8 +357,8 @@ function PostsPageInner() {
               setPlanSummary(event.summary as PlanSummary)
               setPlanDone(true)
               await loadPosts()
-              // Retry after short delay to catch any DB propagation lag
-              setTimeout(() => loadPosts(), 1500)
+              setTimeout(() => loadPosts(), 2000)
+              setTimeout(() => loadPosts(), 5000)
             }
           } catch { /* malformed chunk */ }
         }
@@ -617,7 +617,7 @@ function PostsPageInner() {
                       }}
                       className="w-full text-xs text-violet-600 font-medium text-center pt-1 hover:underline"
                     >
-                      {planSummary.contentDays.length} posts added to your queue ↓ Click to review &amp; approve
+                      {planSummary.contentDays.length} posts added to your queue below ↓ scroll down to review
                     </button>
                   </motion.div>
                 )}
