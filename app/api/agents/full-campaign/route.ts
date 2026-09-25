@@ -244,7 +244,11 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
           campaign_id: campaign.id,
           client_id: clientId,
         }))
-        await db.from('cada_scheduled_posts').insert(scheduledInserts)
+        const { error: insertError } = await db.from('cada_scheduled_posts').insert(scheduledInserts)
+        if (insertError) {
+          send({ step: 4, status: 'error', label: `Failed to save posts: ${insertError.message}` })
+          throw new Error(`Post insert failed: ${insertError.message}`)
+        }
       }
 
       send({ step: 4, status: 'done', label: 'Saved to database & post queue' })
