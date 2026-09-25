@@ -164,7 +164,6 @@ function PostsPageInner() {
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
 
   // Trend research
-  const [trendOpen, setTrendOpen]       = useState(false)
   const [trendReports, setTrendReports] = useState<TrendReport[]>([])
   const [trendFocus, setTrendFocus]     = useState('')
   const [trendRunning, setTrendRunning] = useState(false)
@@ -390,7 +389,9 @@ function PostsPageInner() {
   const queueRef = useRef<HTMLElement>(null)
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -635,151 +636,6 @@ function PostsPageInner() {
         </AnimatePresence>
       </div>
 
-      {/* ── Trend Research ── */}
-      <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
-        <button
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50 transition-colors"
-          onClick={() => setTrendOpen(v => !v)}
-        >
-          <span className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
-            <span className="text-base">📈</span>
-            Trend Research
-            {trendReports.length > 0 && (
-              <span className="text-xs font-normal text-zinc-400">· {trendReports.length} saved report{trendReports.length !== 1 ? 's' : ''}</span>
-            )}
-          </span>
-          <ChevronDown className={cn('w-4 h-4 text-zinc-400 transition-transform', trendOpen && 'rotate-180')} />
-        </button>
-
-        <AnimatePresence>
-          {trendOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-zinc-100"
-            >
-              <div className="px-5 py-5 space-y-4">
-                {/* Run new research */}
-                <div className="flex gap-2">
-                  <input
-                    value={trendFocus}
-                    onChange={e => setTrendFocus(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') runTrendResearch() }}
-                    placeholder='Focus area e.g. "linen dresses", "quiet luxury", "Ramadan collection"'
-                    className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                  />
-                  <Button onClick={runTrendResearch} disabled={trendRunning} className="gap-1.5 flex-shrink-0">
-                    {trendRunning ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Researching…</> : <><Zap className="w-3.5 h-3.5" /> Research</>}
-                  </Button>
-                </div>
-
-                {trendError && (
-                  <p className="text-xs text-red-500">{trendError}</p>
-                )}
-
-                {/* Saved reports */}
-                {trendReports.length === 0 && !trendRunning && (
-                  <p className="text-xs text-zinc-400 text-center py-4">No trend reports yet — run your first research above.</p>
-                )}
-
-                <div className="space-y-2">
-                  {trendReports.map(report => {
-                    const isOpen = expandedReport === report.id
-                    return (
-                      <div key={report.id} className="rounded-xl border border-zinc-200 overflow-hidden">
-                        <button
-                          onClick={() => setExpandedReport(isOpen ? null : report.id)}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors text-left"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-zinc-800 truncate">{report.title}</p>
-                            <p className="text-xs text-zinc-400 mt-0.5">
-                              {new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              {report.styles?.length > 0 && ` · ${report.styles.slice(0, 2).join(', ')}`}
-                            </p>
-                          </div>
-                          <ChevronDown className={cn('w-4 h-4 text-zinc-400 flex-shrink-0 transition-transform', isOpen && 'rotate-180')} />
-                        </button>
-
-                        {isOpen && (
-                          <div className="border-t border-zinc-100 px-4 py-4 space-y-4">
-                            {/* Colors + Styles */}
-                            <div className="grid grid-cols-2 gap-4">
-                              {report.colors?.length > 0 && (
-                                <div>
-                                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Trending Colors</p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {report.colors.map(c => (
-                                      <span key={c} className="text-xs bg-zinc-100 text-zinc-600 rounded-full px-2.5 py-1">{c}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {report.styles?.length > 0 && (
-                                <div>
-                                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Trending Styles</p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {report.styles.map(s => (
-                                      <span key={s} className="text-xs bg-violet-50 text-violet-700 rounded-full px-2.5 py-1">{s}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Hashtags */}
-                            {report.trending_hashtags?.length > 0 && (
-                              <div>
-                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Trending Hashtags</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {report.trending_hashtags.map(h => (
-                                    <a key={h.tag} href={h.platform === 'tiktok' ? `https://www.tiktok.com/tag/${h.tag}` : `https://www.instagram.com/explore/tags/${h.tag}`}
-                                      target="_blank" rel="noopener noreferrer"
-                                      className="text-xs bg-blue-50 text-blue-600 rounded-full px-2.5 py-1 hover:bg-blue-100 transition-colors flex items-center gap-1">
-                                      #{h.tag}
-                                      <ExternalLink className="w-2.5 h-2.5" />
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Content ideas */}
-                            {report.trending_content?.length > 0 && (
-                              <div>
-                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Content Ideas</p>
-                                <div className="space-y-1.5">
-                                  {report.trending_content.map((c, i) => (
-                                    <div key={i} className="text-xs text-zinc-600 bg-zinc-50 rounded-lg px-3 py-2">
-                                      <span className="font-medium text-zinc-800">{c.format}</span>
-                                      {c.idea && <> — {c.idea}</>}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Summary */}
-                            {report.summary && (
-                              <div>
-                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-2">Analysis</p>
-                                <p className="text-xs text-zinc-600 leading-relaxed line-clamp-6">{report.summary}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
       {/* ── Post Queue ── */}
 
       {/* Step 1: Review content */}
@@ -958,7 +814,133 @@ function PostsPageInner() {
           </div>
         </section>
       )}
-    </div>
+    </div>{/* end left col */}
+
+      {/* ── Right sidebar: Trend Analyst ── */}
+      <div className="hidden lg:block">
+        <div className="sticky top-6 bg-white rounded-2xl border border-zinc-200 overflow-hidden max-h-[calc(100vh-3rem)] flex flex-col">
+          {/* Header */}
+          <div className="px-5 py-4 border-b border-zinc-100 flex-shrink-0">
+            <h2 className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
+              <span className="text-base">📈</span>
+              Trend Analyst
+              {trendReports.length > 0 && (
+                <span className="text-xs font-normal text-zinc-400">· {trendReports.length}</span>
+              )}
+            </h2>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="overflow-y-auto flex-1">
+            <div className="px-4 py-4 space-y-4">
+              {/* Run new research */}
+              <div className="space-y-2">
+                <input
+                  value={trendFocus}
+                  onChange={e => setTrendFocus(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') runTrendResearch() }}
+                  placeholder='e.g. "linen dresses", "quiet luxury"'
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <Button onClick={runTrendResearch} disabled={trendRunning} size="sm" className="w-full gap-1.5">
+                  {trendRunning ? <><Loader2 className="w-3 h-3 animate-spin" /> Researching…</> : <><Zap className="w-3 h-3" /> Run Research</>}
+                </Button>
+                {trendError && <p className="text-xs text-red-500">{trendError}</p>}
+              </div>
+
+              {/* Saved reports */}
+              {trendReports.length === 0 && !trendRunning && (
+                <p className="text-xs text-zinc-400 text-center py-4">No reports yet — run research above.</p>
+              )}
+
+              <div className="space-y-2">
+                {trendReports.map(report => {
+                  const isOpen = expandedReport === report.id
+                  return (
+                    <div key={report.id} className="rounded-xl border border-zinc-200 overflow-hidden">
+                      <button
+                        onClick={() => setExpandedReport(isOpen ? null : report.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-50 transition-colors text-left"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-zinc-800 truncate">{report.title}</p>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">
+                            {new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <ChevronDown className={cn('w-3.5 h-3.5 text-zinc-400 flex-shrink-0 transition-transform', isOpen && 'rotate-180')} />
+                      </button>
+
+                      {isOpen && (
+                        <div className="border-t border-zinc-100 px-3 py-3 space-y-3">
+                          {report.colors?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Colors</p>
+                              <div className="flex flex-wrap gap-1">
+                                {report.colors.map(c => (
+                                  <span key={c} className="text-[10px] bg-zinc-100 text-zinc-600 rounded-full px-2 py-0.5">{c}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {report.styles?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Styles</p>
+                              <div className="flex flex-wrap gap-1">
+                                {report.styles.map(s => (
+                                  <span key={s} className="text-[10px] bg-violet-50 text-violet-700 rounded-full px-2 py-0.5">{s}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {report.trending_hashtags?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Hashtags</p>
+                              <div className="flex flex-wrap gap-1">
+                                {report.trending_hashtags.map(h => (
+                                  <a key={h.tag}
+                                    href={h.platform === 'tiktok' ? `https://www.tiktok.com/tag/${h.tag}` : `https://www.instagram.com/explore/tags/${h.tag}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="text-[10px] bg-blue-50 text-blue-600 rounded-full px-2 py-0.5 hover:bg-blue-100 transition-colors flex items-center gap-0.5">
+                                    #{h.tag}
+                                    <ExternalLink className="w-2 h-2" />
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {report.trending_content?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Content Ideas</p>
+                              <div className="space-y-1">
+                                {report.trending_content.map((c, i) => (
+                                  <div key={i} className="text-[10px] text-zinc-600 bg-zinc-50 rounded-lg px-2.5 py-1.5">
+                                    <span className="font-medium text-zinc-800">{c.format}</span>
+                                    {c.idea && <> — {c.idea}</>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {report.summary && (
+                            <div>
+                              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Analysis</p>
+                              <p className="text-[10px] text-zinc-600 leading-relaxed">{report.summary}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>{/* end grid */}
+    </div>{/* end max-w wrapper */}
   )
 }
 
