@@ -129,6 +129,20 @@ List:
       // ── STEP 3: Generate 7 Days of Content ──────────────────────────────────
       send({ step: 3, status: 'running', label: `Generating ${numPosts} posts…` })
 
+      const brandStylePrefix   = ctx.raw.brand_style_prefix ?? ''
+      const brandColorDesc     = ctx.raw.brand_color_description ?? ''
+      const brandShotStyle     = ctx.raw.brand_shot_style ?? ''
+      const brandNegatives     = ctx.raw.brand_negative_prompts ?? ''
+      const brandTargetCustomer = ctx.raw.brand_target_customer ?? ''
+
+      const imageGuide = [
+        brandStylePrefix && `Visual style: ${brandStylePrefix}`,
+        brandColorDesc   && `Brand colors/palette: ${brandColorDesc}`,
+        brandShotStyle   && `Shot style: ${brandShotStyle}`,
+        brandTargetCustomer && `Model/subject: ${brandTargetCustomer}`,
+        brandNegatives   && `Avoid: ${brandNegatives}`,
+      ].filter(Boolean).join('. ')
+
       const contentText = await generateText(
         BASE + '\nYou are a social media copywriter. Write ready-to-post content. Use EXACTLY the format below — no deviations.',
         `Generate exactly ${numPosts} social media posts for ${brandName} on the theme: “${parsed.theme}”
@@ -144,8 +158,10 @@ Caption: [full ready-to-post caption — plain text only, NO asterisks, NO markd
 Content Type: [Reel / TikTok Video / Carousel / Static Photo]
 Hook: [punchy 1-line video opening or caption hook]
 CTA: [specific call to action e.g. “Link in bio to shop” or “Comment YES if you want this”]
-Image Prompt: [detailed visual description for AI image generation — describe the scene, lighting, model, product placement, mood, colors. Be specific: e.g. “A Southeast Asian woman in her 30s wearing a flowy cream linen dress, standing in a sunlit minimalist studio, holding a woven bag, soft natural light, editorial fashion photography, warm tones”]
+Image Prompt: [detailed visual scene for AI image generation — must reflect the brand guidelines below. Describe scene, lighting, subject, product placement, mood, colors. Be specific.]
 ---
+
+Brand image guidelines (apply to every Image Prompt): ${imageGuide || 'No specific guidelines set — use clean, professional photography style.'}
 
 Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. Mix TikTok and Instagram. Rotate products. Use brand hashtags: ${brandHashtags}`
       )
