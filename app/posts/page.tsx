@@ -24,6 +24,7 @@ interface QueuedPost {
   scheduled_at: string
   status: string
   media_url: string | null
+  media_urls: string[] | null
   media_type: string | null
   error_message: string | null
 }
@@ -1007,6 +1008,7 @@ function PostCard({
   publishingNow?: boolean
 }) {
   const [captionExpanded, setCaptionExpanded] = useState(false)
+  const [lightbox, setLightbox] = useState<string | null>(null)
   const isEditing = editingId === post.id
   const statusCls = STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200'
   const statusLabel = STATUS_LABELS[post.status] ?? post.status
@@ -1035,11 +1037,38 @@ function PostCard({
         </div>
       </div>
 
-      {/* Image shown prominently for image_review step */}
-      {isImageReview && post.media_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={post.media_url} alt="Generated image" className="w-full rounded-xl object-cover border border-zinc-100 max-h-80" />
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setLightbox(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="" className="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl object-contain" onClick={e => e.stopPropagation()} />
+          <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 text-white/70 hover:text-white text-2xl font-light">✕</button>
+        </div>
       )}
+
+      {/* Images for image_review — show all slides if multi */}
+      {isImageReview && (post.media_urls?.length ?? 0) > 1 ? (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {post.media_urls!.map((url, i) => (
+            <button key={i} onClick={() => setLightbox(url)} className="flex-shrink-0 group relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt={`Slide ${i + 1}`} className="h-48 w-32 rounded-xl object-cover border border-zinc-100 group-hover:opacity-90 transition-opacity" />
+              <span className="absolute bottom-1.5 left-1.5 text-[10px] bg-black/50 text-white rounded-md px-1.5 py-0.5">Slide {i + 1}</span>
+              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="bg-black/50 rounded-full p-1.5"><ImageIcon className="w-4 h-4 text-white" /></span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : isImageReview && post.media_url ? (
+        <button onClick={() => setLightbox(post.media_url!)} className="w-full group relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={post.media_url} alt="Generated image" className="w-full rounded-xl object-cover border border-zinc-100 max-h-80 group-hover:opacity-90 transition-opacity" />
+          <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="bg-black/50 rounded-full p-2"><ImageIcon className="w-5 h-5 text-white" /></span>
+          </span>
+        </button>
+      ) : null}
 
       {isEditing ? (
         <div className="space-y-2">
@@ -1081,8 +1110,13 @@ function PostCard({
 
           {/* Small thumbnail for non-image-review posts that have an image */}
           {!isImageReview && post.media_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.media_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-zinc-100" />
+            <button onClick={() => setLightbox(post.media_url!)} className="group relative flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={post.media_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-zinc-100 group-hover:opacity-80 transition-opacity" />
+              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <ImageIcon className="w-4 h-4 text-white drop-shadow" />
+              </span>
+            </button>
           )}
 
           {post.error_message && (
