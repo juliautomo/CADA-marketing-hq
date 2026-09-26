@@ -157,7 +157,7 @@ export default function CalendarPage() {
                       key={post.id}
                       onClick={() => setSelected(post)}
                       className={cn(
-                        'w-full text-left rounded-md px-1.5 py-1 text-[10px] font-medium truncate transition-opacity hover:opacity-80',
+                        'w-full text-left rounded-md px-1.5 py-1 text-[10px] font-medium transition-opacity hover:opacity-80',
                         PLATFORM_COLORS[platformKey(post.platform)] ?? 'bg-zinc-200 text-zinc-700'
                       )}
                     >
@@ -165,6 +165,7 @@ export default function CalendarPage() {
                         <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', STATUS_DOT[post.status] ?? 'bg-zinc-300')} />
                         <span className="truncate">{post.title ?? platformLabel(post.platform)}</span>
                       </span>
+                      <span className="text-[9px] opacity-70 pl-2.5">{STATUS_LABELS[post.status] ?? post.status}</span>
                     </button>
                   ))}
                 </div>
