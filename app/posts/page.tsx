@@ -513,29 +513,23 @@ function PostsPageInner() {
                     {/* Platform selector */}
                     <div>
                       <label className="text-xs font-medium text-zinc-500 block mb-1.5">Platforms</label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-4">
                         {['TikTok', 'Instagram'].map(p => {
-                          const active = platforms.includes(p)
+                          const checked = platforms.includes(p)
                           return (
-                            <button
-                              key={p}
-                              type="button"
-                              onClick={() => setPlatforms(prev =>
-                                prev.includes(p)
-                                  ? prev.filter(x => x !== p).length > 0 ? prev.filter(x => x !== p) : prev
-                                  : [...prev, p]
-                              )}
-                              className={cn(
-                                'flex-1 text-sm font-medium py-2 rounded-xl border transition-colors',
-                                active
-                                  ? p === 'TikTok'
-                                    ? 'bg-zinc-900 text-white border-zinc-900'
-                                    : 'bg-gradient-to-r from-violet-500 to-pink-500 text-white border-transparent'
-                                  : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:border-zinc-300'
-                              )}
-                            >
-                              {p}
-                            </button>
+                            <label key={p} className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => setPlatforms(prev =>
+                                  prev.includes(p)
+                                    ? prev.filter(x => x !== p).length > 0 ? prev.filter(x => x !== p) : prev
+                                    : [...prev, p]
+                                )}
+                                className="w-4 h-4 rounded accent-violet-600 cursor-pointer"
+                              />
+                              <span className="text-sm text-zinc-700">{p}</span>
+                            </label>
                           )
                         })}
                       </div>
