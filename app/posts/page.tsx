@@ -1008,6 +1008,7 @@ function PostCard({
   publishingNow?: boolean
 }) {
   const [captionExpanded, setCaptionExpanded] = useState(false)
+  const [conceptExpanded, setConceptExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const isEditing = editingId === post.id
   const statusCls = STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200'
@@ -1102,10 +1103,15 @@ function PostCard({
           </button>
 
           {post.image_concept && !post.media_url && (
-            <p className="text-xs text-zinc-400 italic flex items-start gap-1">
-              <ImageIcon className="w-3 h-3 mt-0.5 flex-shrink-0" />
-              <span className="line-clamp-2">{post.image_concept}</span>
-            </p>
+            <div className="flex items-start gap-1">
+              <ImageIcon className="w-3 h-3 mt-0.5 flex-shrink-0 text-zinc-400" />
+              <div className="min-w-0">
+                <p className={cn('text-xs text-zinc-400 italic', !conceptExpanded && 'line-clamp-2')}>{post.image_concept}</p>
+                <button onClick={() => setConceptExpanded(v => !v)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors mt-0.5">
+                  {conceptExpanded ? '▲ Show less' : '▼ Show full prompt'}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Small thumbnail for non-image-review posts that have an image */}
