@@ -81,6 +81,7 @@ interface PlanHistory {
 }
 
 interface PlanSummary {
+  campaignId?: string
   campaignName: string
   theme: string
   startDate: string
@@ -157,6 +158,8 @@ function PostsPageInner() {
   const [planError, setPlanError] = useState<string | null>(null)
   const [planDone, setPlanDone]   = useState(false)
   const [copied, setCopied]       = useState<number | null>(null)
+  const [summaryPosts, setSummaryPosts] = useState<QueuedPost[]>([])
+  const [approvingId, setApprovingId]   = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Past plans
@@ -354,11 +357,20 @@ function PostsPageInner() {
             if (event.error) { setPlanError(event.error); break }
             updateStep(event as PlanStep)
             if (event.complete) {
-              setPlanSummary(event.summary as PlanSummary)
+              const summary = event.summary as PlanSummary
+              setPlanSummary(summary)
               setPlanDone(true)
               await loadPosts()
               setTimeout(() => loadPosts(), 2000)
               setTimeout(() => loadPosts(), 5000)
+              // Load posts for this campaign for inline approval
+              if (summary.campaignId) {
+                setTimeout(async () => {
+                  const r = await fetch(`/api/agents/post-queue?campaign_id=${summary.campaignId}`)
+                  const d = await r.json()
+                  setSummaryPosts(d.posts ?? [])
+                }, 2000)
+              }
             }
           } catch { /* malformed chunk */ }
         }
@@ -377,7 +389,7 @@ function PostsPageInner() {
   }
 
   function resetPlanner() {
-    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7')
+    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7'); setSummaryPosts([])
   }
 
   const contentReviewPosts = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
@@ -556,9 +568,13 @@ function PostsPageInner() {
                     </div>
 
                     <div className="space-y-3">
-                      {planSummary.contentDays.map(day => {
+                      {planSummary.contentDays.map((day, idx) => {
                         const dateObj = new Date(day.date + 'T00:00:00')
                         const isTikTok = day.platform?.toLowerCase().includes('tiktok')
+                        // Match to saved post by index (posts are inserted in order)
+                        const savedPost = summaryPosts[idx]
+                        const isApproved = savedPost?.status !== 'pending_approval' && savedPost?.status !== undefined
+                        const isApproving = approvingId === savedPost?.id
                         return (
                           <div key={day.day} className="rounded-xl border border-zinc-200 bg-zinc-50 overflow-hidden">
                             {/* Date + platform header */}
@@ -601,24 +617,43 @@ function PostsPageInner() {
                                   <p className="text-xs text-zinc-500">{day.cta}</p>
                                 </div>
                               )}
+
+                              {/* Inline approve button */}
+                              {savedPost && (
+                                <div className="pt-1">
+                                  {isApproved ? (
+                                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                                      <CheckCircle2 className="w-3.5 h-3.5" /> Content approved — image generating
+                                    </div>
+                                  ) : (
+                                    <button
+                                      disabled={isApproving}
+                                      onClick={async () => {
+                                        setApprovingId(savedPost.id)
+                                        try {
+                                          await fetch('/api/agents/post-queue/approve-and-generate', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ id: savedPost.id }),
+                                          })
+                                          setSummaryPosts(prev => prev.map(p => p.id === savedPost.id ? { ...p, status: 'generating' } : p))
+                                          await loadPosts()
+                                        } finally {
+                                          setApprovingId(null)
+                                        }
+                                      }}
+                                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-60"
+                                    >
+                                      {isApproving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…</> : <><CheckCircle className="w-3.5 h-3.5" /> Approve content</>}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
                       })}
                     </div>
-
-                    <button
-                      onClick={() => {
-                        if (queueRef.current) {
-                          queueRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                        } else {
-                          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-                        }
-                      }}
-                      className="w-full text-xs text-violet-600 font-medium text-center pt-1 hover:underline"
-                    >
-                      {planSummary.contentDays.length} posts added to your queue below ↓ scroll down to review
-                    </button>
                   </motion.div>
                 )}
               </div>

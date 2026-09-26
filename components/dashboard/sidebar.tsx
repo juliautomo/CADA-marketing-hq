@@ -16,6 +16,7 @@ import {
   Package,
   Settings,
   LogOut,
+  CalendarDays,
 } from 'lucide-react'
 
 const SECTIONS = [
@@ -37,6 +38,7 @@ const SECTIONS = [
   {
     label: 'Manage',
     items: [
+      { label: 'Calendar',     href: '/calendar',    icon: CalendarDays },
       { label: 'Products',     href: '/products',    icon: Package },
       { label: 'History',      href: '/history',     icon: History },
       { label: 'Automations',  href: '/automations', icon: Layers },
