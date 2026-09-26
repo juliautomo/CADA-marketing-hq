@@ -26,7 +26,7 @@ function createSSE() {
 
 // â”€â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function POST(req: NextRequest) {
-  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1 } = await req.json()
+  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1, platforms = ['TikTok', 'Instagram'] } = await req.json()
   const db = createServiceClient()
   const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
@@ -153,17 +153,17 @@ Trend inspiration: ${trendText.slice(0, 400)}
 
 Use EXACTLY this format for EVERY post, separated by ---:
 
-DAY [N] | [YYYY-MM-DD] | [TikTok or Instagram]
+DAY [N] | [YYYY-MM-DD] | [${platforms.join(' or ')}]
 Caption: [full ready-to-post caption — plain text only, NO asterisks, NO markdown, NO hashtag symbols in middle of text. End with hashtags on a new line.]
-Content Type: [Reel / TikTok Video / Carousel / Static Photo]
-Hook: [punchy 1-line video opening or caption hook]
+Content Type: [Carousel / Static Photo / Feed Post — image-only formats, NO video, NO Reels, NO TikTok Video]
+Hook: [punchy 1-line caption hook or opening line]
 CTA: [specific call to action e.g. “Link in bio to shop” or “Comment YES if you want this”]
-Image Prompt: [detailed visual scene for AI image generation — must reflect the brand guidelines below. Describe scene, lighting, subject, product placement, mood, colors. Be specific.]
+Image Prompt: [detailed visual scene for AI image generation — must reflect the brand guidelines below. Describe scene, lighting, subject, product placement, mood, colors. Be specific. For carousels use SLIDE 1: / SLIDE 2: / SLIDE 3: format.]
 ---
 
 Brand image guidelines (apply to every Image Prompt): ${imageGuide || 'No specific guidelines set — use clean, professional photography style.'}
 
-Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. Mix TikTok and Instagram. Rotate products. Use brand hashtags: ${brandHashtags}`
+Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. ${platforms.length === 1 ? `All posts on ${platforms[0]}.` : `Mix ${platforms.join(' and ')}.`} Rotate products. Use brand hashtags: ${brandHashtags}. IMPORTANT: Only image-based content types — no video or Reels.`
       )
 
       // Parse days — split on --- then match each block
@@ -194,7 +194,7 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
         return {
           day: i + 1,
           date: dateStr,
-          platform: platform.toLowerCase().includes('tiktok') ? 'TikTok' : 'Instagram',
+          platform: platform.toLowerCase().includes('tiktok') && platforms.includes('TikTok') ? 'TikTok' : platforms.includes('Instagram') ? 'Instagram' : platforms[0],
           caption: stripMarkdown(captionMatch?.[1] ?? block.slice(0, 400)),
           contentType: typeMatch?.[1]?.trim() ?? 'Reel',
           hook: hookMatch?.[1]?.trim() ?? '',

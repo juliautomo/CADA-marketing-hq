@@ -153,6 +153,7 @@ function PostsPageInner() {
   const [startDate, setStartDate] = useState(searchParams.get('startDate') ?? '')
   const [weeks, setWeeks]         = useState('1')
   const [postsPerWeek, setPostsPerWeek] = useState('7')
+  const [platforms, setPlatforms] = useState<string[]>(['TikTok', 'Instagram'])
   const [planning, setPlanning]   = useState(false)
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([])
   const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null)
@@ -338,7 +339,7 @@ function PostsPageInner() {
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks) }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'] }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -390,7 +391,7 @@ function PostsPageInner() {
   }
 
   function resetPlanner() {
-    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7'); setSummaryPosts([])
+    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7'); setPlatforms(['TikTok', 'Instagram']); setSummaryPosts([])
   }
 
   const contentReviewPosts = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
@@ -504,6 +505,37 @@ function PostsPageInner() {
                           <option value="5">5× / week</option>
                           <option value="7">Daily</option>
                         </select>
+                      </div>
+                    </div>
+
+                    {/* Platform selector */}
+                    <div>
+                      <label className="text-xs font-medium text-zinc-500 block mb-1.5">Platforms</label>
+                      <div className="flex gap-2">
+                        {['TikTok', 'Instagram'].map(p => {
+                          const active = platforms.includes(p)
+                          return (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => setPlatforms(prev =>
+                                prev.includes(p)
+                                  ? prev.filter(x => x !== p).length > 0 ? prev.filter(x => x !== p) : prev
+                                  : [...prev, p]
+                              )}
+                              className={cn(
+                                'flex-1 text-sm font-medium py-2 rounded-xl border transition-colors',
+                                active
+                                  ? p === 'TikTok'
+                                    ? 'bg-zinc-900 text-white border-zinc-900'
+                                    : 'bg-gradient-to-r from-violet-500 to-pink-500 text-white border-transparent'
+                                  : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:border-zinc-300'
+                              )}
+                            >
+                              {p}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
 
