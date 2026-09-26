@@ -27,6 +27,8 @@ interface QueuedPost {
   media_urls: string[] | null
   media_type: string | null
   error_message: string | null
+  campaign_id: string | null
+  cada_campaigns?: { name: string } | null
 }
 
 interface PlanStep {
@@ -695,71 +697,103 @@ function PostsPageInner() {
         </AnimatePresence>
       </div>
 
-      {/* ── Post Queue ── */}
+      {/* ── Post Queue — grouped by campaign ── */}
+      {(() => {
+        const activePosts = posts.filter(p => !['published', 'failed'].includes(p.status))
 
-      {/* Step 1: Review content */}
-      {contentReviewPosts.length > 0 && (
-        <section ref={queueRef} className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Step 1 — Review content ({contentReviewPosts.length})</span>
-          </div>
-          {contentReviewPosts.map(post => (
-            <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
-              editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-              setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-              onApprove={() => handleAction(post.id, 'approve')}
-              generatingImage={generatingId === post.id}
-              onRemove={() => handleDelete(post.id)}
-              onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
-          ))}
-        </section>
-      )}
+        // Group by campaign_id (null = no campaign)
+        const campaignMap = new Map<string, { name: string; posts: QueuedPost[] }>()
+        for (const post of activePosts) {
+          const key = post.campaign_id ?? '__none__'
+          if (!campaignMap.has(key)) {
+            campaignMap.set(key, {
+              name: post.cada_campaigns?.name ?? (post.campaign_id ? 'Campaign' : 'Unplanned posts'),
+              posts: [],
+            })
+          }
+          campaignMap.get(key)!.posts.push(post)
+        }
 
-      {/* Generating images */}
-      {generatingPosts.length > 0 && (
-        <section className="space-y-3">
-          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Generating images ({generatingPosts.length})</span>
-          {generatingPosts.map(post => (
-            <PostCard key={post.id} post={post} saving={false} editingId={editingId}
-              editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-              setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate} />
-          ))}
-        </section>
-      )}
+        if (campaignMap.size === 0 && !loading && !planning) {
+          return <p className="text-center text-sm text-zinc-400 py-12">No posts yet — plan your content above to get started.</p>
+        }
 
-      {/* Step 2: Review image */}
-      {imageReviewPosts.length > 0 && (
-        <section className="space-y-3">
-          <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Step 2 — Review image ({imageReviewPosts.length})</span>
-          {imageReviewPosts.map(post => (
-            <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
-              editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-              setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-              onSchedule={() => handleAction(post.id, 'schedule')}
-              onReject={() => handleAction(post.id, 'reject')}
-              onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
-          ))}
-        </section>
-      )}
+        return Array.from(campaignMap.entries()).map(([key, group]) => {
+          const reviewPosts    = group.posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
+          const generatingP    = group.posts.filter(p => p.status === 'generating')
+          const imageP         = group.posts.filter(p => p.status === 'image_review')
+          const scheduledP     = group.posts.filter(p => ['approved', 'pending'].includes(p.status))
 
-      {/* Scheduled */}
-      {scheduledPosts.length > 0 && (
-        <section className="space-y-3">
-          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Scheduled ({scheduledPosts.length})</span>
-          {scheduledPosts.map(post => (
-            <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
-              editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-              setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-              onEdit={() => startEdit(post)}
-              onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
-              onPublishNow={post.status === 'pending' ? () => publishNow(post.id) : undefined}
-              onRemove={post.status === 'pending' ? () => handleDelete(post.id) : undefined}
-              publishingNow={publishingId === post.id} />
-          ))}
-        </section>
-      )}
+          return (
+            <section key={key} ref={key === Array.from(campaignMap.keys())[0] ? queueRef : undefined} className="space-y-4">
+              {/* Campaign header */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-zinc-200" />
+                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">{group.name}</span>
+                <div className="flex-1 h-px bg-zinc-200" />
+              </div>
 
-      {/* Done */}
+              {reviewPosts.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Step 1 — Review content ({reviewPosts.length})</span>
+                  {reviewPosts.map(post => (
+                    <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+                      onApprove={() => handleAction(post.id, 'approve')}
+                      generatingImage={generatingId === post.id}
+                      onRemove={() => handleDelete(post.id)}
+                      onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+                  ))}
+                </div>
+              )}
+
+              {generatingP.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Generating images ({generatingP.length})</span>
+                  {generatingP.map(post => (
+                    <PostCard key={post.id} post={post} saving={false} editingId={editingId}
+                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate} />
+                  ))}
+                </div>
+              )}
+
+              {imageP.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Step 2 — Review image ({imageP.length})</span>
+                  {imageP.map(post => (
+                    <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+                      onSchedule={() => handleAction(post.id, 'schedule')}
+                      onReject={() => handleAction(post.id, 'reject')}
+                      onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+                  ))}
+                </div>
+              )}
+
+              {scheduledP.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Scheduled ({scheduledP.length})</span>
+                  {scheduledP.map(post => (
+                    <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+                      onEdit={() => startEdit(post)}
+                      onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
+                      onPublishNow={post.status === 'pending' ? () => publishNow(post.id) : undefined}
+                      onRemove={post.status === 'pending' ? () => handleDelete(post.id) : undefined}
+                      publishingNow={publishingId === post.id} />
+                  ))}
+                </div>
+              )}
+            </section>
+          )
+        })
+      })()}
+
+      {/* Done / failed — flat, below all campaigns */}
       {donePosts.length > 0 && (
         <section className="space-y-3">
           <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Done ({donePosts.length})</span>
@@ -772,9 +806,6 @@ function PostsPageInner() {
         </section>
       )}
 
-      {!loading && posts.length === 0 && !planning && (
-        <p className="text-center text-sm text-zinc-400 py-12">No posts yet — plan your content above to get started.</p>
-      )}
       {loading && <p className="text-center text-sm text-zinc-400 py-8">Loading…</p>}
 
       {/* ── Past Plans ── */}
