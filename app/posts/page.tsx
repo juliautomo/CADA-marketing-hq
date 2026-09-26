@@ -1006,6 +1006,7 @@ function PostCard({
   onPublishNow?: () => void
   publishingNow?: boolean
 }) {
+  const [captionExpanded, setCaptionExpanded] = useState(false)
   const isEditing = editingId === post.id
   const statusCls = STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200'
   const statusLabel = STATUS_LABELS[post.status] ?? post.status
@@ -1066,7 +1067,10 @@ function PostCard({
         </div>
       ) : (
         <>
-          <p className="text-xs text-zinc-600 line-clamp-3 whitespace-pre-wrap">{post.caption}</p>
+          <p className={cn('text-xs text-zinc-600 whitespace-pre-wrap', !captionExpanded && 'line-clamp-3')}>{post.caption}</p>
+          <button onClick={() => setCaptionExpanded(v => !v)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors">
+            {captionExpanded ? '▲ Show less' : '▼ Show full caption'}
+          </button>
 
           {post.image_concept && !post.media_url && (
             <p className="text-xs text-zinc-400 italic flex items-start gap-1">
