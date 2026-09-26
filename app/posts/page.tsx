@@ -721,10 +721,12 @@ function PostsPageInner() {
           return (
             <section key={key} ref={key === Array.from(campaignMap.keys())[0] ? queueRef : undefined} className="space-y-4">
               {/* Campaign header */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-zinc-200" />
-                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">{group.name}</span>
-                <div className="flex-1 h-px bg-zinc-200" />
+              <div className="bg-zinc-900 rounded-2xl px-5 py-3.5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Campaign</p>
+                  <p className="text-sm font-bold text-white">{group.name}</p>
+                </div>
+                <span className="text-xs text-zinc-500 font-medium">{group.posts.length} posts</span>
               </div>
 
               {reviewPosts.length > 0 && (
