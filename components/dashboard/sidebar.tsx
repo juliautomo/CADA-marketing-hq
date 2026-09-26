@@ -23,8 +23,9 @@ const SECTIONS = [
   {
     label: 'Automate',
     items: [
-      { label: 'Dashboard',       href: '/',             icon: LayoutDashboard },
-      { label: 'Content Planner', href: '/posts', icon: Zap },
+      { label: 'Dashboard',       href: '/',         icon: LayoutDashboard },
+      { label: 'Calendar',        href: '/calendar', icon: CalendarDays },
+      { label: 'Content Planner', href: '/posts',    icon: Zap },
     ],
   },
   {
@@ -38,11 +39,10 @@ const SECTIONS = [
   {
     label: 'Manage',
     items: [
-      { label: 'Calendar',     href: '/calendar',    icon: CalendarDays },
-      { label: 'Products',     href: '/products',    icon: Package },
-      { label: 'History',      href: '/history',     icon: History },
-      { label: 'Automations',  href: '/automations', icon: Layers },
-      { label: 'Settings',     href: '/settings',    icon: Settings },
+      { label: 'Products',    href: '/products',    icon: Package },
+      { label: 'History',     href: '/history',     icon: History },
+      { label: 'Automations', href: '/automations', icon: Layers },
+      { label: 'Settings',    href: '/settings',    icon: Settings },
     ],
   },
 ]
