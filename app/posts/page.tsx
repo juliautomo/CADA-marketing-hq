@@ -227,7 +227,7 @@ function PostsPageInner() {
 
   // ── Queue actions ──────────────────────────────────────────────────────────
 
-  async function handleAction(id: string, action: 'approve' | 'reject' | 'schedule') {
+  async function handleAction(id: string, action: 'approve' | 'reject' | 'schedule' | 'unapprove') {
     if (action === 'approve') {
       // Step 1: approve content → triggers image generation → lands in image_review
       setGeneratingId(id)
@@ -401,6 +401,7 @@ function PostsPageInner() {
   const imageReviewPosts   = posts.filter(p => p.status === 'image_review')
   const scheduledPosts     = posts.filter(p => ['approved', 'pending'].includes(p.status))
   const donePosts          = posts.filter(p => ['published', 'failed'].includes(p.status))
+  const failedPosts        = posts.filter(p => p.status === 'failed')
   const allStepsDone    = planSteps.length > 0 && planSteps.every(s => s.status === 'done' || s.status === 'skipped')
   const queueRef = useRef<HTMLElement>(null)
 
@@ -430,6 +431,17 @@ function PostsPageInner() {
       {runResult && (
         <div className={cn('rounded-xl px-4 py-3 text-sm font-medium border', runResult.includes('Failed') || runResult.includes('No pending') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')}>
           {runResult}
+        </div>
+      )}
+
+      {/* Failed posts alert */}
+      {failedPosts.length > 0 && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center gap-3">
+          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+          <p className="text-sm text-red-700 flex-1">
+            <span className="font-semibold">{failedPosts.length} post{failedPosts.length > 1 ? 's' : ''} failed to publish.</span>
+            {' '}Check the Done section below for details.
+          </p>
         </div>
       )}
 
@@ -778,6 +790,7 @@ function PostsPageInner() {
                       setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
                       onEdit={() => startEdit(post)}
                       onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
+                      onUnapprove={post.status === 'approved' ? () => handleAction(post.id, 'unapprove') : undefined}
                       onPublishNow={post.status === 'pending' ? () => publishNow(post.id) : undefined}
                       onRemove={post.status === 'pending' ? () => handleDelete(post.id) : undefined}
                       publishingNow={publishingId === post.id} />
@@ -1044,7 +1057,7 @@ function PostCard({
   post, saving, editingId,
   editCaption, editConcept, editDate,
   setEditCaption, setEditConcept, setEditDate,
-  onApprove, generatingImage, onSchedule, onReject, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
+  onApprove, generatingImage, onSchedule, onReject, onUnapprove, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
 }: {
   post: QueuedPost
   saving: boolean
@@ -1059,6 +1072,7 @@ function PostCard({
   generatingImage?: boolean
   onSchedule?: () => void
   onReject?: () => void
+  onUnapprove?: () => void
   onRemove?: () => void
   onEdit?: () => void
   onSaveEdit?: () => void
@@ -1190,7 +1204,7 @@ function PostCard({
             </p>
           )}
 
-          {(onApprove || onSchedule || onReject || onRemove || onEdit || onPublishNow) && (
+          {(onApprove || onSchedule || onReject || onUnapprove || onRemove || onEdit || onPublishNow) && (
             <div className="flex gap-2 pt-1">
               {/* Step 1: approve content → generate image */}
               {onApprove && (
@@ -1207,6 +1221,12 @@ function PostCard({
                 <button onClick={onSchedule} disabled={saving}
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-emerald-600 text-white rounded-xl py-2 hover:bg-emerald-500 disabled:opacity-40 transition-colors">
                   <Send className="w-3 h-3" /> Approve &amp; schedule
+                </button>
+              )}
+              {onUnapprove && (
+                <button onClick={onUnapprove} disabled={saving}
+                  className="flex items-center justify-center gap-1.5 px-3 text-xs text-zinc-500 border border-zinc-200 rounded-xl py-2 hover:bg-zinc-50 disabled:opacity-40 transition-colors">
+                  <RotateCcw className="w-3 h-3" /> Undo approve
                 </button>
               )}
               {onReject && (

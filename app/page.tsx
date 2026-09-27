@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { AgentCard } from '@/components/dashboard/agent-card'
+import { ProductsNudge } from '@/components/dashboard/products-nudge'
 import { Zap, TrendingUp, CheckCircle2, BarChart3, ArrowRight, Sparkles } from 'lucide-react'
 
 const agents = [
@@ -110,6 +111,8 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <ProductsNudge />
 
       {/* How it works */}
       <div>
