@@ -46,6 +46,7 @@ const FLOW_STEPS = [
     icon: TrendingUp,
     accent: 'from-pink-500 to-rose-500',
     tag: 'Optional',
+    agent: { label: 'Trend Analyst', icon: TrendingUp, color: 'bg-emerald-500' },
   },
   {
     step: '02',
@@ -55,6 +56,7 @@ const FLOW_STEPS = [
     icon: Zap,
     accent: 'from-violet-500 to-purple-600',
     tag: 'Start here',
+    agent: { label: 'Content Planner', icon: Zap, color: 'bg-violet-500' },
   },
   {
     step: '03',
@@ -64,6 +66,7 @@ const FLOW_STEPS = [
     icon: CheckCircle2,
     accent: 'from-blue-500 to-indigo-500',
     tag: null,
+    agent: { label: 'Content Planner', icon: Zap, color: 'bg-violet-500' },
   },
   {
     step: '04',
@@ -73,6 +76,7 @@ const FLOW_STEPS = [
     icon: BarChart3,
     accent: 'from-amber-400 to-orange-500',
     tag: null,
+    agent: { label: 'Performance Reviewer', icon: BarChart3, color: 'bg-amber-500' },
   },
 ]
 
@@ -122,9 +126,10 @@ export default async function DashboardPage() {
             {FLOW_STEPS.map((item) => {
               const Icon = item.icon
               const isClickable = item.step === '02'
+              const AgentIcon = item.agent.icon
               const inner = (
                 <div className={[
-                  'group bg-white rounded-2xl border border-zinc-100 p-5 transition-all h-full',
+                  'group bg-white rounded-2xl border border-zinc-100 p-5 transition-all h-full flex flex-col',
                   isClickable ? 'hover:border-violet-200 hover:shadow-md cursor-pointer' : 'cursor-default',
                 ].join(' ')}>
                   <div className="flex items-start justify-between mb-4">
@@ -144,6 +149,13 @@ export default async function DashboardPage() {
                   </div>
                   <p className={['text-sm font-semibold text-zinc-800 mb-1.5', isClickable ? 'group-hover:text-violet-700 transition-colors' : ''].join(' ')}>{item.label}</p>
                   <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
+                  {/* agent badge */}
+                  <div className="mt-auto pt-4 flex items-center gap-1.5">
+                    <div className={`w-4 h-4 rounded-md ${item.agent.color} flex items-center justify-center flex-shrink-0`}>
+                      <AgentIcon className="w-2.5 h-2.5 text-white" />
+                    </div>
+                    <span className="text-[10px] font-medium text-zinc-400">{item.agent.label}</span>
+                  </div>
                 </div>
               )
               return isClickable
