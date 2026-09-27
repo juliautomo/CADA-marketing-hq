@@ -39,7 +39,7 @@ function LoginPageInner() {
     })
     const data = await res.json()
     if (res.ok) {
-      window.location.href = next
+      window.location.href = '/'
     } else {
       setError('Invalid username or password')
       setLogging(false)
