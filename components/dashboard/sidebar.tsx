@@ -41,7 +41,6 @@ const SECTIONS = [
     items: [
       { label: 'Products',    href: '/products',    icon: Package },
       { label: 'History',     href: '/history',     icon: History },
-      { label: 'Automations', href: '/automations', icon: Layers },
       { label: 'Settings',    href: '/settings',    icon: Settings },
     ],
   },
