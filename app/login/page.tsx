@@ -56,11 +56,18 @@ function LoginPageInner() {
             <Layers className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-zinc-900">Marketing HQ</h1>
-          <p className="text-sm text-zinc-500 mt-1">Sign in to continue</p>
+          <p className="text-sm text-zinc-500 mt-1">
+            {next !== '/' ? 'Sign in to access this page' : 'Sign in to continue'}
+          </p>
         </div>
 
         {/* Login form */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-6 space-y-4">
+          {next !== '/' && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5 text-xs text-amber-700">
+              Please sign in to continue.
+            </div>
+          )}
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-zinc-500 block mb-1.5">Username</label>
