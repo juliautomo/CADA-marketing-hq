@@ -163,7 +163,7 @@ export default async function DashboardPage() {
           </div>
           <p className="text-sm text-zinc-400 hidden sm:block">Pick an agent to get started</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
           {agents.map((agent, i) => (
             <AgentCard key={agent.href} {...agent} index={i} />
           ))}

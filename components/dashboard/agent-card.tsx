@@ -78,11 +78,12 @@ export function AgentCard({ title, description, href, iconName, color, capabilit
       initial={{ opacity: 0, y: 28 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: index * 0.09, ease: [0.22, 1, 0.36, 1] }}
+      className="h-full"
     >
       <Link
         href={href}
         className={[
-          'group relative flex flex-col overflow-hidden rounded-2xl',
+          'group relative flex flex-col overflow-hidden rounded-2xl h-full',
           'bg-zinc-950 border border-zinc-800 transition-all duration-300',
           'hover:-translate-y-1.5',
           'hover:shadow-[0_20px_60px_-12px_rgba(var(--glow),0.35)]',
