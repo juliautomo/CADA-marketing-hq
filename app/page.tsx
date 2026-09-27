@@ -161,7 +161,6 @@ export default async function DashboardPage() {
             <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-400 mb-1.5">Powered by Claude AI</p>
             <h2 className="text-lg font-bold text-zinc-900">AI Agents</h2>
           </div>
-          <p className="text-sm text-zinc-400 hidden sm:block">Pick an agent to get started</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
           {agents.map((agent, i) => (
