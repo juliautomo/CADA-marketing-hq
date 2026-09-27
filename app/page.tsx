@@ -150,9 +150,12 @@ export default async function DashboardPage() {
 
       {/* Agents grid */}
       <div>
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-zinc-900">AI Agents</h2>
-          <p className="text-sm text-zinc-500 mt-1">Each agent specialises in a different part of your marketing workflow.</p>
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-400 mb-1.5">Powered by Claude AI</p>
+            <h2 className="text-lg font-bold text-zinc-900">AI Agents</h2>
+          </div>
+          <p className="text-sm text-zinc-400 hidden sm:block">Pick an agent to get started</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {agents.map((agent, i) => (
