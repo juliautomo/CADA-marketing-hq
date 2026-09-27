@@ -121,9 +121,12 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 relative z-10">
             {FLOW_STEPS.map((item) => {
               const Icon = item.icon
-              return (
-                <Link key={item.step} href={item.href}
-                  className="group bg-white rounded-2xl border border-zinc-100 p-5 hover:border-zinc-200 hover:shadow-md transition-all">
+              const isClickable = item.step === '02'
+              const inner = (
+                <div className={[
+                  'group bg-white rounded-2xl border border-zinc-100 p-5 transition-all h-full',
+                  isClickable ? 'hover:border-violet-200 hover:shadow-md cursor-pointer' : 'cursor-default',
+                ].join(' ')}>
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.accent} flex items-center justify-center shadow-sm`}>
                       <Icon className="w-5 h-5 text-white" />
@@ -134,15 +137,18 @@ export default async function DashboardPage() {
                           {item.tag}
                         </span>
                       )}
-                      <span className="text-2xl font-black text-zinc-100 group-hover:text-zinc-200 transition-colors leading-none">
+                      <span className="text-2xl font-black text-zinc-100 leading-none">
                         {item.step}
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-zinc-800 mb-1.5 group-hover:text-violet-700 transition-colors">{item.label}</p>
+                  <p className={['text-sm font-semibold text-zinc-800 mb-1.5', isClickable ? 'group-hover:text-violet-700 transition-colors' : ''].join(' ')}>{item.label}</p>
                   <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
-                </Link>
+                </div>
               )
+              return isClickable
+                ? <Link key={item.step} href={item.href}>{inner}</Link>
+                : <div key={item.step}>{inner}</div>
             })}
           </div>
         </div>
