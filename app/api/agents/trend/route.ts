@@ -164,7 +164,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
     // â”€â”€ Save to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     const topic = body.focus || brandIndustry || 'General'
-    const title = `${topic} — ${body.season ?? 'Current Season'} ${dateStr}`
+    const title = `${topic} — ${dateStr}`
 
     const { data: report } = await db
       .from('cada_trend_reports')
