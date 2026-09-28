@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { generateImage } from '@/lib/openai'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cada-marketing-hq.vercel.app'
 
@@ -25,23 +24,13 @@ export async function GET(req: Request) {
 
   if (approvedPosts && approvedPosts.length > 0) {
     for (const post of approvedPosts) {
-      if (!post.image_concept) {
-        // No concept — skip image gen, move straight to pending
-        await supabase.from('cada_scheduled_posts').update({ status: 'pending' }).eq('id', post.id)
-        continue
-      }
-      await supabase.from('cada_scheduled_posts').update({ status: 'generating' }).eq('id', post.id)
-      try {
-        const mediaUrl = await generateImage(post.image_concept, '1024x1024', 'medium')
-        await supabase.from('cada_scheduled_posts')
-          .update({ status: 'pending', media_url: mediaUrl })
-          .eq('id', post.id)
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        await supabase.from('cada_scheduled_posts')
-          .update({ status: 'failed', error_message: `Image generation failed: ${msg}` })
-          .eq('id', post.id)
-      }
+      // Delegate to approve-and-generate so brand context, model, size and watermark are applied
+      const clientHeader: Record<string, string> = post.client_id ? { 'x-client-id': post.client_id } : {}
+      await fetch(`${APP_URL}/api/agents/post-queue/approve-and-generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...clientHeader },
+        body: JSON.stringify({ id: post.id }),
+      }).catch(() => {/* fire-and-forget; status updated inside that route */})
     }
   }
 
