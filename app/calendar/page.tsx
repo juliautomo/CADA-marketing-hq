@@ -15,6 +15,7 @@ interface Post {
   media_url: string | null
   campaign_id: string | null
   error_message: string | null
+  cada_campaigns: { name: string } | null
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -236,6 +237,9 @@ export default function CalendarPage() {
                           <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', STATUS_DOT[post.status] ?? 'bg-zinc-300')} />
                           <span className="truncate">{post.title ?? platformLabel(post.platform)}</span>
                         </span>
+                        {post.cada_campaigns?.name && (
+                          <span className="text-[9px] opacity-60 pl-2.5 truncate block">{post.cada_campaigns.name}</span>
+                        )}
                         <span className="text-[9px] opacity-70 pl-2.5 flex items-center gap-1.5">
                           {post.scheduled_at ? format(parseISO(post.scheduled_at), 'h:mm a') : ''}
                           <span className="opacity-60">·</span>
