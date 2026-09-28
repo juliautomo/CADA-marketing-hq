@@ -1158,12 +1158,12 @@ function PostCard({
         <div className="space-y-2">
           <div>
             <label className="text-xs text-zinc-500 font-medium">Caption</label>
-            <textarea value={editCaption} onChange={e => setEditCaption(e.target.value)} rows={4}
+            <textarea value={editCaption} onChange={e => setEditCaption(e.target.value)} rows={7}
               className="w-full mt-1 text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400" />
           </div>
           <div>
             <label className="text-xs text-zinc-500 font-medium flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Image prompt</label>
-            <textarea value={editConcept} onChange={e => setEditConcept(e.target.value)} rows={2}
+            <textarea value={editConcept} onChange={e => setEditConcept(e.target.value)} rows={5}
               className="w-full mt-1 text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-400" />
           </div>
           <div>
