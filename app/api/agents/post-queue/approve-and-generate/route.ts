@@ -49,16 +49,16 @@ export async function POST(req: NextRequest) {
     const colorDesc     = ctx.raw.brand_color_description ?? ''
     const shotStyle     = ctx.raw.brand_shot_style ?? ''
     const negatives     = ctx.raw.brand_negative_prompts ?? ''
-    const quality       = ((post.image_quality ?? ctx.raw.image_quality) as 'low' | 'medium' | 'high') ?? 'medium'
+    const quality       = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
     const referenceUrl  = ctx.referenceImageUrl
 
-    // Map post size to OpenAI dimensions
-    const sizeMap: Record<string, '1024x1024' | '1024x1280' | '1024x1792'> = {
+    // GPT Image 1 only supports 1024x1024, 1024x1536, 1536x1024
+    const sizeMap: Record<string, '1024x1024' | '1024x1536'> = {
       '1:1': '1024x1024',
-      '4:5': '1024x1280',
-      '9:16': '1024x1792',
+      '4:5': '1024x1536',
+      '9:16': '1024x1536',
     }
-    const imageSize = (sizeMap[(post.image_size as string) ?? ''] ?? '1024x1536') as '1024x1024' | '1024x1280' | '1024x1792'
+    const imageSize = sizeMap[(post.image_size as string) ?? ''] ?? '1024x1536'
 
     // Rewrite the image concept to match brand visual style before generating
     const brandStyleGuide = [

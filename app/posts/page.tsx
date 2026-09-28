@@ -581,7 +581,7 @@ function PostsPageInner() {
                             <select value={imageSize} onChange={e => setImageSize(e.target.value as typeof imageSize)}
                               className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
                               <option value="1:1">1:1 Square</option>
-                              <option value="4:5">4:5 Portrait</option>
+                              <option value="4:5">4:5 Portrait (default)</option>
                               <option value="9:16">9:16 Stories</option>
                             </select>
                           </div>
