@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { generateImage } from '@/lib/openai'
+import { generateImage, generateImageWithReference } from '@/lib/openai'
 import { getBrandContext } from '@/lib/brand'
 
 // Split a prompt on SLIDE markers → ['slide 1 prompt', 'slide 2 prompt', ...]
@@ -44,11 +44,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const ctx = await getBrandContext(clientId)
-    const stylePrefix = ctx.raw.brand_style_prefix ?? ''
-    const colorDesc   = ctx.raw.brand_color_description ?? ''
-    const shotStyle   = ctx.raw.brand_shot_style ?? ''
-    const negatives   = ctx.raw.brand_negative_prompts ?? ''
-    const quality     = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
+    const stylePrefix   = ctx.raw.brand_style_prefix ?? ''
+    const colorDesc     = ctx.raw.brand_color_description ?? ''
+    const shotStyle     = ctx.raw.brand_shot_style ?? ''
+    const negatives     = ctx.raw.brand_negative_prompts ?? ''
+    const quality       = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
+    const referenceUrl  = ctx.referenceImageUrl
 
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
@@ -63,10 +64,15 @@ export async function POST(req: NextRequest) {
       return styleDirective ? `${styleDirective}\n\nCONTENT: ${base}` : base
     }
 
+    const generate = (prompt: string) =>
+      referenceUrl
+        ? generateImageWithReference(prompt, referenceUrl, '1024x1536', quality)
+        : generateImage(prompt, '1024x1536', quality)
+
     if (isMulti) {
       // Generate all slide images in parallel
       const urls = await Promise.all(
-        slides.map(slide => generateImage(buildPrompt(slide), '1024x1536', quality))
+        slides.map(slide => generate(buildPrompt(slide)))
       )
       const { data } = await db
         .from('cada_scheduled_posts')
@@ -81,7 +87,7 @@ export async function POST(req: NextRequest) {
         .single()
       return NextResponse.json({ post: data })
     } else {
-      const mediaUrl = await generateImage(buildPrompt(imagePrompt), '1024x1536', quality)
+      const mediaUrl = await generate(buildPrompt(imagePrompt))
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })
