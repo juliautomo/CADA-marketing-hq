@@ -49,8 +49,16 @@ export async function POST(req: NextRequest) {
     const colorDesc     = ctx.raw.brand_color_description ?? ''
     const shotStyle     = ctx.raw.brand_shot_style ?? ''
     const negatives     = ctx.raw.brand_negative_prompts ?? ''
-    const quality       = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
+    const quality       = ((post.image_quality ?? ctx.raw.image_quality) as 'low' | 'medium' | 'high') ?? 'medium'
     const referenceUrl  = ctx.referenceImageUrl
+
+    // Map post size to OpenAI dimensions
+    const sizeMap: Record<string, '1024x1024' | '1024x1280' | '1024x1792'> = {
+      '1:1': '1024x1024',
+      '4:5': '1024x1280',
+      '9:16': '1024x1792',
+    }
+    const imageSize = (sizeMap[(post.image_size as string) ?? ''] ?? '1024x1536') as '1024x1024' | '1024x1280' | '1024x1792'
 
     // Rewrite the image concept to match brand visual style before generating
     const brandStyleGuide = [
@@ -88,15 +96,15 @@ export async function POST(req: NextRequest) {
 
     const generate = (prompt: string) =>
       referenceUrl
-        ? generateImageWithReference(prompt, referenceUrl, '1024x1536', quality)
-        : generateImage(prompt, '1024x1536', quality)
+        ? generateImageWithReference(prompt, referenceUrl, imageSize, quality)
+        : generateImage(prompt, imageSize, quality)
 
     if (isMulti) {
       // Generate slide 1 first, then use it as style reference for remaining slides
       // so all slides share the same visual style
       const firstUrl = await generate(buildPrompt(rewrittenSlides[0]))
       const generateWithStyle = (prompt: string) =>
-        generateImageWithReference(prompt, firstUrl, '1024x1536', quality)
+        generateImageWithReference(prompt, firstUrl, imageSize, quality)
       const remainingUrls = await Promise.all(
         rewrittenSlides.slice(1).map(slide => generateWithStyle(buildPrompt(slide)))
       )

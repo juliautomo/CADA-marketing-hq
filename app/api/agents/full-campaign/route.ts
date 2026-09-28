@@ -26,7 +26,7 @@ function createSSE() {
 
 // â”€â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function POST(req: NextRequest) {
-  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1, platforms = ['TikTok', 'Instagram'] } = await req.json()
+  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1, platforms = ['TikTok', 'Instagram'], imageSize = '4:5', imageQuality: planImageQuality = 'medium', postFormat = 'auto' } = await req.json()
   const db = createServiceClient()
   const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
@@ -164,7 +164,7 @@ Image Prompt: [STRICTLY follow the brand image guidelines below. Describe ONLY t
 BRAND IMAGE GUIDELINES — MANDATORY for every Image Prompt. Violating these is not allowed:
 ${imageGuide || 'Clean, professional photography style.'}
 
-Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. ${platforms.length === 1 ? `All posts on ${platforms[0]}.` : `Mix ${platforms.join(' and ')}.`} Rotate products. Use brand hashtags: ${brandHashtags}. IMPORTANT: Only image-based content types — no video or Reels.`
+Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. ${platforms.length === 1 ? `All posts on ${platforms[0]}.` : `Mix ${platforms.join(' and ')}.`} Rotate products. Use brand hashtags: ${brandHashtags}. IMPORTANT: Only image-based content types — no video or Reels.${postFormat === 'single' ? ' Every post must be a single image (Static Photo or Feed Post) — no carousels.' : postFormat === 'carousel' ? ' Every post must be a Carousel (3 slides with SLIDE 1: / SLIDE 2: / SLIDE 3: in the Image Prompt).' : ''}`
       )
 
       // Parse days — split on --- then match each block
@@ -260,6 +260,8 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
           image_concept: day.imagePrompt || day.hook || '',
           campaign_id: campaign.id,
           client_id: clientId,
+          image_size: imageSize,
+          post_format: postFormat,
         }))
         const { error: insertError } = await db.from('cada_scheduled_posts').insert(scheduledInserts)
         if (insertError) {

@@ -167,6 +167,10 @@ function PostsPageInner() {
   const [planDone, setPlanDone]   = useState(false)
   const [summaryPosts, setSummaryPosts] = useState<QueuedPost[]>([])
   const [approvingId, setApprovingId]   = useState<string | null>(null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [imageSize, setImageSize]       = useState<'1:1' | '4:5' | '9:16'>('4:5')
+  const [imageQuality, setImageQuality] = useState<'low' | 'medium' | 'high'>('medium')
+  const [postFormat, setPostFormat]     = useState<'auto' | 'single' | 'carousel'>('auto')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Past plans
@@ -357,7 +361,7 @@ function PostsPageInner() {
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'] }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -403,7 +407,7 @@ function PostsPageInner() {
   }
 
   function resetPlanner() {
-    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7'); setPlatforms(['TikTok', 'Instagram']); setSummaryPosts([])
+    setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7'); setPlatforms(['TikTok', 'Instagram']); setSummaryPosts([]); setShowAdvanced(false); setImageSize('4:5'); setImageQuality('medium'); setPostFormat('auto')
   }
 
   const contentReviewPosts = posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
@@ -558,6 +562,49 @@ function PostsPageInner() {
                           )
                         })}
                       </div>
+                    </div>
+
+                    {/* Advanced options */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvanced(v => !v)}
+                        className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+                      >
+                        <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showAdvanced && 'rotate-180')} />
+                        Advanced options
+                      </button>
+                      {showAdvanced && (
+                        <div className="mt-3 grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="text-xs font-medium text-zinc-500 block mb-1.5">Post size</label>
+                            <select value={imageSize} onChange={e => setImageSize(e.target.value as typeof imageSize)}
+                              className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                              <option value="1:1">1:1 Square</option>
+                              <option value="4:5">4:5 Portrait</option>
+                              <option value="9:16">9:16 Stories</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-zinc-500 block mb-1.5">Image quality</label>
+                            <select value={imageQuality} onChange={e => setImageQuality(e.target.value as typeof imageQuality)}
+                              className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                              <option value="low">Low (faster)</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High (slower)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-zinc-500 block mb-1.5">Post format</label>
+                            <select value={postFormat} onChange={e => setPostFormat(e.target.value as typeof postFormat)}
+                              className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                              <option value="auto">Auto (AI decides)</option>
+                              <option value="single">Single image</option>
+                              <option value="carousel">Carousel</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <Button onClick={handlePlan} disabled={!prompt.trim()} className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white border-0">
