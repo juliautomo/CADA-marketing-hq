@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const ctx = await getBrandContext(clientId)
+    const ctx = await getBrandContext((post.client_id as string | null) ?? clientId)
     const stylePrefix   = ctx.raw.brand_style_prefix ?? ''
     const colorDesc     = ctx.raw.brand_color_description ?? ''
     const shotStyle     = ctx.raw.brand_shot_style ?? ''
@@ -107,6 +107,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Add equal padding on all sides (prompt instructions alone aren't reliable)
+    const addPadding = async (url: string, paddingPx = 56): Promise<string> => {
+      try {
+        const { default: sharp } = await import('sharp')
+        const res = await fetch(url)
+        if (!res.ok) return url
+        const buffer = Buffer.from(await res.arrayBuffer())
+        const padded = await sharp(buffer)
+          .extend({ top: paddingPx, bottom: paddingPx, left: paddingPx, right: paddingPx, background: { r: 255, g: 255, b: 255, alpha: 1 } })
+          .png()
+          .toBuffer()
+        return uploadBase64ToStorage(`data:image/png;base64,${padded.toString('base64')}`)
+      } catch (err) {
+        console.error('Padding failed, using original:', err)
+        return url
+      }
+    }
+
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
 
@@ -147,8 +165,9 @@ export async function POST(req: NextRequest) {
         rewrittenSlides.slice(1).map(slide => generateWithStyle(buildPrompt(slide)))
       )
       const rawUrls = [firstRaw, ...remainingRaw]
-      // Apply logo to all slides in parallel
-      const urls = await Promise.all(rawUrls.map(applyLogo))
+      // Add padding then apply logo to all slides in parallel
+      const paddedUrls = await Promise.all(rawUrls.map(u => addPadding(u)))
+      const urls = await Promise.all(paddedUrls.map(applyLogo))
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: urls[0], media_urls: urls, media_type: 'image' })
@@ -158,7 +177,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ post: data })
     } else {
       const rawUrl = await generate(buildPrompt(rewrittenSlides[0]))
-      const mediaUrl = await applyLogo(rawUrl)
+      const paddedUrl = await addPadding(rawUrl)
+      const mediaUrl = await applyLogo(paddedUrl)
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })
