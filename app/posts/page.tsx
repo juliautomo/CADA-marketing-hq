@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle, XCircle, Edit2, CalendarClock, ImageIcon,
   Send, RotateCcw, Clock, Play, Trash2, RefreshCw, Zap,
-  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, Copy, Check, History, ExternalLink,
+  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, Copy, Check, History, ExternalLink, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -146,6 +146,7 @@ function PostsPageInner() {
   const [saving, setSaving]             = useState<string | null>(null)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [runResult, setRunResult]       = useState<string | null>(null)
+  const [dismissedFailed, setDismissedFailed] = useState(false)
   const [running, setRunning]           = useState(false)
   const [publishingId, setPublishingId] = useState<string | null>(null)
 
@@ -435,13 +436,16 @@ function PostsPageInner() {
       )}
 
       {/* Failed posts alert */}
-      {failedPosts.length > 0 && (
+      {!dismissedFailed && failedPosts.length > 0 && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center gap-3">
           <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
           <p className="text-sm text-red-700 flex-1">
             <span className="font-semibold">{failedPosts.length} post{failedPosts.length > 1 ? 's' : ''} failed to publish.</span>
             {' '}Check History for details.
           </p>
+          <button onClick={() => setDismissedFailed(true)} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
