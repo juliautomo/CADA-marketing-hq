@@ -37,6 +37,7 @@ interface VisualKitSettings {
   brand_negative_prompts: string
   brand_color_description: string
   brand_shot_style: string
+  brand_image_instructions: string
   brand_model_reference_url: string
   brand_logo_url: string
   brand_colors: string // JSON array of hex strings e.g. ["#F5E6D3","#6B0F2B"]
@@ -86,6 +87,7 @@ const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
   brand_negative_prompts: '',
   brand_color_description: '',
   brand_shot_style: '',
+  brand_image_instructions: '',
   brand_model_reference_url: '',
   brand_logo_url: '',
   brand_colors: '["#F5E6D3","#6B0F2B","#C4A882","#8B7355","#F0EBE3"]',
@@ -1168,6 +1170,14 @@ function SettingsContent() {
                 value={visualKit.brand_negative_prompts}
                 onChange={v => updateVisualKit('brand_negative_prompts', v)}
                 rows={2}
+              />
+              <Field
+                label="Image Generation Instructions"
+                description="Rules AI follows when turning content ideas into image prompts. Be specific about format, layout, and what to always include."
+                placeholder="e.g. Always render as a flat design infographic poster. Include bold text overlays with the key message. Use icons and graphic elements instead of realistic people. Every slide must have readable Indonesian text as part of the design."
+                value={visualKit.brand_image_instructions}
+                onChange={v => updateVisualKit('brand_image_instructions', v)}
+                rows={4}
               />
             </CardContent>
           </Card>

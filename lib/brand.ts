@@ -20,7 +20,7 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
     'brand_voice', 'brand_guidelines', 'brand_target_customer',
     'brand_campaign_theme', 'brand_caption_examples',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
-    'brand_shot_style', 'brand_colors',
+    'brand_shot_style', 'brand_colors', 'brand_image_instructions',
     'brand_model_reference_url', 'brand_logo_url',
     'image_quality', 'drive_media_upload_enabled', 'drive_media_folder_id',
   ]

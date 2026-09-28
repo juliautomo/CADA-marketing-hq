@@ -60,11 +60,13 @@ export async function POST(req: NextRequest) {
       negatives   && `Avoid: ${negatives}`,
     ].filter(Boolean).join('\n')
 
+    const imageInstructions = ctx.raw.brand_image_instructions ?? ''
+
     const rewritePrompt = async (concept: string): Promise<string> => {
-      if (!brandStyleGuide) return concept
+      if (!brandStyleGuide && !imageInstructions) return concept
       return generateText(
         `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`,
-        `BRAND VISUAL STYLE:\n${brandStyleGuide}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept as a flat graphic design / infographic poster — NOT a photograph or realistic scene. Rules:\n1. Describe the layout as a designed poster with background, sections, and graphic elements\n2. EXPLICITLY list every text string that must appear on the image as rendered text (e.g. "bold white text reading 'DULU vs SEKARANG' at top", "subtitle text 'Email 5 menit'")\n3. Replace any people/faces with flat icons, emoji-style illustrations, or simple graphic shapes\n4. Keep the same message and information as the original\n5. Output only the rewritten prompt — no explanation`
+        `BRAND VISUAL STYLE:\n${brandStyleGuide}${imageInstructions ? `\n\nIMAGE GENERATION RULES:\n${imageInstructions}` : ''}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept following the brand style and image generation rules above. Keep the same message and information. Output only the rewritten prompt.`
       )
     }
 
