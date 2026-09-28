@@ -170,7 +170,7 @@ function PostsPageInner() {
   const [summaryPosts, setSummaryPosts] = useState<QueuedPost[]>([])
   const [approvingId, setApprovingId]   = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [imageModel, setImageModel]     = useState<'gpt-image-1' | 'dall-e-3'>('gpt-image-1')
+  const [imageModel, setImageModel]     = useState<'gpt-image-1' | 'dall-e-3' | 'gemini-imagen'>('gpt-image-1')
   const [imageSize, setImageSize]       = useState<'1:1' | '4:5' | '9:16' | '16:9'>('4:5')
   const [imageQuality, setImageQuality] = useState<'low' | 'medium' | 'high'>('medium')
   const [postFormat, setPostFormat]     = useState<'auto' | 'single' | 'carousel'>('auto')
@@ -607,6 +607,7 @@ function PostsPageInner() {
                               className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
                               <option value="gpt-image-1">GPT Image 1 (default)</option>
                               <option value="dall-e-3">DALL·E 3</option>
+                              <option value="gemini-imagen">Gemini Imagen 3</option>
                             </select>
                           </div>
                           <div>

@@ -3,6 +3,7 @@ export const maxDuration = 120
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { generateImage, generateImageWithReference, generateImageDalle3, uploadBase64ToStorage } from '@/lib/openai'
+import { generateImageGemini } from '@/lib/gemini'
 import { getBrandContext } from '@/lib/brand'
 import { generateText } from '@/lib/anthropic'
 
@@ -162,6 +163,9 @@ export async function POST(req: NextRequest) {
     const generate = (prompt: string) => {
       if (imageModel === 'dall-e-3') {
         return generateImageDalle3(prompt, imageSize as '1024x1024' | '1792x1024' | '1024x1792', dalle3Quality)
+      }
+      if (imageModel === 'gemini-imagen') {
+        return generateImageGemini(prompt, (post.image_size as string) ?? '4:5')
       }
       return referenceUrl
         ? generateImageWithReference(prompt, referenceUrl, imageSize as '1024x1024' | '1024x1536', quality)
