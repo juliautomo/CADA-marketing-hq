@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { generateImage, generateImageWithReference } from '@/lib/openai'
 import { getBrandContext } from '@/lib/brand'
+import { generateText } from '@/lib/anthropic'
 
 // Split a prompt on SLIDE markers → ['slide 1 prompt', 'slide 2 prompt', ...]
 function parseSlides(prompt: string): string[] {
@@ -51,8 +52,27 @@ export async function POST(req: NextRequest) {
     const quality       = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
     const referenceUrl  = ctx.referenceImageUrl
 
+    // Rewrite the image concept to match brand visual style before generating
+    const brandStyleGuide = [
+      stylePrefix && `Visual style: ${stylePrefix}`,
+      shotStyle   && `Composition: ${shotStyle}`,
+      colorDesc   && `Colors: ${colorDesc}`,
+      negatives   && `Avoid: ${negatives}`,
+    ].filter(Boolean).join('\n')
+
+    const rewritePrompt = async (concept: string): Promise<string> => {
+      if (!brandStyleGuide) return concept
+      return generateText(
+        `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`,
+        `BRAND VISUAL STYLE:\n${brandStyleGuide}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept so it describes the SAME content and message but using the brand's visual style (flat design, graphic elements, text overlays, icons — NOT realistic photography or scenes unless the brand style explicitly calls for it). Keep the subject/message identical. Output only the rewritten prompt.`
+      )
+    }
+
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
+
+    // Rewrite all slide concepts in parallel
+    const rewrittenSlides = await Promise.all(slides.map(rewritePrompt))
 
     const buildPrompt = (base: string) => {
       const styleDirective = [
@@ -70,9 +90,9 @@ export async function POST(req: NextRequest) {
         : generateImage(prompt, '1024x1536', quality)
 
     if (isMulti) {
-      // Generate all slide images in parallel
+      // Generate all slide images in parallel using rewritten prompts
       const urls = await Promise.all(
-        slides.map(slide => generate(buildPrompt(slide)))
+        rewrittenSlides.map(slide => generate(buildPrompt(slide)))
       )
       const { data } = await db
         .from('cada_scheduled_posts')
@@ -87,7 +107,7 @@ export async function POST(req: NextRequest) {
         .single()
       return NextResponse.json({ post: data })
     } else {
-      const mediaUrl = await generate(buildPrompt(imagePrompt))
+      const mediaUrl = await generate(buildPrompt(rewrittenSlides[0]))
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })
