@@ -47,6 +47,28 @@ export async function generateImage(
   return uploadBase64ToStorage(extractBase64Result(response.data))
 }
 
+export async function generateImageDalle3(
+  prompt: string,
+  size: '1024x1024' | '1792x1024' | '1024x1792' = '1024x1024',
+  quality: 'standard' | 'hd' = 'standard',
+): Promise<string> {
+  const response = await getClient().images.generate({
+    model: 'dall-e-3',
+    prompt,
+    n: 1,
+    size,
+    quality,
+    response_format: 'url',
+  })
+  const url = response.data?.[0]?.url
+  if (!url) throw new Error('No image URL returned from dall-e-3')
+  // dall-e-3 returns a temporary URL; fetch and re-upload to our storage
+  const res = await fetch(url)
+  const buffer = Buffer.from(await res.arrayBuffer())
+  const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
+  return uploadBase64ToStorage(dataUrl)
+}
+
 export async function generateImageWithReference(
   prompt: string,
   referenceUrl: string,

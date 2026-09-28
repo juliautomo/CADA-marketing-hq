@@ -168,7 +168,8 @@ function PostsPageInner() {
   const [summaryPosts, setSummaryPosts] = useState<QueuedPost[]>([])
   const [approvingId, setApprovingId]   = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [imageSize, setImageSize]       = useState<'1:1' | '4:5' | '9:16'>('4:5')
+  const [imageModel, setImageModel]     = useState<'gpt-image-1' | 'dall-e-3'>('gpt-image-1')
+  const [imageSize, setImageSize]       = useState<'1:1' | '4:5' | '9:16' | '16:9'>('4:5')
   const [imageQuality, setImageQuality] = useState<'low' | 'medium' | 'high'>('medium')
   const [postFormat, setPostFormat]     = useState<'auto' | 'single' | 'carousel'>('auto')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -361,7 +362,7 @@ function PostsPageInner() {
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat, imageModel }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -575,23 +576,55 @@ function PostsPageInner() {
                         Advanced options
                       </button>
                       {showAdvanced && (
-                        <div className="mt-3 grid grid-cols-3 gap-3">
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium text-zinc-500 block mb-1.5">Image model</label>
+                            <select value={imageModel} onChange={e => {
+                              const m = e.target.value as typeof imageModel
+                              setImageModel(m)
+                              // Reset size to a valid default for the new model
+                              setImageSize(m === 'dall-e-3' ? '1:1' : '4:5')
+                            }}
+                              className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                              <option value="gpt-image-1">GPT Image 1 (default)</option>
+                              <option value="dall-e-3">DALL·E 3</option>
+                            </select>
+                          </div>
                           <div>
                             <label className="text-xs font-medium text-zinc-500 block mb-1.5">Post size</label>
                             <select value={imageSize} onChange={e => setImageSize(e.target.value as typeof imageSize)}
                               className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
-                              <option value="1:1">1:1 Square</option>
-                              <option value="4:5">4:5 Portrait (default)</option>
-                              <option value="9:16">9:16 Stories</option>
+                              {imageModel === 'dall-e-3' ? (
+                                <>
+                                  <option value="1:1">1:1 Square</option>
+                                  <option value="16:9">16:9 Landscape</option>
+                                  <option value="9:16">9:16 Portrait</option>
+                                </>
+                              ) : (
+                                <>
+                                  <option value="1:1">1:1 Square</option>
+                                  <option value="4:5">4:5 Portrait (default)</option>
+                                  <option value="9:16">9:16 Stories</option>
+                                </>
+                              )}
                             </select>
                           </div>
                           <div>
                             <label className="text-xs font-medium text-zinc-500 block mb-1.5">Image quality</label>
                             <select value={imageQuality} onChange={e => setImageQuality(e.target.value as typeof imageQuality)}
                               className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
-                              <option value="low">Low (faster)</option>
-                              <option value="medium">Medium</option>
-                              <option value="high">High (slower)</option>
+                              {imageModel === 'dall-e-3' ? (
+                                <>
+                                  <option value="medium">Standard</option>
+                                  <option value="high">HD (slower)</option>
+                                </>
+                              ) : (
+                                <>
+                                  <option value="low">Low (faster)</option>
+                                  <option value="medium">Medium</option>
+                                  <option value="high">High (slower)</option>
+                                </>
+                              )}
                             </select>
                           </div>
                           <div>

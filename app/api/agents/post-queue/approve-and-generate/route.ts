@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { generateImage, generateImageWithReference, uploadBase64ToStorage } from '@/lib/openai'
+import { generateImage, generateImageWithReference, generateImageDalle3, uploadBase64ToStorage } from '@/lib/openai'
 import { getBrandContext } from '@/lib/brand'
 import { generateText } from '@/lib/anthropic'
 import { compositeLogoOntoImage } from '@/lib/watermark'
@@ -53,13 +53,22 @@ export async function POST(req: NextRequest) {
     const quality       = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
     const referenceUrl  = ctx.referenceImageUrl
 
-    // GPT Image 1 only supports 1024x1024, 1024x1536, 1536x1024
-    const sizeMap: Record<string, '1024x1024' | '1024x1536'> = {
+    const imageModel = (post.image_model as string) ?? 'gpt-image-1'
+
+    // Size maps per model
+    const gptSizeMap: Record<string, '1024x1024' | '1024x1536'> = {
       '1:1': '1024x1024',
       '4:5': '1024x1536',
       '9:16': '1024x1536',
     }
-    const imageSize = sizeMap[(post.image_size as string) ?? ''] ?? '1024x1536'
+    const dalle3SizeMap: Record<string, '1024x1024' | '1792x1024' | '1024x1792'> = {
+      '1:1': '1024x1024',
+      '16:9': '1792x1024',
+      '9:16': '1024x1792',
+    }
+    const imageSize = imageModel === 'dall-e-3'
+      ? (dalle3SizeMap[(post.image_size as string) ?? ''] ?? '1024x1024')
+      : (gptSizeMap[(post.image_size as string) ?? ''] ?? '1024x1536')
 
     // Rewrite the image concept to match brand visual style before generating
     const brandStyleGuide = [
@@ -113,17 +122,26 @@ export async function POST(req: NextRequest) {
       return styleDirective ? `${styleDirective}\n\nCONTENT: ${base}` : base
     }
 
-    const generate = (prompt: string) =>
-      referenceUrl
-        ? generateImageWithReference(prompt, referenceUrl, imageSize, quality)
-        : generateImage(prompt, imageSize, quality)
+    // Map quality for dall-e-3 (only standard/hd)
+    const dalle3Quality = quality === 'high' ? 'hd' : 'standard'
+
+    const generate = (prompt: string) => {
+      if (imageModel === 'dall-e-3') {
+        return generateImageDalle3(prompt, imageSize as '1024x1024' | '1792x1024' | '1024x1792', dalle3Quality)
+      }
+      return referenceUrl
+        ? generateImageWithReference(prompt, referenceUrl, imageSize as '1024x1024' | '1024x1536', quality)
+        : generateImage(prompt, imageSize as '1024x1024' | '1024x1536', quality)
+    }
 
     if (isMulti) {
       // Generate slide 1 first, then use it as style reference for remaining slides
       // so all slides share the same visual style
       const firstRaw = await generate(buildPrompt(rewrittenSlides[0]))
       const generateWithStyle = (prompt: string) =>
-        generateImageWithReference(prompt, firstRaw, imageSize, quality)
+        imageModel === 'dall-e-3'
+          ? generateImageDalle3(prompt, imageSize as '1024x1024' | '1792x1024' | '1024x1792', dalle3Quality)
+          : generateImageWithReference(prompt, firstRaw, imageSize as '1024x1024' | '1024x1536', quality)
       const remainingRaw = await Promise.all(
         rewrittenSlides.slice(1).map(slide => generateWithStyle(buildPrompt(slide)))
       )

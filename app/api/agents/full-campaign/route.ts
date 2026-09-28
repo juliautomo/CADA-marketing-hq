@@ -26,7 +26,7 @@ function createSSE() {
 
 // â”€â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function POST(req: NextRequest) {
-  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1, platforms = ['TikTok', 'Instagram'], imageSize = '4:5', imageQuality: planImageQuality = 'medium', postFormat = 'auto' } = await req.json()
+  const { prompt, startDate: explicitStartDate, numPosts = 7, weeks = 1, platforms = ['TikTok', 'Instagram'], imageSize = '4:5', imageQuality: planImageQuality = 'medium', postFormat = 'auto', imageModel = 'gpt-image-1' } = await req.json()
   const db = createServiceClient()
   const clientId = req.headers.get('x-client-id') ?? null
   const { stream, send, close } = createSSE()
@@ -266,6 +266,7 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
           client_id: clientId,
           image_size: imageSize,
           post_format: postFormat,
+          image_model: imageModel,
         }))
         const { error: insertError } = await db.from('cada_scheduled_posts').insert(scheduledInserts)
         if (insertError) {
