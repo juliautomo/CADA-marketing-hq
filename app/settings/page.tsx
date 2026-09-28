@@ -788,7 +788,7 @@ function SettingsContent() {
                   placeholder="e.g. acmeco"
                   value={brand.brand_handle}
                   onChange={v => updateBrand('brand_handle', v)}
-                  rows={1}
+                  rows={2}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -806,7 +806,7 @@ function SettingsContent() {
                   placeholder="e.g. Shopee, Amazon, own website"
                   value={brand.brand_ecommerce_platform}
                   onChange={v => updateBrand('brand_ecommerce_platform', v)}
-                  rows={1}
+                  rows={2}
                 />
               </div>
               <Field
@@ -814,7 +814,7 @@ function SettingsContent() {
                 placeholder="e.g. A Singapore-based skincare brand making clean, affordable products for sensitive skin."
                 value={brand.brand_description}
                 onChange={v => updateBrand('brand_description', v)}
-                rows={3}
+                rows={4}
               />
               <div className="grid grid-cols-2 gap-3">
                 <Field
@@ -829,7 +829,7 @@ function SettingsContent() {
                   placeholder="e.g. Shopee, Instagram, own website"
                   value={brand.brand_channels}
                   onChange={v => updateBrand('brand_channels', v)}
-                  rows={1}
+                  rows={2}
                 />
               </div>
               <Field
