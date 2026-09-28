@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle, XCircle, Edit2, CalendarClock, ImageIcon,
   Send, RotateCcw, Clock, Play, Trash2, RefreshCw, Zap,
-  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, Copy, Check, History, ExternalLink, X,
+  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, History, ExternalLink, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -162,7 +162,6 @@ function PostsPageInner() {
   const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null)
   const [planError, setPlanError] = useState<string | null>(null)
   const [planDone, setPlanDone]   = useState(false)
-  const [copied, setCopied]       = useState<number | null>(null)
   const [summaryPosts, setSummaryPosts] = useState<QueuedPost[]>([])
   const [approvingId, setApprovingId]   = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -387,12 +386,6 @@ function PostsPageInner() {
     }
   }
 
-  function copyCaption(caption: string, day: number) {
-    navigator.clipboard.writeText(caption)
-    setCopied(day)
-    setTimeout(() => setCopied(null), 2000)
-  }
-
   function resetPlanner() {
     setPlanSteps([]); setPlanSummary(null); setPlanError(null); setPlanDone(false); setPrompt(''); setStartDate(''); setWeeks('1'); setPostsPerWeek('7'); setPlatforms(['TikTok', 'Instagram']); setSummaryPosts([])
   }
@@ -604,119 +597,15 @@ function PostsPageInner() {
                   </div>
                 )}
 
-                {/* Post preview after planning */}
+                {/* Plan complete — scroll to queue */}
                 {planSummary && allStepsDone && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-zinc-800">📅 {planSummary.campaignName}</p>
-                      <button onClick={resetPlanner} className="text-xs text-zinc-400 hover:text-zinc-600 underline">Plan again</button>
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm text-emerald-700">
+                      <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                      <span><span className="font-semibold">{planSummary.campaignName}</span> — {planSummary.contentDays.length} posts ready to review below</span>
                     </div>
-
-                    <div className="space-y-3">
-                      {planSummary.contentDays.map((day, idx) => {
-                        const dateObj = new Date(day.date + 'T00:00:00')
-                        const isTikTok = day.platform?.toLowerCase().includes('tiktok')
-                        // Match to saved post by index (posts are inserted in order)
-                        const savedPost = summaryPosts[idx]
-                        const isApproved = savedPost?.status !== 'pending_approval' && savedPost?.status !== undefined
-                        const isApproving = approvingId === savedPost?.id
-                        return (
-                          <div key={day.day} className="rounded-xl border border-zinc-200 bg-zinc-50 overflow-hidden">
-                            {/* Date + platform header */}
-                            <div className={cn('flex items-center gap-3 px-4 py-2.5', isTikTok ? 'bg-zinc-900' : 'bg-gradient-to-r from-violet-500 to-pink-500')}>
-                              <div className="text-center min-w-[2.5rem]">
-                                <p className="text-[10px] text-white/70 leading-none uppercase">{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                                <p className="text-lg font-bold text-white leading-tight">{dateObj.getDate()}</p>
-                                <p className="text-[10px] text-white/70 leading-none">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</p>
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-xs font-semibold text-white">{day.platform} · {day.contentType}</p>
-                                {day.hook && <p className="text-xs text-white/80 mt-0.5 italic">&ldquo;{day.hook}&rdquo;</p>}
-                              </div>
-                              <button
-                                onClick={() => copyCaption(day.caption, day.day)}
-                                className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
-                                title="Copy caption"
-                              >
-                                {copied === day.day ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-
-                            {/* Caption */}
-                            <div className="px-4 py-3 space-y-2.5">
-                              <div>
-                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Caption</p>
-                                <p className="text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed">{day.caption}</p>
-                              </div>
-
-                              {day.imagePrompt && (
-                                <div>
-                                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Image prompt</p>
-                                  <p className="text-xs text-zinc-500 italic">{day.imagePrompt}</p>
-                                </div>
-                              )}
-
-                              {day.cta && (
-                                <div className="flex items-center gap-1.5">
-                                  <Send className="w-3 h-3 text-zinc-400 flex-shrink-0" />
-                                  <p className="text-xs text-zinc-500">{day.cta}</p>
-                                </div>
-                              )}
-
-                              {/* Inline approve button */}
-                              {savedPost && (
-                                <div className="pt-1">
-                                  {isApproved ? (
-                                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-                                      <CheckCircle2 className="w-3.5 h-3.5" /> Content approved — image generating
-                                    </div>
-                                  ) : (
-                                    <div className="flex gap-2">
-                                      <button
-                                        disabled={isApproving}
-                                        onClick={async () => {
-                                          setApprovingId(savedPost.id)
-                                          try {
-                                            await fetch('/api/agents/post-queue/approve-and-generate', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({ id: savedPost.id }),
-                                            })
-                                            setSummaryPosts(prev => prev.map(p => p.id === savedPost.id ? { ...p, status: 'generating' } : p))
-                                            await loadPosts()
-                                          } finally {
-                                            setApprovingId(null)
-                                          }
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-60"
-                                      >
-                                        {isApproving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…</> : <><CheckCircle className="w-3.5 h-3.5" /> Approve content</>}
-                                      </button>
-                                      <button
-                                        disabled={isApproving}
-                                        onClick={async () => {
-                                          await fetch('/api/agents/post-queue', {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ id: savedPost.id, action: 'reject' }),
-                                          })
-                                          setSummaryPosts(prev => prev.filter(p => p.id !== savedPost.id))
-                                          await loadPosts()
-                                        }}
-                                        className="flex items-center justify-center px-3 rounded-xl border border-zinc-200 hover:bg-red-50 hover:border-red-200 text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-60"
-                                        title="Delete post"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                    <button onClick={resetPlanner} className="text-xs text-zinc-400 hover:text-zinc-600 underline whitespace-nowrap ml-4">Plan again</button>
                   </motion.div>
                 )}
               </div>
