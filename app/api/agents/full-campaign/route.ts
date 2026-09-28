@@ -162,7 +162,7 @@ Caption: [full ready-to-post caption — plain text only, NO asterisks, NO markd
 Content Type: [Carousel / Static Photo / Feed Post — image-only formats, NO video, NO Reels, NO TikTok Video]
 Hook: [punchy 1-line caption hook or opening line]
 CTA: [specific call to action e.g. “Link in bio to shop” or “Comment YES if you want this”]
-Image Prompt: [STRICTLY follow the brand image guidelines below. Describe ONLY the content/subject — what to show, what text overlays, what icons or UI elements. Do NOT describe a visual style, lighting, or photography technique — those are set by the brand guidelines. For carousels use SLIDE 1: / SLIDE 2: / SLIDE 3: format.]
+Image Prompt: [STRICTLY follow the brand image guidelines below. Describe ONLY the content/subject — what to show, what text overlays, what icons or UI elements. Do NOT describe a visual style, lighting, or photography technique — those are set by the brand guidelines. For carousels use SLIDE 1: / SLIDE 2: / SLIDE 3: format. ALWAYS add: (1) decorative sparkle/star shapes ✦ scattered in background, (2) a bold curved swoosh accent line in brand color behind the headline, (3) small geometric dot or confetti pattern in one corner. ALWAYS end with: "IMPORTANT: leave generous bottom padding (at least 48px) below the footer — do not crop or cut off the bottom edge."]
 ---
 
 BRAND IMAGE GUIDELINES — MANDATORY for every Image Prompt. Violating these is not allowed:
