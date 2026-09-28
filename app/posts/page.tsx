@@ -147,7 +147,7 @@ function PostsPageInner() {
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [runResult, setRunResult]       = useState<string | null>(null)
   const [dismissedFailedCount, setDismissedFailedCount] = useState(() => {
-    try { return parseInt(sessionStorage.getItem('dismissedFailedCount') ?? '0', 10) } catch { return 0 }
+    try { return parseInt(localStorage.getItem('dismissedFailedCount') ?? '0', 10) } catch { return 0 }
   })
   const [running, setRunning]           = useState(false)
   const [publishingId, setPublishingId] = useState<string | null>(null)
@@ -452,7 +452,7 @@ function PostsPageInner() {
             <span className="font-semibold">{failedPosts.length} post{failedPosts.length > 1 ? 's' : ''} failed to publish.</span>
             {' '}Check History for details.
           </p>
-          <button onClick={() => { const n = failedPosts.length; setDismissedFailedCount(n); try { sessionStorage.setItem('dismissedFailedCount', String(n)) } catch {} }} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
+          <button onClick={() => { const n = failedPosts.length; setDismissedFailedCount(n); try { localStorage.setItem('dismissedFailedCount', String(n)) } catch {} }} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
