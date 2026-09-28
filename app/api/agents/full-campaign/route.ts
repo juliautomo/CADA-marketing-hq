@@ -1,4 +1,5 @@
 ﻿export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // long-running: generates full campaign content plan
 import { NextRequest } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { createCalendarEvent, uploadTextToDrive } from '@/lib/google'
