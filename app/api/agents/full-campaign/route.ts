@@ -234,7 +234,7 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
       // Save content days as content_items
       const contentInserts = contentDays.map((day) => ({
         type: 'caption' as const,
-        title: `Day ${day.day} â€” ${day.platform} â€” ${parsed.name}`,
+        title: `Day ${day.day} — ${day.platform} — ${parsed.name}`,
         body: day.caption,
         metadata: {
           day: day.day,
