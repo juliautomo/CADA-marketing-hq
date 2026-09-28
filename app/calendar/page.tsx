@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, parseISO } from 'date-fns'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, parseISO, setHours, setMinutes, setSeconds } from 'date-fns'
 
 interface Post {
   id: string
@@ -14,6 +14,7 @@ interface Post {
   status: string
   media_url: string | null
   campaign_id: string | null
+  error_message: string | null
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -46,6 +47,10 @@ export default function CalendarPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Post | null>(null)
+  const [dragPostId, setDragPostId] = useState<string | null>(null)
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const dragCounter = useRef<Record<string, number>>({})
 
   const loadPosts = useCallback(async () => {
     setLoading(true)
@@ -60,7 +65,6 @@ export default function CalendarPage() {
 
   useEffect(() => { loadPosts() }, [loadPosts])
 
-  // Build calendar grid
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
@@ -85,20 +89,53 @@ export default function CalendarPage() {
   const platformKey = (platform: string) =>
     platform?.toLowerCase().includes('tiktok') ? 'tiktok' : 'instagram'
 
+  const canReschedule = (status: string) =>
+    ['draft', 'pending_approval', 'approved', 'pending', 'failed'].includes(status)
+
+  async function handleDrop(targetDay: Date) {
+    if (!dragPostId) return
+    const post = posts.find(p => p.id === dragPostId)
+    if (!post || !post.scheduled_at) return
+    const orig = parseISO(post.scheduled_at)
+    // Keep original time, change date
+    const newDate = setSeconds(setMinutes(setHours(targetDay, orig.getHours()), orig.getMinutes()), orig.getSeconds())
+    if (isSameDay(newDate, orig)) return // dropped on same day
+
+    setSaving(true)
+    try {
+      await fetch('/api/agents/post-queue', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: dragPostId, action: 'edit', scheduled_at: newDate.toISOString() }),
+      })
+      setPosts(prev => prev.map(p =>
+        p.id === dragPostId ? { ...p, scheduled_at: newDate.toISOString() } : p
+      ))
+      if (selected?.id === dragPostId) {
+        setSelected(s => s ? { ...s, scheduled_at: newDate.toISOString() } : s)
+      }
+    } finally {
+      setSaving(false)
+      setDragPostId(null)
+      setDragOverDay(null)
+      dragCounter.current = {}
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Content Calendar</h1>
-          <p className="text-sm text-zinc-500 mt-1">All scheduled posts across every campaign</p>
+          <p className="text-sm text-zinc-500 mt-1">Drag posts to reschedule · click to view details</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Legend */}
           <div className="hidden sm:flex items-center gap-3 mr-4 text-xs text-zinc-500">
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-zinc-900 inline-block" /> TikTok</span>
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-violet-500 inline-block" /> Instagram</span>
           </div>
+          {saving && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
           <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
             className="p-2 rounded-xl hover:bg-zinc-100 transition-colors">
             <ChevronLeft className="w-4 h-4 text-zinc-600" />
@@ -139,39 +176,74 @@ export default function CalendarPage() {
               const isToday = isSameDay(d, new Date())
               const isCurrentMonth = isSameMonth(d, currentMonth)
               const isLastRow = i >= days.length - 7
+              const dayKey = d.toISOString()
+              const isDragTarget = dragOverDay === dayKey && dragPostId !== null
+
               return (
-                <div key={d.toISOString()}
+                <div key={dayKey}
                   className={cn(
-                    'min-h-[100px] p-2 space-y-1 border-b border-zinc-100',
+                    'min-h-[100px] p-2 space-y-1 border-b border-zinc-100 transition-colors',
                     !isCurrentMonth && 'bg-zinc-50/50',
-                    isLastRow && 'border-b-0'
-                  )}>
+                    isLastRow && 'border-b-0',
+                    isDragTarget && 'bg-violet-50 ring-1 ring-inset ring-violet-200',
+                  )}
+                  onDragOver={e => { e.preventDefault() }}
+                  onDragEnter={e => {
+                    e.preventDefault()
+                    dragCounter.current[dayKey] = (dragCounter.current[dayKey] ?? 0) + 1
+                    setDragOverDay(dayKey)
+                  }}
+                  onDragLeave={() => {
+                    dragCounter.current[dayKey] = (dragCounter.current[dayKey] ?? 1) - 1
+                    if ((dragCounter.current[dayKey] ?? 0) <= 0) {
+                      setDragOverDay(prev => prev === dayKey ? null : prev)
+                    }
+                  }}
+                  onDrop={e => { e.preventDefault(); handleDrop(d) }}
+                >
                   <p className={cn(
                     'text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full',
                     isToday ? 'bg-zinc-900 text-white' : isCurrentMonth ? 'text-zinc-700' : 'text-zinc-300'
                   )}>
                     {format(d, 'd')}
                   </p>
-                  {dayPosts.map(post => (
-                    <button
-                      key={post.id}
-                      onClick={() => setSelected(post)}
-                      className={cn(
-                        'w-full text-left rounded-md px-1.5 py-1 text-[10px] font-medium transition-opacity hover:opacity-80',
-                        PLATFORM_COLORS[platformKey(post.platform)] ?? 'bg-zinc-200 text-zinc-700'
-                      )}
-                    >
-                      <span className="flex items-center gap-1">
-                        <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', STATUS_DOT[post.status] ?? 'bg-zinc-300')} />
-                        <span className="truncate">{post.title ?? platformLabel(post.platform)}</span>
-                      </span>
-                      <span className="text-[9px] opacity-70 pl-2.5 flex items-center gap-1.5">
-                        {post.scheduled_at ? format(parseISO(post.scheduled_at), 'h:mm a') : ''}
-                        <span className="opacity-60">·</span>
-                        {STATUS_LABELS[post.status] ?? post.status}
-                      </span>
-                    </button>
-                  ))}
+                  {dayPosts.map(post => {
+                    const draggable = canReschedule(post.status)
+                    return (
+                      <div
+                        key={post.id}
+                        draggable={draggable}
+                        onDragStart={e => {
+                          if (!draggable) { e.preventDefault(); return }
+                          setDragPostId(post.id)
+                          e.dataTransfer.effectAllowed = 'move'
+                        }}
+                        onDragEnd={() => {
+                          setDragPostId(null)
+                          setDragOverDay(null)
+                          dragCounter.current = {}
+                        }}
+                        onClick={() => setSelected(post)}
+                        className={cn(
+                          'w-full text-left rounded-md px-1.5 py-1 text-[10px] font-medium transition-opacity',
+                          PLATFORM_COLORS[platformKey(post.platform)] ?? 'bg-zinc-200 text-zinc-700',
+                          draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+                          dragPostId === post.id && 'opacity-40',
+                          'hover:opacity-80',
+                        )}
+                      >
+                        <span className="flex items-center gap-1">
+                          <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', STATUS_DOT[post.status] ?? 'bg-zinc-300')} />
+                          <span className="truncate">{post.title ?? platformLabel(post.platform)}</span>
+                        </span>
+                        <span className="text-[9px] opacity-70 pl-2.5 flex items-center gap-1.5">
+                          {post.scheduled_at ? format(parseISO(post.scheduled_at), 'h:mm a') : ''}
+                          <span className="opacity-60">·</span>
+                          {STATUS_LABELS[post.status] ?? post.status}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               )
             })}
@@ -188,7 +260,7 @@ export default function CalendarPage() {
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className={cn('px-5 py-4', PLATFORM_COLORS[platformKey(selected.platform)] ?? 'bg-zinc-800')}>
+            <div className={cn('px-5 py-4', selected.status === 'failed' ? 'bg-red-600' : (PLATFORM_COLORS[platformKey(selected.platform)] ?? 'bg-zinc-800'))}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-white/70 font-medium">{platformLabel(selected.platform)}</p>
@@ -205,6 +277,17 @@ export default function CalendarPage() {
             </div>
 
             <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* Failed error */}
+              {selected.status === 'failed' && selected.error_message && (
+                <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl p-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-red-700 mb-0.5">Publish failed</p>
+                    <p className="text-xs text-red-600">{selected.error_message}</p>
+                  </div>
+                </div>
+              )}
+
               {selected.media_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={selected.media_url} alt="" className="w-full rounded-xl object-cover" />
@@ -225,7 +308,6 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && posts.length === 0 && (
         <div className="text-center py-20 text-zinc-400">
           <p className="text-sm">No posts scheduled yet — run a content plan to get started.</p>
