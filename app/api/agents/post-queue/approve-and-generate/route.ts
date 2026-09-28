@@ -1,9 +1,10 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { generateImage, generateImageWithReference } from '@/lib/openai'
+import { generateImage, generateImageWithReference, uploadBase64ToStorage } from '@/lib/openai'
 import { getBrandContext } from '@/lib/brand'
 import { generateText } from '@/lib/anthropic'
+import { compositeLogoOntoImage } from '@/lib/watermark'
 
 // Split a prompt on SLIDE markers → ['slide 1 prompt', 'slide 2 prompt', ...]
 function parseSlides(prompt: string): string[] {
@@ -78,6 +79,24 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const logoUrl = ctx.raw.brand_logo_url || undefined
+
+    // Composite logo onto a generated image URL; returns the same URL if no logo
+    const applyLogo = async (url: string): Promise<string> => {
+      if (!logoUrl) return url
+      try {
+        const composited = await compositeLogoOntoImage(url, logoUrl, {
+          position: 'bottom-right',
+          logoMaxWidthPercent: 20,
+          padding: 32,
+        })
+        return uploadBase64ToStorage(composited)
+      } catch (err) {
+        console.error('Logo composite failed, using original:', err)
+        return url
+      }
+    }
+
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
 
@@ -102,18 +121,20 @@ export async function POST(req: NextRequest) {
     if (isMulti) {
       // Generate slide 1 first, then use it as style reference for remaining slides
       // so all slides share the same visual style
-      const firstUrl = await generate(buildPrompt(rewrittenSlides[0]))
+      const firstRaw = await generate(buildPrompt(rewrittenSlides[0]))
       const generateWithStyle = (prompt: string) =>
-        generateImageWithReference(prompt, firstUrl, imageSize, quality)
-      const remainingUrls = await Promise.all(
+        generateImageWithReference(prompt, firstRaw, imageSize, quality)
+      const remainingRaw = await Promise.all(
         rewrittenSlides.slice(1).map(slide => generateWithStyle(buildPrompt(slide)))
       )
-      const urls = [firstUrl, ...remainingUrls]
+      const rawUrls = [firstRaw, ...remainingRaw]
+      // Apply logo to all slides in parallel
+      const urls = await Promise.all(rawUrls.map(applyLogo))
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({
           status: 'image_review',
-          media_url: urls[0],       // first slide as primary
+          media_url: urls[0],
           media_urls: urls,
           media_type: 'image',
         })
@@ -122,7 +143,8 @@ export async function POST(req: NextRequest) {
         .single()
       return NextResponse.json({ post: data })
     } else {
-      const mediaUrl = await generate(buildPrompt(rewrittenSlides[0]))
+      const rawUrl = await generate(buildPrompt(rewrittenSlides[0]))
+      const mediaUrl = await applyLogo(rawUrl)
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })
