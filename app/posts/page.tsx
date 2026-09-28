@@ -762,15 +762,19 @@ function PostsPageInner() {
 
       {loading && <p className="text-center text-sm text-zinc-400 py-8">Loading…</p>}
 
-      {/* ── Past Plans ── */}
-      {plans.length > 0 && (
+      {/* ── Past Plans — exclude campaigns still active in the queue ── */}
+      {(() => {
+        const activeCampaignIds = new Set(posts.filter(p => !['published', 'failed', 'rejected'].includes(p.status)).map(p => p.campaign_id).filter(Boolean))
+        const pastPlans = plans.filter(p => !activeCampaignIds.has(p.id))
+        if (pastPlans.length === 0) return null
+        return (
         <section className="space-y-3 pt-2">
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-zinc-400" />
-            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Past plans ({plans.length})</h2>
+            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Past plans ({pastPlans.length})</h2>
           </div>
           <div className="space-y-2">
-            {plans.map(plan => {
+            {pastPlans.map(plan => {
               const isOpen = expandedPlan === plan.id
               const approved = plan.posts.filter(p => ['approved','generating','pending','published'].includes(p.status)).length
               const pending  = plan.posts.filter(p => ['draft','pending_approval'].includes(p.status)).length
@@ -857,7 +861,8 @@ function PostsPageInner() {
             })}
           </div>
         </section>
-      )}
+        )
+      })()}
     </div>
 
       {/* ── Right sidebar: Trend Analyst ── */}
