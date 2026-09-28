@@ -1037,7 +1037,7 @@ function PostsPageInner() {
                         className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-50 transition-colors text-left"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-zinc-800 truncate">{report.title}</p>
+                          <p className="text-xs font-medium text-zinc-800 leading-snug">{report.title}</p>
                           <p className="text-[10px] text-zinc-400 mt-0.5">
                             {new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
