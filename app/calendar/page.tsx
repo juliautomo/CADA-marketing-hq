@@ -77,11 +77,16 @@ export default function CalendarPage() {
   async function handleDelete(id: string) {
     setDeleting(true)
     try {
-      await fetch('/api/agents/post-queue', {
+      const res = await fetch('/api/agents/post-queue', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        alert(json.error ?? 'Failed to delete post')
+        return
+      }
       setPosts(prev => prev.filter(p => p.id !== id))
       setSelected(null)
     } finally {
