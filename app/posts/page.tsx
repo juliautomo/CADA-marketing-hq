@@ -172,6 +172,7 @@ function PostsPageInner() {
   // Past plans
   const [plans, setPlans]           = useState<PlanHistory[]>([])
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
+  const [collapsedCampaigns, setCollapsedCampaigns] = useState<Set<string>>(new Set())
 
   // Trend research
   const [trendReports, setTrendReports] = useState<TrendReport[]>([])
@@ -662,73 +663,95 @@ function PostsPageInner() {
           const generatingP    = group.posts.filter(p => p.status === 'generating')
           const imageP         = group.posts.filter(p => p.status === 'image_review')
           const scheduledP     = group.posts.filter(p => ['approved', 'pending'].includes(p.status))
+          const isCollapsed    = collapsedCampaigns.has(key)
+          const toggleCollapse = () => setCollapsedCampaigns(prev => {
+            const next = new Set(prev)
+            if (next.has(key)) next.delete(key); else next.add(key)
+            return next
+          })
+
+          // Status summary for collapsed view
+          const pendingCount   = reviewPosts.length + imageP.length + generatingP.length
+          const scheduledCount = scheduledP.length
 
           return (
             <section key={key} ref={key === Array.from(campaignMap.keys())[0] ? queueRef : undefined} className="space-y-4">
-              {/* Campaign header */}
-              <div className="bg-zinc-900 rounded-2xl px-5 py-3.5 flex items-center justify-between">
-                <div>
+              {/* Campaign header — collapsible */}
+              <button onClick={toggleCollapse} className="w-full bg-zinc-900 rounded-2xl px-5 py-3.5 flex items-center justify-between hover:bg-zinc-800 transition-colors">
+                <div className="text-left">
                   <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Campaign</p>
                   <p className="text-sm font-bold text-white">{group.name}</p>
                 </div>
-                <span className="text-xs text-zinc-500 font-medium">{group.posts.length} posts</span>
-              </div>
-
-              {reviewPosts.length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Step 1 — Review content ({reviewPosts.length})</span>
-                  {reviewPosts.map(post => (
-                    <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
-                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-                      onApprove={() => handleAction(post.id, 'approve')}
-                      generatingImage={generatingId === post.id}
-                      onRemove={() => handleDelete(post.id)}
-                      onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
-                  ))}
+                <div className="flex items-center gap-3">
+                  {isCollapsed && (
+                    <div className="flex items-center gap-2">
+                      {pendingCount > 0 && <span className="text-[10px] font-semibold bg-amber-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>}
+                      {scheduledCount > 0 && <span className="text-[10px] font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">{scheduledCount} scheduled</span>}
+                    </div>
+                  )}
+                  <ChevronDown className={cn('w-4 h-4 text-zinc-400 transition-transform', isCollapsed && '-rotate-90')} />
                 </div>
-              )}
+              </button>
 
-              {generatingP.length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Generating images ({generatingP.length})</span>
-                  {generatingP.map(post => (
-                    <PostCard key={post.id} post={post} saving={false} editingId={editingId}
-                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate} />
-                  ))}
-                </div>
-              )}
+              {!isCollapsed && (
+                <div className="space-y-4">
+                  {reviewPosts.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Step 1 — Review content ({reviewPosts.length})</span>
+                      {reviewPosts.map(post => (
+                        <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+                          editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                          setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+                          onApprove={() => handleAction(post.id, 'approve')}
+                          generatingImage={generatingId === post.id}
+                          onRemove={() => handleDelete(post.id)}
+                          onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+                      ))}
+                    </div>
+                  )}
 
-              {imageP.length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Step 2 — Review image ({imageP.length})</span>
-                  {imageP.map(post => (
-                    <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
-                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-                      onSchedule={() => handleAction(post.id, 'schedule')}
-                      onRegenerate={() => regenerateImage(post.id)} regenerating={regeneratingId === post.id}
-                      onReject={() => handleAction(post.id, 'reject')}
-                      onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
-                  ))}
-                </div>
-              )}
+                  {generatingP.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Generating images ({generatingP.length})</span>
+                      {generatingP.map(post => (
+                        <PostCard key={post.id} post={post} saving={false} editingId={editingId}
+                          editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                          setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate} />
+                      ))}
+                    </div>
+                  )}
 
-              {scheduledP.length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Scheduled ({scheduledP.length})</span>
-                  {scheduledP.map(post => (
-                    <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
-                      editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-                      setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-                      onEdit={() => startEdit(post)}
-                      onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
-                      onUnapprove={post.status === 'approved' ? () => handleAction(post.id, 'unapprove') : undefined}
-                      onPublishNow={post.status === 'pending' ? () => publishNow(post.id) : undefined}
-                      onRemove={post.status === 'pending' ? () => handleDelete(post.id) : undefined}
-                      publishingNow={publishingId === post.id} />
-                  ))}
+                  {imageP.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Step 2 — Review image ({imageP.length})</span>
+                      {imageP.map(post => (
+                        <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+                          editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                          setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+                          onSchedule={() => handleAction(post.id, 'schedule')}
+                          onRegenerate={() => regenerateImage(post.id)} regenerating={regeneratingId === post.id}
+                          onReject={() => handleAction(post.id, 'reject')}
+                          onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+                      ))}
+                    </div>
+                  )}
+
+                  {scheduledP.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Scheduled ({scheduledP.length})</span>
+                      {scheduledP.map(post => (
+                        <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+                          editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                          setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+                          onEdit={() => startEdit(post)}
+                          onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
+                          onUnapprove={post.status === 'approved' ? () => handleAction(post.id, 'unapprove') : undefined}
+                          onPublishNow={post.status === 'pending' ? () => publishNow(post.id) : undefined}
+                          onRemove={post.status === 'pending' ? () => handleDelete(post.id) : undefined}
+                          publishingNow={publishingId === post.id} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </section>
