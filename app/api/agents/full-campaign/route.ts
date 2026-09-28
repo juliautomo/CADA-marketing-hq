@@ -158,10 +158,11 @@ Caption: [full ready-to-post caption — plain text only, NO asterisks, NO markd
 Content Type: [Carousel / Static Photo / Feed Post — image-only formats, NO video, NO Reels, NO TikTok Video]
 Hook: [punchy 1-line caption hook or opening line]
 CTA: [specific call to action e.g. “Link in bio to shop” or “Comment YES if you want this”]
-Image Prompt: [detailed visual scene for AI image generation — must reflect the brand guidelines below. Describe scene, lighting, subject, product placement, mood, colors. Be specific. For carousels use SLIDE 1: / SLIDE 2: / SLIDE 3: format.]
+Image Prompt: [STRICTLY follow the brand image guidelines below. Do not invent a visual style — use ONLY what the guidelines describe. Describe scene, lighting, subject, mood, colors matching the brand. For carousels use SLIDE 1: / SLIDE 2: / SLIDE 3: format.]
 ---
 
-Brand image guidelines (apply to every Image Prompt): ${imageGuide || 'No specific guidelines set — use clean, professional photography style.'}
+BRAND IMAGE GUIDELINES — MANDATORY for every Image Prompt. Violating these is not allowed:
+${imageGuide || 'Clean, professional photography style.'}
 
 Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. ${platforms.length === 1 ? `All posts on ${platforms[0]}.` : `Mix ${platforms.join(' and ')}.`} Rotate products. Use brand hashtags: ${brandHashtags}. IMPORTANT: Only image-based content types — no video or Reels.`
       )
