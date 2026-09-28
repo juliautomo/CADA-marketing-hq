@@ -146,11 +146,12 @@ function PostsPageInner() {
   const [saving, setSaving]             = useState<string | null>(null)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [runResult, setRunResult]       = useState<string | null>(null)
-  const [dismissedFailed, setDismissedFailed] = useState(() => {
-    try { return sessionStorage.getItem('dismissedFailedBanner') === '1' } catch { return false }
+  const [dismissedFailedCount, setDismissedFailedCount] = useState(() => {
+    try { return parseInt(sessionStorage.getItem('dismissedFailedCount') ?? '0', 10) } catch { return 0 }
   })
   const [running, setRunning]           = useState(false)
   const [publishingId, setPublishingId] = useState<string | null>(null)
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null)
 
   // Planner state
   const [planOpen, setPlanOpen]   = useState(!searchParams.get('topic'))
@@ -278,6 +279,18 @@ function PostsPageInner() {
       })
       await loadPosts()
     } finally { setSaving(null) }
+  }
+
+  async function regenerateImage(id: string) {
+    setRegeneratingId(id)
+    try {
+      await fetch('/api/agents/post-queue/approve-and-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      await loadPosts()
+    } finally { setRegeneratingId(null) }
   }
 
   async function publishNow(id: string) {
@@ -431,14 +444,14 @@ function PostsPageInner() {
       )}
 
       {/* Failed posts alert */}
-      {!dismissedFailed && failedPosts.length > 0 && (
+      {failedPosts.length > dismissedFailedCount && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center gap-3">
           <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
           <p className="text-sm text-red-700 flex-1">
             <span className="font-semibold">{failedPosts.length} post{failedPosts.length > 1 ? 's' : ''} failed to publish.</span>
             {' '}Check History for details.
           </p>
-          <button onClick={() => { setDismissedFailed(true); try { sessionStorage.setItem('dismissedFailedBanner', '1') } catch {} }} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
+          <button onClick={() => { const n = failedPosts.length; setDismissedFailedCount(n); try { sessionStorage.setItem('dismissedFailedCount', String(n)) } catch {} }} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -688,6 +701,7 @@ function PostsPageInner() {
                       editCaption={editCaption} editConcept={editConcept} editDate={editDate}
                       setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
                       onSchedule={() => handleAction(post.id, 'schedule')}
+                      onRegenerate={() => regenerateImage(post.id)} regenerating={regeneratingId === post.id}
                       onReject={() => handleAction(post.id, 'reject')}
                       onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
                   ))}
@@ -958,7 +972,7 @@ function PostCard({
   post, saving, editingId,
   editCaption, editConcept, editDate,
   setEditCaption, setEditConcept, setEditDate,
-  onApprove, generatingImage, onSchedule, onReject, onUnapprove, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
+  onApprove, generatingImage, onSchedule, onRegenerate, regenerating, onReject, onUnapprove, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
 }: {
   post: QueuedPost
   saving: boolean
@@ -972,6 +986,8 @@ function PostCard({
   onApprove?: () => void
   generatingImage?: boolean
   onSchedule?: () => void
+  onRegenerate?: () => void
+  regenerating?: boolean
   onReject?: () => void
   onUnapprove?: () => void
   onRemove?: () => void
@@ -1105,7 +1121,7 @@ function PostCard({
             </p>
           )}
 
-          {(onApprove || onSchedule || onReject || onUnapprove || onRemove || onEdit || onPublishNow) && (
+          {(onApprove || onSchedule || onRegenerate || onReject || onUnapprove || onRemove || onEdit || onPublishNow) && (
             <div className="flex gap-2 pt-1">
               {/* Step 1: approve content → generate image */}
               {onApprove && (
@@ -1122,6 +1138,13 @@ function PostCard({
                 <button onClick={onSchedule} disabled={saving}
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-emerald-600 text-white rounded-xl py-2 hover:bg-emerald-500 disabled:opacity-40 transition-colors">
                   <Send className="w-3 h-3" /> Approve &amp; schedule
+                </button>
+              )}
+              {onRegenerate && (
+                <button onClick={onRegenerate} disabled={regenerating}
+                  className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors">
+                  {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  {regenerating ? 'Generating…' : 'Regenerate'}
                 </button>
               )}
               {onUnapprove && (
