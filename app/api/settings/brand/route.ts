@@ -7,7 +7,7 @@ const KEYS = [
   'brand_products_list', 'brand_price_point', 'brand_markets', 'brand_channels',
   'brand_subject_description', 'brand_hashtags', 'brand_ecommerce_platform', 'brand_industry',
   'brand_voice', 'brand_guidelines', 'brand_target_customer', 'brand_campaign_theme', 'brand_caption_examples', 'image_quality',
-  'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description', 'brand_shot_style',
+  'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description', 'brand_shot_style', 'brand_image_instructions',
   'brand_style_reference_url', 'brand_color_swatch_url', 'brand_model_reference_url', 'brand_logo_url',
   'brand_colors',
   'product_catalog_config',
