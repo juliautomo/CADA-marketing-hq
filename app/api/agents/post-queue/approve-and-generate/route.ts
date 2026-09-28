@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     // Composite logo onto a generated image URL; returns the same URL if no logo or if sharp fails
     const applyLogo = async (url: string): Promise<string> => {
-      if (!logoUrl) return url
+      if (!logoUrl) { console.log('applyLogo: no logoUrl, skipping'); return url }
       try {
         const { compositeLogoOntoImage } = await import('@/lib/watermark')
         const composited = await compositeLogoOntoImage(url, logoUrl, {
@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
           logoMaxWidthPercent: 20,
           padding: 32,
         })
+        console.log('applyLogo: logo composited successfully')
         return uploadBase64ToStorage(composited)
       } catch (err) {
         console.error('Logo composite failed, using original:', err)
@@ -107,17 +108,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Add equal padding on all sides (prompt instructions alone aren't reliable)
-    const addPadding = async (url: string, paddingPx = 56): Promise<string> => {
+    // Scale image down so all content fits, then add equal white padding on all sides.
+    // Using extend-only would add space below already-clipped content; scale+extend
+    // ensures the full original image is always visible inside the padding border.
+    const addPadding = async (url: string, paddingPx = 60): Promise<string> => {
       try {
         const { default: sharp } = await import('sharp')
         const res = await fetch(url)
         if (!res.ok) return url
         const buffer = Buffer.from(await res.arrayBuffer())
+        const meta = await sharp(buffer).metadata()
+        const w = meta.width ?? 1024
+        const h = meta.height ?? 1536
         const padded = await sharp(buffer)
+          .resize(w - paddingPx * 2, h - paddingPx * 2, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
           .extend({ top: paddingPx, bottom: paddingPx, left: paddingPx, right: paddingPx, background: { r: 255, g: 255, b: 255, alpha: 1 } })
           .png()
           .toBuffer()
+        console.log(`addPadding: added ${paddingPx}px on all sides, output ${w}x${h}`)
         return uploadBase64ToStorage(`data:image/png;base64,${padded.toString('base64')}`)
       } catch (err) {
         console.error('Padding failed, using original:', err)
