@@ -177,6 +177,7 @@ function PostsPageInner() {
   // Past plans
   const [plans, setPlans]           = useState<PlanHistory[]>([])
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
+  const [pastPlansOpen, setPastPlansOpen] = useState(false)
   const [collapsedCampaigns, setCollapsedCampaigns] = useState<Set<string>>(new Set())
 
   // Trend research
@@ -849,11 +850,16 @@ function PostsPageInner() {
         if (pastPlans.length === 0) return null
         return (
         <section className="space-y-3 pt-2">
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPastPlansOpen(v => !v)}
+            className="flex items-center gap-2 w-full text-left group"
+          >
             <History className="w-4 h-4 text-zinc-400" />
-            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Past plans ({pastPlans.length})</h2>
-          </div>
-          <div className="space-y-2">
+            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex-1">Past plans ({pastPlans.length})</h2>
+            <ChevronDown className={cn('w-3.5 h-3.5 text-zinc-400 transition-transform', pastPlansOpen && 'rotate-180')} />
+          </button>
+          {pastPlansOpen && <div className="space-y-2">
             {pastPlans.map(plan => {
               const isOpen = expandedPlan === plan.id
               const approved = plan.posts.filter(p => ['approved','generating','pending','published'].includes(p.status)).length
@@ -939,7 +945,7 @@ function PostsPageInner() {
                 </div>
               )
             })}
-          </div>
+          </div>}
         </section>
         )
       })()}
