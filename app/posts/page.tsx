@@ -667,26 +667,44 @@ function PostsPageInner() {
                                       <CheckCircle2 className="w-3.5 h-3.5" /> Content approved — image generating
                                     </div>
                                   ) : (
-                                    <button
-                                      disabled={isApproving}
-                                      onClick={async () => {
-                                        setApprovingId(savedPost.id)
-                                        try {
-                                          await fetch('/api/agents/post-queue/approve-and-generate', {
-                                            method: 'POST',
+                                    <div className="flex gap-2">
+                                      <button
+                                        disabled={isApproving}
+                                        onClick={async () => {
+                                          setApprovingId(savedPost.id)
+                                          try {
+                                            await fetch('/api/agents/post-queue/approve-and-generate', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ id: savedPost.id }),
+                                            })
+                                            setSummaryPosts(prev => prev.map(p => p.id === savedPost.id ? { ...p, status: 'generating' } : p))
+                                            await loadPosts()
+                                          } finally {
+                                            setApprovingId(null)
+                                          }
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-60"
+                                      >
+                                        {isApproving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…</> : <><CheckCircle className="w-3.5 h-3.5" /> Approve content</>}
+                                      </button>
+                                      <button
+                                        disabled={isApproving}
+                                        onClick={async () => {
+                                          await fetch('/api/agents/post-queue', {
+                                            method: 'DELETE',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ id: savedPost.id }),
                                           })
-                                          setSummaryPosts(prev => prev.map(p => p.id === savedPost.id ? { ...p, status: 'generating' } : p))
+                                          setSummaryPosts(prev => prev.filter(p => p.id !== savedPost.id))
                                           await loadPosts()
-                                        } finally {
-                                          setApprovingId(null)
-                                        }
-                                      }}
-                                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-60"
-                                    >
-                                      {isApproving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…</> : <><CheckCircle className="w-3.5 h-3.5" /> Approve content</>}
-                                    </button>
+                                        }}
+                                        className="flex items-center justify-center px-3 rounded-xl border border-zinc-200 hover:bg-red-50 hover:border-red-200 text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-60"
+                                        title="Delete post"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               )}
