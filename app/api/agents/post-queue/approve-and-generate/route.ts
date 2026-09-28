@@ -5,7 +5,6 @@ import { createServiceClient } from '@/lib/supabase'
 import { generateImage, generateImageWithReference, generateImageDalle3, uploadBase64ToStorage } from '@/lib/openai'
 import { getBrandContext } from '@/lib/brand'
 import { generateText } from '@/lib/anthropic'
-import { compositeLogoOntoImage } from '@/lib/watermark'
 
 // Split a prompt on SLIDE markers → ['slide 1 prompt', 'slide 2 prompt', ...]
 function parseSlides(prompt: string): string[] {
@@ -91,10 +90,11 @@ export async function POST(req: NextRequest) {
 
     const logoUrl = ctx.raw.brand_logo_url || undefined
 
-    // Composite logo onto a generated image URL; returns the same URL if no logo
+    // Composite logo onto a generated image URL; returns the same URL if no logo or if sharp fails
     const applyLogo = async (url: string): Promise<string> => {
       if (!logoUrl) return url
       try {
+        const { compositeLogoOntoImage } = await import('@/lib/watermark')
         const composited = await compositeLogoOntoImage(url, logoUrl, {
           position: 'bottom-right',
           logoMaxWidthPercent: 20,

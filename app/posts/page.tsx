@@ -242,12 +242,18 @@ function PostsPageInner() {
       // Fire-and-forget: route returns immediately after setting status=generating,
       // actual image generation runs via after() on the server.
       setGeneratingId(id)
-      // Fire-and-forget — route handles generation with maxDuration=120
+      // Route handles generation with maxDuration=120; reload posts when it resolves
       fetch('/api/agents/post-queue/approve-and-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
-      }).then(() => loadPosts()).catch(() => loadPosts())
+      }).then(async res => {
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}))
+          console.error('approve-and-generate error:', res.status, json)
+        }
+        await loadPosts()
+      }).catch(err => { console.error('approve-and-generate fetch failed:', err); loadPosts() })
       // Also poll every 8s in case the response comes back before we reload
       const poll = setInterval(async () => {
         await loadPosts()
