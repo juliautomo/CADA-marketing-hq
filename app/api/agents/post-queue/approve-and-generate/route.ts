@@ -92,10 +92,15 @@ export async function POST(req: NextRequest) {
         : generateImage(prompt, '1024x1536', quality)
 
     if (isMulti) {
-      // Generate all slide images in parallel using rewritten prompts
-      const urls = await Promise.all(
-        rewrittenSlides.map(slide => generate(buildPrompt(slide)))
+      // Generate slide 1 first, then use it as style reference for remaining slides
+      // so all slides share the same visual style
+      const firstUrl = await generate(buildPrompt(rewrittenSlides[0]))
+      const generateWithStyle = (prompt: string) =>
+        generateImageWithReference(prompt, firstUrl, '1024x1536', quality)
+      const remainingUrls = await Promise.all(
+        rewrittenSlides.slice(1).map(slide => generateWithStyle(buildPrompt(slide)))
       )
+      const urls = [firstUrl, ...remainingUrls]
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({
