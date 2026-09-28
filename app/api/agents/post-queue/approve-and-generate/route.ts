@@ -53,9 +53,15 @@ export async function POST(req: NextRequest) {
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
 
-    const buildPrompt = (base: string) =>
-      [stylePrefix, base, shotStyle, colorDesc, negatives ? `Avoid: ${negatives}` : '']
-        .filter(Boolean).join('. ')
+    const buildPrompt = (base: string) => {
+      const styleDirective = [
+        stylePrefix && `STYLE: ${stylePrefix}`,
+        shotStyle   && `COMPOSITION: ${shotStyle}`,
+        colorDesc   && `COLORS: ${colorDesc}`,
+        negatives   && `DO NOT include: ${negatives}`,
+      ].filter(Boolean).join('\n')
+      return styleDirective ? `${styleDirective}\n\nCONTENT: ${base}` : base
+    }
 
     if (isMulti) {
       // Generate all slide images in parallel
