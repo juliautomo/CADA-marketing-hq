@@ -135,12 +135,15 @@ List:
       const brandNegatives     = ctx.raw.brand_negative_prompts ?? ''
       const brandTargetCustomer = ctx.raw.brand_target_customer ?? ''
 
+      const brandImageInstructions = ctx.raw.brand_image_instructions ?? ''
+
       const imageGuide = [
         brandStylePrefix && `Visual style: ${brandStylePrefix}`,
         brandColorDesc   && `Brand colors/palette: ${brandColorDesc}`,
         brandShotStyle   && `Shot style: ${brandShotStyle}`,
         brandTargetCustomer && `Model/subject: ${brandTargetCustomer}`,
         brandNegatives   && `Avoid: ${brandNegatives}`,
+        brandImageInstructions && `Image rendering rules: ${brandImageInstructions}`,
       ].filter(Boolean).join('. ')
 
       const contentText = await generateText(
