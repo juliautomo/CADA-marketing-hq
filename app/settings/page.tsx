@@ -23,6 +23,7 @@ interface BrandSettings {
   brand_subject_description: string
   brand_hashtags: string
   brand_ecommerce_platform: string
+  brand_website: string
   brand_industry: string
   brand_voice: string
   brand_guidelines: string
@@ -74,6 +75,7 @@ const BRAND_DEFAULTS: BrandSettings = {
   brand_subject_description: '',
   brand_hashtags: '',
   brand_ecommerce_platform: '',
+  brand_website: '',
   brand_industry: '',
   brand_voice: '',
   brand_guidelines: '',
@@ -836,13 +838,23 @@ function SettingsContent() {
                   rows={2}
                 />
               </div>
-              <Field
-                label="Price Point"
-                placeholder="e.g. affordable-mid ($15–$45)"
-                value={brand.brand_price_point}
-                onChange={v => updateBrand('brand_price_point', v)}
-                rows={1}
-              />
+              <div className="grid grid-cols-2 gap-3 items-stretch">
+                <Field
+                  label="Price Point"
+                  placeholder="e.g. affordable-mid ($15–$45)"
+                  value={brand.brand_price_point}
+                  onChange={v => updateBrand('brand_price_point', v)}
+                  rows={1}
+                />
+                <Field
+                  label="Website(s)"
+                  description="Injected into content briefs and CTAs."
+                  placeholder="e.g. belajarclaude.id, linktr.ee/belajarclaude"
+                  value={brand.brand_website}
+                  onChange={v => updateBrand('brand_website', v)}
+                  rows={1}
+                />
+              </div>
             </CardContent>
           </Card>
 

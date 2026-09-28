@@ -16,7 +16,7 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
   const KEYS = [
     'brand_name', 'brand_handle', 'brand_description',
     'brand_products_list', 'brand_price_point', 'brand_markets', 'brand_channels',
-    'brand_subject_description', 'brand_hashtags', 'brand_ecommerce_platform', 'brand_industry',
+    'brand_subject_description', 'brand_hashtags', 'brand_ecommerce_platform', 'brand_website', 'brand_industry',
     'brand_voice', 'brand_guidelines', 'brand_target_customer',
     'brand_campaign_theme', 'brand_caption_examples',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
@@ -140,6 +140,7 @@ export function getBrandSystemPrompt(agentRole: string, overrides: BrandOverride
   const captionExamples = overrides.brand_caption_examples
   const industry = (overrides as Record<string, string>).brand_industry || ''
   const ecommerce = (overrides as Record<string, string>).brand_ecommerce_platform || ''
+  const website = (overrides as Record<string, string>).brand_website || ''
   const hashtags = (overrides as Record<string, string>).brand_hashtags || ''
   const subjectDescription = (overrides as Record<string, string>).brand_subject_description || ''
 
@@ -164,6 +165,7 @@ ${captionExamples ? `\nCAPTION STYLE EXAMPLES (match this voice and style):\n${c
 
 ${industry ? `INDUSTRY: ${industry}` : ''}
 ${ecommerce ? `PRIMARY SALES PLATFORM: ${ecommerce}` : ''}
+${website ? `WEBSITE(S): ${website}` : ''}
 ${subjectDescription ? `SUBJECT / MODEL: ${subjectDescription} (use this in image and video descriptions)` : ''}
 ${hashtags ? `DEFAULT HASHTAGS: ${hashtags}` : ''}
 
