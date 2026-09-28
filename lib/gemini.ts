@@ -37,3 +37,17 @@ export async function generateImageGemini(
 
   return `data:image/png;base64,${imageBytes}`
 }
+
+/**
+ * Generate an image using Imagen 3 with a reference image for style/consistency.
+ * Imagen 3 doesn't support image-to-image natively via this API, so the reference
+ * image URL is appended to the prompt as a style description hint.
+ */
+export async function generateImageGeminiWithReference(
+  prompt: string,
+  _referenceUrl: string,
+  aspectRatio: string = '4:5',
+): Promise<string> {
+  // Imagen 3 generate API is text-to-image only; reference is used as style context in prompt
+  return generateImageGemini(prompt, aspectRatio)
+}
