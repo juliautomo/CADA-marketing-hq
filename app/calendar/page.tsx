@@ -18,10 +18,17 @@ interface Post {
   cada_campaigns: { name: string } | null
 }
 
-const PLATFORM_COLORS: Record<string, string> = {
-  tiktok:    'bg-zinc-900 text-white',
-  instagram: 'bg-gradient-to-r from-violet-500 to-pink-500 text-white',
-}
+const CAMPAIGN_PALETTE = [
+  'bg-violet-500 text-white',
+  'bg-sky-500 text-white',
+  'bg-emerald-500 text-white',
+  'bg-amber-500 text-white',
+  'bg-rose-500 text-white',
+  'bg-indigo-500 text-white',
+  'bg-teal-500 text-white',
+  'bg-orange-500 text-white',
+]
+const NO_CAMPAIGN_COLOR = 'bg-zinc-400 text-white'
 
 const STATUS_DOT: Record<string, string> = {
   pending_approval: 'bg-amber-400',
@@ -81,14 +88,31 @@ export default function CalendarPage() {
   const postsByDay = (d: Date) =>
     posts.filter(p => p.scheduled_at && isSameDay(parseISO(p.scheduled_at), d))
 
+  // Build stable campaign → color index from all loaded posts
+  const campaignColorMap: Record<string, string> = {}
+  let colorIdx = 0
+  for (const p of posts) {
+    if (p.campaign_id && !(p.campaign_id in campaignColorMap)) {
+      campaignColorMap[p.campaign_id] = CAMPAIGN_PALETTE[colorIdx % CAMPAIGN_PALETTE.length]
+      colorIdx++
+    }
+  }
+  const chipColor = (post: Post) =>
+    post.campaign_id ? (campaignColorMap[post.campaign_id] ?? NO_CAMPAIGN_COLOR) : NO_CAMPAIGN_COLOR
+
+  // Unique campaigns for legend
+  const campaignLegend = posts.reduce<{ id: string; name: string; color: string }[]>((acc, p) => {
+    if (p.campaign_id && !acc.find(c => c.id === p.campaign_id)) {
+      acc.push({ id: p.campaign_id, name: p.cada_campaigns?.name ?? 'Campaign', color: campaignColorMap[p.campaign_id] })
+    }
+    return acc
+  }, [])
+
   const platformLabel = (platform: string) => {
     const p = platform?.toLowerCase()
     if (p?.includes('tiktok')) return 'TikTok'
     return 'Instagram'
   }
-
-  const platformKey = (platform: string) =>
-    platform?.toLowerCase().includes('tiktok') ? 'tiktok' : 'instagram'
 
   const canReschedule = (status: string) =>
     ['draft', 'pending_approval', 'approved', 'pending', 'failed'].includes(status)
@@ -132,10 +156,16 @@ export default function CalendarPage() {
           <p className="text-sm text-zinc-500 mt-1">Drag posts to reschedule · click to view details</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-3 mr-4 text-xs text-zinc-500">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-zinc-900 inline-block" /> TikTok</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-violet-500 inline-block" /> Instagram</span>
-          </div>
+          {campaignLegend.length > 0 && (
+            <div className="hidden sm:flex items-center gap-3 mr-4 text-xs text-zinc-500 flex-wrap max-w-xs justify-end">
+              {campaignLegend.map(c => (
+                <span key={c.id} className="flex items-center gap-1 whitespace-nowrap">
+                  <span className={cn('w-2.5 h-2.5 rounded-sm inline-block', c.color.split(' ')[0])} />
+                  {c.name}
+                </span>
+              ))}
+            </div>
+          )}
           {saving && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
           <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
             className="p-2 rounded-xl hover:bg-zinc-100 transition-colors">
@@ -227,7 +257,7 @@ export default function CalendarPage() {
                         onClick={() => setSelected(post)}
                         className={cn(
                           'w-full text-left rounded-md px-1.5 py-1 text-[10px] font-medium transition-opacity',
-                          PLATFORM_COLORS[platformKey(post.platform)] ?? 'bg-zinc-200 text-zinc-700',
+                          chipColor(post),
                           draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                           dragPostId === post.id && 'opacity-40',
                           'hover:opacity-80',
@@ -264,7 +294,7 @@ export default function CalendarPage() {
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className={cn('px-5 py-4', selected.status === 'failed' ? 'bg-red-600' : (PLATFORM_COLORS[platformKey(selected.platform)] ?? 'bg-zinc-800'))}>
+            <div className={cn('px-5 py-4', selected.status === 'failed' ? 'bg-red-600' : chipColor(selected).replace(' text-white', ''))}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-white/70 font-medium">{platformLabel(selected.platform)}</p>
