@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, parseISO, setHours, setMinutes, setSeconds } from 'date-fns'
 
@@ -58,6 +58,7 @@ export default function CalendarPage() {
   const [dragPostId, setDragPostId] = useState<string | null>(null)
   const [dragOverDay, setDragOverDay] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const dragCounter = useRef<Record<string, number>>({})
 
   const loadPosts = useCallback(async () => {
@@ -72,6 +73,17 @@ export default function CalendarPage() {
   }, [])
 
   useEffect(() => { loadPosts() }, [loadPosts])
+
+  async function handleDelete(id: string) {
+    setDeleting(true)
+    try {
+      await fetch(`/api/agents/post-queue?id=${id}`, { method: 'DELETE' })
+      setPosts(prev => prev.filter(p => p.id !== id))
+      setSelected(null)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -332,7 +344,15 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="border-t border-zinc-100 px-5 py-3 flex justify-end">
+            <div className="border-t border-zinc-100 px-5 py-3 flex items-center justify-between">
+              <button
+                onClick={() => handleDelete(selected.id)}
+                disabled={deleting}
+                className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Delete
+              </button>
               <button onClick={() => setSelected(null)}
                 className="text-sm text-zinc-500 hover:text-zinc-800 transition-colors">
                 Close
