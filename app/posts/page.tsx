@@ -20,6 +20,7 @@ interface QueuedPost {
   title: string | null
   caption: string
   image_concept: string | null
+  image_prompt_used: string | null
   platform: string
   scheduled_at: string
   status: string
@@ -961,8 +962,14 @@ function PostsPageInner() {
                                 </div>
                                 {post.image_concept && (
                                   <div>
-                                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Image prompt</p>
+                                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Image concept</p>
                                     <p className="text-xs text-zinc-500 italic">{post.image_concept}</p>
+                                  </div>
+                                )}
+                                {post.image_prompt_used && (
+                                  <div>
+                                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1">Prompt sent to AI ↗</p>
+                                    <p className="text-xs text-zinc-500 whitespace-pre-wrap font-mono">{post.image_prompt_used}</p>
                                   </div>
                                 )}
                               </div>

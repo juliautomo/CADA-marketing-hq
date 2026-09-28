@@ -88,7 +88,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const logoUrl = ctx.raw.brand_logo_url || undefined
+    // brand_logo_url may be stored as a JSON-encoded string ("\"https://...\"") — strip quotes
+    const rawLogoUrl = ctx.raw.brand_logo_url || ''
+    const logoUrl = rawLogoUrl.replace(/^"|"$/g, '') || undefined
+    console.log('logoUrl resolved:', logoUrl ?? 'none')
 
     // Composite logo onto a generated image URL; returns the same URL if no logo or if sharp fails
     const applyLogo = async (url: string): Promise<string> => {
@@ -161,16 +164,22 @@ export async function POST(req: NextRequest) {
         : generateImage(prompt, imageSize as '1024x1024' | '1024x1536', quality)
     }
 
+    // Save the final prompts sent to the image model for review
+    const finalPrompts = rewrittenSlides.map(s => buildPrompt(s))
+    await db.from('cada_scheduled_posts')
+      .update({ image_prompt_used: finalPrompts.join('\n\n---\n\n') })
+      .eq('id', id)
+
     if (isMulti) {
       // Generate slide 1 first, then use it as style reference for remaining slides
       // so all slides share the same visual style
-      const firstRaw = await generate(buildPrompt(rewrittenSlides[0]))
+      const firstRaw = await generate(finalPrompts[0])
       const generateWithStyle = (prompt: string) =>
         imageModel === 'dall-e-3'
           ? generateImageDalle3(prompt, imageSize as '1024x1024' | '1792x1024' | '1024x1792', dalle3Quality)
           : generateImageWithReference(prompt, firstRaw, imageSize as '1024x1024' | '1024x1536', quality)
       const remainingRaw = await Promise.all(
-        rewrittenSlides.slice(1).map(slide => generateWithStyle(buildPrompt(slide)))
+        finalPrompts.slice(1).map(generateWithStyle)
       )
       const rawUrls = [firstRaw, ...remainingRaw]
       // Add padding then apply logo to all slides in parallel
@@ -184,7 +193,7 @@ export async function POST(req: NextRequest) {
         .single()
       return NextResponse.json({ post: data })
     } else {
-      const rawUrl = await generate(buildPrompt(rewrittenSlides[0]))
+      const rawUrl = await generate(finalPrompts[0])
       const paddedUrl = await addPadding(rawUrl)
       const mediaUrl = await applyLogo(paddedUrl)
       const { data } = await db
