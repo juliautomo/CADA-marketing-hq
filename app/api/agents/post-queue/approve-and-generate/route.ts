@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // seconds — image gen + logo composite can take 30–45s
-import { NextRequest, NextResponse } from 'next/server'
+export const maxDuration = 300
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { generateImage, generateImageWithReference, generateImageDalle3, uploadBase64ToStorage } from '@/lib/openai'
 import { getBrandContext } from '@/lib/brand'
@@ -33,16 +33,14 @@ export async function POST(req: NextRequest) {
 
   await db.from('cada_scheduled_posts').update({ status: 'generating' }).eq('id', id)
 
+  // Return immediately so the client isn't blocked by image generation time.
+  // after() runs after the response is sent, surviving Vercel's response timeout.
+  after(async () => {
   const imagePrompt = post.image_concept as string | null
 
   if (!imagePrompt) {
-    const { data } = await db
-      .from('cada_scheduled_posts')
-      .update({ status: 'image_review' })
-      .eq('id', id)
-      .select()
-      .single()
-    return NextResponse.json({ post: data })
+    await db.from('cada_scheduled_posts').update({ status: 'image_review' }).eq('id', id)
+    return
   }
 
   try {
@@ -149,40 +147,26 @@ export async function POST(req: NextRequest) {
       const rawUrls = [firstRaw, ...remainingRaw]
       // Apply logo to all slides in parallel
       const urls = await Promise.all(rawUrls.map(applyLogo))
-      const { data } = await db
+      await db
         .from('cada_scheduled_posts')
-        .update({
-          status: 'image_review',
-          media_url: urls[0],
-          media_urls: urls,
-          media_type: 'image',
-        })
+        .update({ status: 'image_review', media_url: urls[0], media_urls: urls, media_type: 'image' })
         .eq('id', id)
-        .select()
-        .single()
-      return NextResponse.json({ post: data })
     } else {
       const rawUrl = await generate(buildPrompt(rewrittenSlides[0]))
       const mediaUrl = await applyLogo(rawUrl)
-      const { data } = await db
+      await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })
         .eq('id', id)
-        .select()
-        .single()
-      return NextResponse.json({ post: data })
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    const { data } = await db
+    await db
       .from('cada_scheduled_posts')
-      .update({
-        status: 'failed',
-        error_message: `Image generation failed: ${msg}`,
-      })
+      .update({ status: 'failed', error_message: `Image generation failed: ${msg}` })
       .eq('id', id)
-      .select()
-      .single()
-    return NextResponse.json({ post: data, imageError: true })
   }
+  }) // end after()
+
+  return NextResponse.json({ status: 'generating' })
 }

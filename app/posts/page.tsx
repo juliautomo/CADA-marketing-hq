@@ -239,17 +239,29 @@ function PostsPageInner() {
 
   async function handleAction(id: string, action: 'approve' | 'reject' | 'schedule' | 'unapprove') {
     if (action === 'approve') {
-      // Step 1: approve content → triggers image generation → lands in image_review
+      // Fire-and-forget: route returns immediately after setting status=generating,
+      // actual image generation runs via after() on the server.
       setGeneratingId(id)
-      try {
-        await fetch('/api/agents/post-queue/approve-and-generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id }),
-        })
+      fetch('/api/agents/post-queue/approve-and-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }).catch(() => {})
+      // Poll every 5s until status changes away from 'generating'
+      await loadPosts()
+      const poll = setInterval(async () => {
         await loadPosts()
-        setTimeout(() => loadPosts(), 2000)
-      } finally { setGeneratingId(null) }
+        setPosts(prev => {
+          const p = prev.find(x => x.id === id)
+          if (!p || p.status !== 'generating') {
+            clearInterval(poll)
+            setGeneratingId(null)
+          }
+          return prev
+        })
+      }, 5000)
+      // Safety: clear poll after 3 minutes
+      setTimeout(() => { clearInterval(poll); setGeneratingId(null) }, 3 * 60 * 1000)
       return
     }
     if (action === 'schedule') {
