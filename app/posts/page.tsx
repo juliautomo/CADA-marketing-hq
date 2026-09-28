@@ -29,7 +29,7 @@ interface QueuedPost {
   media_type: string | null
   error_message: string | null
   campaign_id: string | null
-  cada_campaigns?: { name: string } | null
+  cada_campaigns?: { name: string; created_at: string } | null
 }
 
 interface PlanStep {
@@ -749,7 +749,7 @@ function PostsPageInner() {
             const plan = plans.find(p => p.id === post.campaign_id)
             campaignMap.set(key, {
               name: post.cada_campaigns?.name ?? (post.campaign_id ? 'Campaign' : 'Unplanned posts'),
-              createdAt: plan?.created_at ?? null,
+              createdAt: post.cada_campaigns?.created_at ?? plan?.created_at ?? null,
               posts: [],
             })
           }
