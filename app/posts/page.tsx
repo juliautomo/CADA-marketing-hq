@@ -742,7 +742,7 @@ function PostsPageInner() {
 
       {/* ── Post Queue — grouped by campaign ── */}
       {(() => {
-        const activePosts = posts.filter(p => !['published', 'failed', 'rejected'].includes(p.status))
+        const activePosts = posts.filter(p => !['published', 'rejected'].includes(p.status))
 
         // Group by campaign_id (null = no campaign)
         const campaignMap = new Map<string, { name: string; createdAt: string | null; posts: QueuedPost[] }>()
@@ -775,6 +775,7 @@ function PostsPageInner() {
           const generatingP    = group.posts.filter(p => p.status === 'generating')
           const imageP         = group.posts.filter(p => p.status === 'image_review')
           const scheduledP     = group.posts.filter(p => ['approved', 'pending'].includes(p.status))
+          const failedP        = group.posts.filter(p => p.status === 'failed')
           const isCollapsed    = !expandedCampaigns.has(key)
           const toggleCollapse = () => setExpandedCampaigns(prev => {
             const next = new Set(prev)
@@ -783,7 +784,7 @@ function PostsPageInner() {
           })
 
           // Status summary for collapsed view
-          const pendingCount   = reviewPosts.length + imageP.length + generatingP.length
+          const pendingCount   = reviewPosts.length + imageP.length + generatingP.length + failedP.length
           const scheduledCount = scheduledP.length
 
           return (
@@ -869,6 +870,21 @@ function PostsPageInner() {
                       ))}
                     </div>
                   )}
+
+                  {failedP.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs font-semibold text-red-500 uppercase tracking-wider">Failed — tap to retry ({failedP.length})</span>
+                      {failedP.map(post => (
+                        <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
+                          editCaption={editCaption} editConcept={editConcept} editDate={editDate}
+                          setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
+                          onApprove={() => handleAction(post.id, 'approve')}
+                          generatingImage={generatingId === post.id}
+                          onRemove={() => handleDelete(post.id)}
+                          onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -881,7 +897,7 @@ function PostsPageInner() {
 
       {/* ── Past Plans — exclude campaigns still active in the queue ── */}
       {(() => {
-        const activeCampaignIds = new Set(posts.filter(p => !['published', 'failed', 'rejected'].includes(p.status)).map(p => p.campaign_id).filter(Boolean))
+        const activeCampaignIds = new Set(posts.filter(p => !['published', 'rejected'].includes(p.status)).map(p => p.campaign_id).filter(Boolean))
         const pastPlans = plans.filter(p => !activeCampaignIds.has(p.id))
         if (pastPlans.length === 0) return null
         return (
