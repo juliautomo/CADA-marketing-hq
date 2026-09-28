@@ -178,7 +178,7 @@ function PostsPageInner() {
   const [plans, setPlans]           = useState<PlanHistory[]>([])
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
   const [pastPlansOpen, setPastPlansOpen] = useState(false)
-  const [collapsedCampaigns, setCollapsedCampaigns] = useState<Set<string>>(new Set())
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
 
   // Trend research
   const [trendReports, setTrendReports] = useState<TrendReport[]>([])
@@ -723,29 +723,38 @@ function PostsPageInner() {
         const activePosts = posts.filter(p => !['published', 'failed', 'rejected'].includes(p.status))
 
         // Group by campaign_id (null = no campaign)
-        const campaignMap = new Map<string, { name: string; posts: QueuedPost[] }>()
+        const campaignMap = new Map<string, { name: string; createdAt: string | null; posts: QueuedPost[] }>()
         for (const post of activePosts) {
           const key = post.campaign_id ?? '__none__'
           if (!campaignMap.has(key)) {
+            const plan = plans.find(p => p.id === post.campaign_id)
             campaignMap.set(key, {
               name: post.cada_campaigns?.name ?? (post.campaign_id ? 'Campaign' : 'Unplanned posts'),
+              createdAt: plan?.created_at ?? null,
               posts: [],
             })
           }
           campaignMap.get(key)!.posts.push(post)
         }
 
+        // Sort campaigns newest-first
+        const sortedCampaignEntries = Array.from(campaignMap.entries()).sort(([, a], [, b]) => {
+          if (!a.createdAt) return 1
+          if (!b.createdAt) return -1
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
+
         if (campaignMap.size === 0 && !loading && !planning) {
           return <p className="text-center text-sm text-zinc-400 py-12">No posts yet — plan your content above to get started.</p>
         }
 
-        return Array.from(campaignMap.entries()).map(([key, group]) => {
+        return sortedCampaignEntries.map(([key, group]) => {
           const reviewPosts    = group.posts.filter(p => ['draft', 'pending_approval'].includes(p.status))
           const generatingP    = group.posts.filter(p => p.status === 'generating')
           const imageP         = group.posts.filter(p => p.status === 'image_review')
           const scheduledP     = group.posts.filter(p => ['approved', 'pending'].includes(p.status))
-          const isCollapsed    = collapsedCampaigns.has(key)
-          const toggleCollapse = () => setCollapsedCampaigns(prev => {
+          const isCollapsed    = !expandedCampaigns.has(key)
+          const toggleCollapse = () => setExpandedCampaigns(prev => {
             const next = new Set(prev)
             if (next.has(key)) next.delete(key); else next.add(key)
             return next
@@ -762,6 +771,11 @@ function PostsPageInner() {
                 <div className="text-left">
                   <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Campaign</p>
                   <p className="text-sm font-bold text-white">{group.name}</p>
+                  {group.createdAt && (
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      Generated {new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(group.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   {isCollapsed && (
