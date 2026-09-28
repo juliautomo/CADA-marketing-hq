@@ -58,6 +58,7 @@ interface HistoryPost {
   scheduled_at: string
   status: string
   image_concept: string | null
+  image_prompt_used: string | null
   media_url: string | null
 }
 
