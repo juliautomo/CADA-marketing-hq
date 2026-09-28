@@ -22,14 +22,12 @@ export async function compositeLogoOntoImage(
     position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     logoMaxWidthPercent?: number  // logo width as % of image width (default: 20%)
     padding?: number              // px padding from edge (default: 32)
-    opacity?: number              // 0–1 (default: 0.9)
   } = {}
 ): Promise<string> {
   const {
     position = 'bottom-right',
     logoMaxWidthPercent = 20,
     padding = 32,
-    opacity = 0.9,
   } = options
 
   const [imageBuffer, logoBuffer] = await Promise.all([
@@ -54,14 +52,6 @@ export async function compositeLogoOntoImage(
   const logoW = logoMeta.width ?? logoMaxWidth
   const logoH = logoMeta.height ?? logoMaxWidth
 
-  // Apply opacity by compositing onto transparent canvas
-  const logoWithOpacity = await sharp({
-    create: { width: logoW, height: logoH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-  })
-    .composite([{ input: logoResized, blend: 'over' }])
-    .png()
-    .toBuffer()
-
   // Calculate position
   let left: number
   let top: number
@@ -79,7 +69,7 @@ export async function compositeLogoOntoImage(
 
   const composited = await sharp(imageBuffer)
     .composite([{
-      input: logoWithOpacity,
+      input: logoResized,
       left: Math.max(0, left),
       top: Math.max(0, top),
       blend: 'over',

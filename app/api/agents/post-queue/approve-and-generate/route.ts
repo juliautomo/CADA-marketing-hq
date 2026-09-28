@@ -172,11 +172,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ post: data })
     }
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
     const { data } = await db
       .from('cada_scheduled_posts')
       .update({
-        status: 'image_review',
-        error_message: `Image generation failed: ${err instanceof Error ? err.message : String(err)}`,
+        status: 'failed',
+        error_message: `Image generation failed: ${msg}`,
       })
       .eq('id', id)
       .select()
