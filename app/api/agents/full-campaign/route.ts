@@ -251,9 +251,10 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
 
       // Add to post queue so they appear in Posts for approval
       if (campaign) {
+        const defaultPostTime = ctx.raw.default_post_time ?? '09:00'
         const scheduledInserts = contentDays.map((day) => ({
           caption: day.caption,
-          scheduled_at: new Date(day.date + 'T09:00:00').toISOString(),
+          scheduled_at: new Date(day.date + 'T' + defaultPostTime + ':00').toISOString(),
           status: 'pending_approval',
           platform: day.platform,
           title: `Day ${day.day} — ${day.platform}`,

@@ -22,7 +22,7 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
     'brand_shot_style', 'brand_colors', 'brand_image_instructions',
     'brand_model_reference_url', 'brand_logo_url',
-    'image_quality', 'drive_media_upload_enabled', 'drive_media_folder_id',
+    'image_quality', 'default_post_time', 'drive_media_upload_enabled', 'drive_media_folder_id',
   ]
   let query = db.from('cada_settings').select('key, value').in('key', KEYS)
   if (clientId) query = query.eq('client_id', clientId)

@@ -30,6 +30,7 @@ interface BrandSettings {
   brand_campaign_theme: string
   brand_caption_examples: string
   image_quality: 'low' | 'medium' | 'high'
+  default_post_time: string
 }
 
 interface VisualKitSettings {
@@ -80,6 +81,7 @@ const BRAND_DEFAULTS: BrandSettings = {
   brand_campaign_theme: '',
   brand_caption_examples: '',
   image_quality: 'medium',
+  default_post_time: '09:00',
 }
 
 const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
@@ -1032,6 +1034,25 @@ function SettingsContent() {
                 {brand.image_quality === 'medium' && 'Recommended — great quality for social media at a fraction of the cost.'}
                 {brand.image_quality === 'high' && 'Best quality for final posts and campaigns.'}
               </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Publishing</CardTitle>
+              <CardDescription>Default scheduling preferences for generated posts.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <label className="text-sm font-medium text-zinc-700 block mb-1.5">Default post time</label>
+                <p className="text-xs text-zinc-400 mb-3">Time of day posts are scheduled when a content plan is generated.</p>
+                <input
+                  type="time"
+                  value={brand.default_post_time}
+                  onChange={e => updateBrand('default_post_time', e.target.value)}
+                  className="text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
             </CardContent>
           </Card>
 
