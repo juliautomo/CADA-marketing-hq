@@ -43,6 +43,9 @@ export async function PATCH(req: NextRequest) {
   } else if (action === 'unapprove') {
     updates.status = 'draft'
     updates.error_message = null
+  } else if (action === 'reject') {
+    updates.status = 'rejected'
+    updates.error_message = 'Rejected by user'
   } else if (action === 'edit') {
     if (caption !== undefined) updates.caption = caption
     if (image_concept !== undefined) updates.image_concept = image_concept

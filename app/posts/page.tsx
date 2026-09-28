@@ -440,7 +440,7 @@ function PostsPageInner() {
           <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
           <p className="text-sm text-red-700 flex-1">
             <span className="font-semibold">{failedPosts.length} post{failedPosts.length > 1 ? 's' : ''} failed to publish.</span>
-            {' '}Check the Done section below for details.
+            {' '}Check History for details.
           </p>
         </div>
       )}
@@ -692,9 +692,9 @@ function PostsPageInner() {
                                         disabled={isApproving}
                                         onClick={async () => {
                                           await fetch('/api/agents/post-queue', {
-                                            method: 'DELETE',
+                                            method: 'PATCH',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ id: savedPost.id }),
+                                            body: JSON.stringify({ id: savedPost.id, action: 'reject' }),
                                           })
                                           setSummaryPosts(prev => prev.filter(p => p.id !== savedPost.id))
                                           await loadPosts()
@@ -723,7 +723,7 @@ function PostsPageInner() {
 
       {/* ── Post Queue — grouped by campaign ── */}
       {(() => {
-        const activePosts = posts.filter(p => !['published', 'failed'].includes(p.status))
+        const activePosts = posts.filter(p => !['published', 'failed', 'rejected'].includes(p.status))
 
         // Group by campaign_id (null = no campaign)
         const campaignMap = new Map<string, { name: string; posts: QueuedPost[] }>()
@@ -820,18 +820,6 @@ function PostsPageInner() {
         })
       })()}
 
-      {/* Done / failed — flat, below all campaigns */}
-      {donePosts.length > 0 && (
-        <section className="space-y-3">
-          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Done ({donePosts.length})</span>
-          {donePosts.map(post => (
-            <PostCard key={post.id} post={post} saving={false} editingId={editingId}
-              editCaption={editCaption} editConcept={editConcept} editDate={editDate}
-              setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-              onRemove={post.status === 'failed' ? () => handleDelete(post.id) : undefined} />
-          ))}
-        </section>
-      )}
 
       {loading && <p className="text-center text-sm text-zinc-400 py-8">Loading…</p>}
 
