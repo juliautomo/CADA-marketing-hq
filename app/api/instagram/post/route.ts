@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
-  const { mediaUrl, caption, mediaType = 'IMAGE' } = await req.json()
+  const { mediaUrl, mediaUrls, caption, mediaType = 'IMAGE' } = await req.json()
+  const isCarousel = Array.isArray(mediaUrls) && mediaUrls.length > 1
   const clientId = req.headers.get('x-client-id') ?? null
 
   const supabase = createServiceClient()
@@ -44,55 +45,89 @@ export async function POST(req: NextRequest) {
     ], { onConflict: 'key,client_id' })
   }
 
-  // Step 1: Create media container
-  const isVideo = mediaType === 'REELS' || mediaType === 'VIDEO'
-  const containerBody: Record<string, string> = {
-    caption,
-    access_token: token,
-  }
-  if (isVideo) {
-    containerBody.media_type = 'REELS'
-    containerBody.video_url = mediaUrl
-    containerBody.share_to_feed = 'true'
+  let creationId: string
+
+  if (isCarousel) {
+    // Carousel: step 1 — create one item container per image
+    const itemIds: string[] = []
+    for (const url of mediaUrls) {
+      const itemRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: url, is_carousel_item: 'true', access_token: token }),
+      })
+      const itemData = await itemRes.json()
+      if (!itemData.id) {
+        return NextResponse.json({ error: itemData.error?.message ?? 'Failed to create carousel item container' }, { status: 500 })
+      }
+      itemIds.push(itemData.id)
+    }
+
+    // Step 2 — create carousel container
+    const carouselRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        media_type: 'CAROUSEL',
+        children: itemIds.join(','),
+        caption,
+        access_token: token,
+      }),
+    })
+    const carouselData = await carouselRes.json()
+    if (!carouselData.id) {
+      return NextResponse.json({ error: carouselData.error?.message ?? 'Failed to create carousel container' }, { status: 500 })
+    }
+    creationId = carouselData.id
+
   } else {
-    containerBody.image_url = mediaUrl
-  }
+    // Single image or video
+    const isVideo = mediaType === 'REELS' || mediaType === 'VIDEO'
+    const containerBody: Record<string, string> = { caption, access_token: token }
+    if (isVideo) {
+      containerBody.media_type = 'REELS'
+      containerBody.video_url = mediaUrl
+      containerBody.share_to_feed = 'true'
+    } else {
+      containerBody.image_url = mediaUrl
+    }
 
-  const containerRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(containerBody),
-  })
-  const containerData = await containerRes.json()
+    const containerRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(containerBody),
+    })
+    const containerData = await containerRes.json()
+    if (!containerData.id) {
+      return NextResponse.json({ error: containerData.error?.message ?? 'Failed to create media container' }, { status: 500 })
+    }
+    creationId = containerData.id
 
-  if (!containerData.id) {
-    return NextResponse.json({ error: containerData.error?.message ?? 'Failed to create media container' }, { status: 500 })
-  }
-
-  // For Reels, wait for processing
-  if (isVideo) {
-    let ready = false
-    for (let i = 0; i < 12; i++) {
-      await new Promise(r => setTimeout(r, 5000))
-      const statusRes = await fetch(
-        `https://graph.facebook.com/v25.0/${containerData.id}?fields=status_code&access_token=${token}`
-      )
-      const statusData = await statusRes.json()
-      if (statusData.status_code === 'FINISHED') { ready = true; break }
-      if (statusData.status_code === 'ERROR') {
-        return NextResponse.json({ error: 'Video processing failed on Instagram' }, { status: 500 })
+    // For Reels, wait for processing
+    if (isVideo) {
+      let ready = false
+      for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 5000))
+        const statusRes = await fetch(
+          `https://graph.facebook.com/v25.0/${containerData.id}?fields=status_code&access_token=${token}`
+        )
+        const statusData = await statusRes.json()
+        if (statusData.status_code === 'FINISHED') { ready = true; break }
+        if (statusData.status_code === 'ERROR') {
+          return NextResponse.json({ error: 'Video processing failed on Instagram' }, { status: 500 })
+        }
+      }
+      if (!ready) {
+        return NextResponse.json({ error: 'Video processing timed out — try again in a minute' }, { status: 500 })
       }
     }
-    if (!ready) {
-      return NextResponse.json({ error: 'Video processing timed out — try again in a minute' }, { status: 500 })
-    }
   }
 
-  // Step 2: Publish
+  // Final step: publish
   const publishRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creation_id: containerData.id, access_token: token }),
+    body: JSON.stringify({ creation_id: creationId, access_token: token }),
   })
   const publishData = await publishRes.json()
 

@@ -64,11 +64,13 @@ export async function GET(req: Request) {
       const clientHeader: Record<string, string> = post.client_id ? { 'x-client-id': post.client_id } : {}
       let res: Response
       if (post.platform === 'instagram') {
+        const mediaUrls = Array.isArray(post.media_urls) && post.media_urls.length > 1 ? post.media_urls : undefined
         res = await fetch(`${APP_URL}/api/instagram/post`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...clientHeader },
           body: JSON.stringify({
             mediaUrl: post.media_url,
+            mediaUrls,
             caption: post.caption,
             mediaType: post.media_type,
           }),
