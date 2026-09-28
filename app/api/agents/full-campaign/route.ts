@@ -151,7 +151,7 @@ List:
         BASE + '\nYou are a social media copywriter. Write ready-to-post content. Use EXACTLY the format below — no deviations.',
         `Generate exactly ${numPosts} social media posts for ${brandName} on the theme: “${parsed.theme}”
 Starting: ${parsed.startDate}
-Duration: ${weeks} week${weeks > 1 ? 's' : ''} — spread posts evenly, one per scheduled day
+Duration: ${weeks === 0 ? '1 day' : `${weeks} week${weeks > 1 ? 's' : ''}`} — spread posts evenly, one per scheduled day
 Products to feature: ${brandProducts}
 Trend inspiration: ${trendText.slice(0, 400)}
 

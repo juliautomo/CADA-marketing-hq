@@ -377,11 +377,13 @@ function PostsPageInner() {
     setPlanDone(false)
 
     try {
-      const numPosts = Math.min(parseInt(weeks) * parseInt(postsPerWeek), 14)
+      const isOneDay = weeks === '1day'
+      const numPosts = isOneDay ? platforms.length : Math.min(parseInt(weeks) * parseInt(postsPerWeek), 14)
+      const weeksNum = isOneDay ? 0 : parseInt(weeks)
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: parseInt(weeks), platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat, imageModel }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: weeksNum, platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat, imageModel }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -543,6 +545,7 @@ function PostsPageInner() {
                         <label className="text-xs font-medium text-zinc-500 block mb-1.5">Duration</label>
                         <select value={weeks} onChange={e => setWeeks(e.target.value)}
                           className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                          <option value="1day">1 day</option>
                           <option value="1">1 week</option>
                           <option value="2">2 weeks</option>
                           <option value="4">4 weeks</option>
@@ -1261,6 +1264,16 @@ function PostCard({
                   {conceptExpanded ? '▲ Show less' : '▼ Show full prompt'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {post.image_prompt_used && (
+            <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100">
+              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Prompt sent to AI</p>
+              <p className={cn('text-[11px] text-zinc-500 font-mono whitespace-pre-wrap', !conceptExpanded && 'line-clamp-4')}>{post.image_prompt_used}</p>
+              <button onClick={() => setConceptExpanded(v => !v)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors mt-1">
+                {conceptExpanded ? '▲ Show less' : '▼ Show full prompt'}
+              </button>
             </div>
           )}
 
