@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { toPng } from 'html-to-image'
-import { Download, RefreshCw, Loader2, Plus, Trash2, Sparkles, ImageIcon } from 'lucide-react'
+import { Download, Loader2, Plus, Trash2, Sparkles, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -308,8 +308,6 @@ function DraggableResizable({
 }
 
 function TimelineVisual({ items }: { items: TimelineItem[] }) {
-  const left = items.filter((_, i) => i % 2 === 0)
-  const right = items.filter((_, i) => i % 2 === 1)
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, height: '100%', alignContent: 'start' }}>
       {items.map((item, i) => (
@@ -481,7 +479,12 @@ export default function TemplatePage() {
       })
       const data = await res.json()
       if (data.fields) {
-        setFields(prev => ({ ...DEFAULT, ...data.fields, illustrationUrl: prev.illustrationUrl }))
+        setFields(prev => ({
+          ...DEFAULT,
+          ...data.fields,
+          illustrationUrl: prev.illustrationUrl,
+          visualX: 0, visualY: 0, visualW: 100, visualH: 100,
+        }))
       }
     } finally {
       setLoadingPost(false)
