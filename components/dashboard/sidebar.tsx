@@ -17,6 +17,7 @@ import {
   Settings,
   LogOut,
   CalendarDays,
+  LayoutTemplate,
 } from 'lucide-react'
 
 const SECTIONS = [
@@ -31,6 +32,7 @@ const SECTIONS = [
   {
     label: 'Features',
     items: [
+      { label: 'Image Template',        href: '/template',           icon: LayoutTemplate },
       { label: 'Content Creator',      href: '/agents/creator',     icon: Sparkles },
       { label: 'Trend Analyst',        href: '/agents/trend',       icon: TrendingUp },
       { label: 'Performance Reviewer', href: '/agents/performance', icon: BarChart3 },
