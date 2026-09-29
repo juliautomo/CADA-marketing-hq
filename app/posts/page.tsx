@@ -164,6 +164,7 @@ function PostsPageInner() {
   const [platforms, setPlatforms] = useState<string[]>(['TikTok', 'Instagram'])
   const [planning, setPlanning]   = useState(false)
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([])
+  const planAbortRef = useRef<AbortController | null>(null)
   const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null)
   const [planError, setPlanError] = useState<string | null>(null)
   const [planDone, setPlanDone]   = useState(false)
@@ -369,6 +370,10 @@ function PostsPageInner() {
     })
   }
 
+  function stopPlan() {
+    planAbortRef.current?.abort()
+  }
+
   async function handlePlan() {
     if (!prompt.trim() || planning) return
     setPlanning(true)
@@ -376,6 +381,9 @@ function PostsPageInner() {
     setPlanSummary(null)
     setPlanError(null)
     setPlanDone(false)
+
+    const abort = new AbortController()
+    planAbortRef.current = abort
 
     try {
       const isOneDay = weeks === '1day'
@@ -385,6 +393,7 @@ function PostsPageInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: weeksNum, platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat, imageModel, promptModel }),
+        signal: abort.signal,
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -423,9 +432,14 @@ function PostsPageInner() {
         }
       }
     } catch (e) {
-      setPlanError(e instanceof Error ? e.message : 'Something went wrong')
+      if (e instanceof Error && e.name === 'AbortError') {
+        setPlanSteps(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'skipped' } : s))
+      } else {
+        setPlanError(e instanceof Error ? e.message : 'Something went wrong')
+      }
     } finally {
       setPlanning(false)
+      planAbortRef.current = null
     }
   }
 
@@ -682,6 +696,13 @@ function PostsPageInner() {
                 {/* Progress steps */}
                 {(planning || planSteps.length > 0) && (
                   <div className="space-y-2">
+                    {planning && (
+                      <div className="flex justify-end mb-1">
+                        <button onClick={stopPlan} className="text-xs text-zinc-400 hover:text-red-500 border border-zinc-200 hover:border-red-200 rounded-lg px-3 py-1 transition-colors flex items-center gap-1">
+                          <X className="w-3 h-3" /> Stop
+                        </button>
+                      </div>
+                    )}
                     {STEP_DEFS.map(def => {
                       const step = planSteps.find(s => s.step === def.n)
                       const status = step?.status ?? 'pending'
