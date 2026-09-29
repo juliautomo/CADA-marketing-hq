@@ -79,7 +79,7 @@ const DEFAULT: TemplateFields = {
 
 // ─── Poster Template Component ────────────────────────────────────────────────
 
-function PosterTemplate({ fields, logoUrl, visualAreaRef }: { fields: TemplateFields; logoUrl: string; visualAreaRef?: React.RefObject<HTMLDivElement> }) {
+function PosterTemplate({ fields, logoUrl, visualAreaRef }: { fields: TemplateFields; logoUrl: string; visualAreaRef?: React.RefObject<HTMLDivElement | null> }) {
   const W = 1080
   const H = 1350
 
