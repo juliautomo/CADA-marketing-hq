@@ -390,6 +390,22 @@ export default function TemplatePage() {
     } finally { setGeneratingIllustration(false) }
   }
 
+  async function downloadIllustration() {
+    if (!fields.illustrationUrl) return
+    try {
+      const res = await fetch(fields.illustrationUrl)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'illustration.png'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      window.open(fields.illustrationUrl, '_blank')
+    }
+  }
+
   async function handleExport() {
     if (!exportRef.current) return
     setExporting(true)
@@ -794,10 +810,10 @@ export default function TemplatePage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={fields.illustrationUrl} alt="Illustration" className="w-full rounded-xl border border-zinc-200 object-contain max-h-40" />
                 <div className="absolute top-2 right-2 flex gap-1">
-                  <a href={fields.illustrationUrl} download="illustration.png" target="_blank" rel="noreferrer"
+                  <button onClick={downloadIllustration}
                     className="bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600 rounded-full p-1 transition-colors">
                     <Download className="w-3.5 h-3.5" />
-                  </a>
+                  </button>
                   <button onClick={() => set('illustrationUrl', '')}
                     className="bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500 rounded-full p-1 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
