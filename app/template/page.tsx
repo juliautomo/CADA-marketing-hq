@@ -312,8 +312,19 @@ function StepsVisual({ items }: { items: StepItem[] }) {
 interface Draft { name: string; savedAt: string; fields: TemplateFields }
 interface QueuePost { id: string; title: string | null; caption: string; image_concept: string | null; status: string; cada_campaigns?: { name: string } | null }
 
+function loadFromStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) as T : fallback } catch { return fallback }
+}
+
 export default function TemplatePage() {
-  const [fields, setFields] = useState<TemplateFields>(DEFAULT)
+  const [fields, setFields] = useState<TemplateFields>(() => {
+    const saved = loadFromStorage<TemplateFields | null>('template-autosave', null)
+    if (saved?.headline && saved.headline !== DEFAULT.headline) {
+      return { ...saved, layout: { ...DEFAULT_LAYOUT, ...saved.layout } }
+    }
+    return DEFAULT
+  })
   const [logoUrl, setLogoUrl] = useState('')
   const [exporting, setExporting] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
@@ -476,9 +487,7 @@ export default function TemplatePage() {
 
   // ── Drafts (localStorage) ────────────────────────────────────────────────
 
-  const [drafts, setDrafts] = useState<Draft[]>(() => {
-    try { return JSON.parse(localStorage.getItem('template-drafts') ?? '[]') } catch { return [] }
-  })
+  const [drafts, setDrafts] = useState<Draft[]>(() => loadFromStorage<Draft[]>('template-drafts', []))
   const [draftName, setDraftName] = useState('')
   const [showDraftInput, setShowDraftInput] = useState(false)
 
@@ -486,22 +495,6 @@ export default function TemplatePage() {
   useEffect(() => {
     try { localStorage.setItem('template-autosave', JSON.stringify(fields)) } catch {}
   }, [fields])
-
-  // Restore autosave on first load (only if fields are still default)
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('template-autosave')
-      if (saved) {
-        const parsed = JSON.parse(saved) as TemplateFields
-        // Only restore if there's actually something non-default (headline changed)
-        if (parsed.headline && parsed.headline !== DEFAULT.headline) {
-          // Merge layout with DEFAULT_LAYOUT so new keys added after the save still exist
-          setFields({ ...parsed, layout: { ...DEFAULT_LAYOUT, ...parsed.layout } })
-        }
-      }
-    } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   function saveDraft() {
     const name = draftName.trim() || `Draft ${new Date().toLocaleString('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
