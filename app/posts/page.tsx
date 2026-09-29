@@ -310,13 +310,13 @@ function PostsPageInner() {
     } finally { setSaving(null) }
   }
 
-  async function regenerateImage(id: string, imageModel?: string) {
+  async function regenerateImage(id: string, imageModel?: string, fixNote?: string) {
     setRegeneratingId(id)
     try {
       await fetch('/api/agents/post-queue/approve-and-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...(imageModel ? { imageModel } : {}) }),
+        body: JSON.stringify({ id, ...(imageModel ? { imageModel } : {}), ...(fixNote ? { correctionNote: fixNote } : {}) }),
       })
       await loadPosts()
     } finally { setRegeneratingId(null) }
@@ -884,7 +884,7 @@ function PostsPageInner() {
                           editCaption={editCaption} editConcept={editConcept} editDate={editDate}
                           setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
                           onSchedule={() => handleAction(post.id, 'schedule')}
-                          onRegenerate={(model) => regenerateImage(post.id, model)} regenerating={regeneratingId === post.id}
+                          onRegenerate={(model, fixNote) => regenerateImage(post.id, model, fixNote)} regenerating={regeneratingId === post.id}
                           onReject={() => handleAction(post.id, 'reject')}
                           onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
                       ))}
@@ -915,7 +915,7 @@ function PostsPageInner() {
                         <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
                           editCaption={editCaption} editConcept={editConcept} editDate={editDate}
                           setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-                          onRegenerate={(model) => regenerateImage(post.id, model)} regenerating={regeneratingId === post.id}
+                          onRegenerate={(model, fixNote) => regenerateImage(post.id, model, fixNote)} regenerating={regeneratingId === post.id}
                           onRemove={() => handleDelete(post.id)}
                           onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
                       ))}
@@ -1201,7 +1201,7 @@ function PostCard({
   onApprove?: () => void
   generatingImage?: boolean
   onSchedule?: () => void
-  onRegenerate?: (model: string) => void
+  onRegenerate?: (model: string, fixNote?: string) => void
   regenerating?: boolean
   onReject?: () => void
   onUnapprove?: () => void
@@ -1216,6 +1216,7 @@ function PostCard({
   const [conceptExpanded, setConceptExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [regenModel, setRegenModel] = useState<string>(() => (post.image_model as string) ?? 'gpt-image-1')
+  const [fixNote, setFixNote] = useState('')
   const isEditing = editingId === post.id
   const statusCls = STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200'
   const statusLabel = STATUS_LABELS[post.status] ?? post.status
@@ -1367,24 +1368,33 @@ function PostCard({
                 </button>
               )}
               {onRegenerate && (
-                <div className="flex gap-1.5 items-center">
-                  <select
-                    value={regenModel}
-                    onChange={e => setRegenModel(e.target.value)}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <input
+                    value={fixNote}
+                    onChange={e => setFixNote(e.target.value)}
                     disabled={regenerating}
-                    className="text-xs border border-violet-200 rounded-xl px-2 py-2 text-violet-700 bg-white focus:outline-none focus:ring-1 focus:ring-violet-300 disabled:opacity-40"
-                  >
-                    <option value="gpt-image-1">GPT Image 1</option>
-                    <option value="dall-e-3">DALL·E 3</option>
-                    <option value="gemini-nano-banana-2">Nano Banana 2 (Gemini)</option>
-                    <option value="gemini-nano-banana-2-lite">Nano Banana 2 Lite (Gemini)</option>
-                    <option value="gemini-nano-banana-pro">Nano Banana Pro (Gemini)</option>
-                  </select>
-                  <button onClick={() => onRegenerate(regenModel)} disabled={regenerating}
-                    className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors">
-                    {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                    {regenerating ? 'Generating…' : post.status === 'failed' ? 'Retry' : 'Regenerate'}
-                  </button>
+                    placeholder='Optional: describe what to fix, e.g. "fix typo: cepatdan → cepat dan"'
+                    className="w-full text-xs border border-zinc-200 rounded-xl px-3 py-2 text-zinc-700 placeholder:text-zinc-400 bg-zinc-50 focus:outline-none focus:ring-1 focus:ring-violet-300 disabled:opacity-40"
+                  />
+                  <div className="flex gap-1.5 items-center">
+                    <select
+                      value={regenModel}
+                      onChange={e => setRegenModel(e.target.value)}
+                      disabled={regenerating}
+                      className="text-xs border border-violet-200 rounded-xl px-2 py-2 text-violet-700 bg-white focus:outline-none focus:ring-1 focus:ring-violet-300 disabled:opacity-40"
+                    >
+                      <option value="gpt-image-1">GPT Image 1</option>
+                      <option value="dall-e-3">DALL·E 3</option>
+                      <option value="gemini-nano-banana-2">Nano Banana 2 (Gemini)</option>
+                      <option value="gemini-nano-banana-2-lite">Nano Banana 2 Lite (Gemini)</option>
+                      <option value="gemini-nano-banana-pro">Nano Banana Pro (Gemini)</option>
+                    </select>
+                    <button onClick={() => { onRegenerate(regenModel, fixNote.trim() || undefined); setFixNote('') }} disabled={regenerating}
+                      className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors whitespace-nowrap">
+                      {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                      {regenerating ? 'Generating…' : post.status === 'failed' ? 'Retry' : 'Regenerate'}
+                    </button>
+                  </div>
                 </div>
               )}
               {onUnapprove && (

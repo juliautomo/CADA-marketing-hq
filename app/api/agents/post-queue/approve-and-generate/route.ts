@@ -17,7 +17,7 @@ function parseSlides(prompt: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  const { id, imageModel: imageModelOverride } = await req.json()
+  const { id, imageModel: imageModelOverride, correctionNote } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   const clientId = req.headers.get('x-client-id') ?? null
@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
   if (imageModelOverride) generatingUpdate.image_model = imageModelOverride
   await db.from('cada_scheduled_posts').update(generatingUpdate).eq('id', id)
 
-  const imagePrompt = post.image_concept as string | null
+  const imagePrompt = correctionNote
+    ? `${post.image_concept as string ?? ''}\n\nCORRECTION NEEDED: ${correctionNote}`
+    : post.image_concept as string | null
 
   if (!imagePrompt) {
     const { data } = await db
