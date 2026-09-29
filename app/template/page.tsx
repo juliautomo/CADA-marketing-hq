@@ -29,6 +29,8 @@ interface TemplateFields {
   tipsText: string
   illustrationUrl: string
   illustrationPosition: IllustrationPosition
+  illustrationX: number
+  illustrationY: number
 }
 
 const DEFAULT: TemplateFields = {
@@ -67,11 +69,13 @@ const DEFAULT: TemplateFields = {
   tipsText: 'Simpan template Claude favoritmu untuk tugas harian yang sering diulang.',
   illustrationUrl: '',
   illustrationPosition: 'center',
+  illustrationX: 50,
+  illustrationY: 50,
 }
 
 // ─── Poster Template Component ────────────────────────────────────────────────
 
-function PosterTemplate({ fields, logoUrl }: { fields: TemplateFields; logoUrl: string }) {
+function PosterTemplate({ fields, logoUrl, onIllustrationDrag }: { fields: TemplateFields; logoUrl: string; onIllustrationDrag?: (x: number, y: number) => void }) {
   const W = 1080
   const H = 1350
 
@@ -80,8 +84,6 @@ function PosterTemplate({ fields, logoUrl }: { fields: TemplateFields; logoUrl: 
       style={{
         width: W,
         height: H,
-        transform: `scale(${scale})`,
-        transformOrigin: 'top left',
         background: '#FFFFFF',
         fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
         position: 'relative',
@@ -151,7 +153,13 @@ function PosterTemplate({ fields, logoUrl }: { fields: TemplateFields; logoUrl: 
         {fields.visualType === 'checklist' && <ChecklistVisual items={fields.checklist} />}
         {fields.visualType === 'steps' && <StepsVisual items={fields.steps} />}
         {fields.visualType === 'illustration-only' && (
-          <IllustrationVisual url={fields.illustrationUrl} position={fields.illustrationPosition} />
+          <IllustrationVisual
+            url={fields.illustrationUrl}
+            position={fields.illustrationPosition}
+            x={fields.illustrationX}
+            y={fields.illustrationY}
+            onPositionChange={onIllustrationDrag}
+          />
         )}
       </div>
 
@@ -293,67 +301,89 @@ function StepsVisual({ items }: { items: StepItem[] }) {
   )
 }
 
-function IllustrationVisual({ url, position }: { url: string; position: IllustrationPosition }) {
-  const placeholder = (
-    <div style={{
-      width: '100%', height: '100%', minHeight: 280,
-      border: '2.5px dashed #C4B5FD', borderRadius: 24,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: '#FAFAFF', gap: 12,
-    }}>
-      <div style={{ fontSize: 48 }}>🖼️</div>
-      <p style={{ fontSize: 16, color: '#A78BFA', fontWeight: 600, margin: 0 }}>Illustration appears here</p>
-      <p style={{ fontSize: 13, color: '#C4B5FD', margin: 0 }}>
-        {position === 'center' && 'Centered in this area'}
-        {position === 'right-float' && 'Floating right — text wraps left'}
-        {position === 'background' && 'Faded behind all content'}
-      </p>
-    </div>
-  )
+function IllustrationVisual({
+  url, position, x = 50, y = 50, onPositionChange,
+}: {
+  url: string; position: IllustrationPosition
+  x?: number; y?: number
+  onPositionChange?: (x: number, y: number) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState(false)
 
-  if (!url) return placeholder
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!onPositionChange || !containerRef.current) return
+    e.preventDefault()
+    setDragging(true)
+    const rect = containerRef.current.getBoundingClientRect()
+    const onMove = (ev: MouseEvent) => {
+      const nx = Math.max(5, Math.min(95, (ev.clientX - rect.left) / rect.width * 100))
+      const ny = Math.max(5, Math.min(95, (ev.clientY - rect.top) / rect.height * 100))
+      onPositionChange(nx, ny)
+    }
+    const onUp = () => {
+      setDragging(false)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [onPositionChange])
 
-  if (position === 'center') {
+  const isBackground = position === 'background'
+
+  if (!url) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 16 }} />
-    )
-  }
-
-  if (position === 'right-float') {
-    return (
-      <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt="" style={{
-          position: 'absolute', right: 0, top: 0, bottom: 0,
-          width: '48%', height: '100%', objectFit: 'contain', borderRadius: 16,
-        }} />
-        <div style={{
-          position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
-          width: '48%', display: 'flex', flexDirection: 'column', gap: 8,
-        }}>
-          <p style={{ fontSize: 14, color: '#A78BFA', fontWeight: 600, margin: 0 }}>← Text / cards go here</p>
-          <p style={{ fontSize: 13, color: '#C4B5FD', margin: 0 }}>Add a checklist or steps to fill this side</p>
-        </div>
-      </div>
-    )
-  }
-
-  // background
-  return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="" style={{
-        position: 'absolute', inset: 0, width: '100%', height: '100%',
-        objectFit: 'contain', opacity: 0.15, borderRadius: 16,
-      }} />
       <div style={{
-        position: 'relative', zIndex: 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100%', minHeight: 280,
+        width: '100%', height: '100%', minHeight: 280,
+        border: '2.5px dashed #C4B5FD', borderRadius: 24,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        background: '#FAFAFF', gap: 12,
       }}>
-        <p style={{ fontSize: 14, color: '#7C3AED', fontWeight: 600 }}>Faded background — overlay content here</p>
+        <div style={{ fontSize: 48 }}>🖼️</div>
+        <p style={{ fontSize: 16, color: '#A78BFA', fontWeight: 600, margin: 0 }}>Illustration appears here</p>
+        <p style={{ fontSize: 13, color: '#C4B5FD', margin: 0 }}>
+          {position === 'center' && 'Centered — drag to reposition after generating'}
+          {position === 'right-float' && 'Right side default — drag after generating'}
+          {position === 'background' && 'Faded behind all content'}
+        </p>
       </div>
+    )
+  }
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt=""
+        draggable={false}
+        onMouseDown={onPositionChange ? handleMouseDown : undefined}
+        style={{
+          position: 'absolute',
+          left: `${x}%`,
+          top: `${y}%`,
+          transform: 'translate(-50%, -50%)',
+          maxWidth: isBackground ? '100%' : '70%',
+          maxHeight: isBackground ? '100%' : '90%',
+          width: isBackground ? '100%' : 'auto',
+          height: isBackground ? '100%' : 'auto',
+          objectFit: 'contain',
+          opacity: isBackground ? 0.15 : 1,
+          borderRadius: 16,
+          cursor: onPositionChange ? (dragging ? 'grabbing' : 'grab') : 'default',
+          userSelect: 'none',
+        }}
+      />
+      {onPositionChange && !dragging && (
+        <div style={{
+          position: 'absolute', bottom: 8, right: 8, pointerEvents: 'none',
+          background: 'rgba(91,63,196,0.75)', color: '#fff',
+          fontSize: 11, fontWeight: 600, borderRadius: 8, padding: '3px 10px',
+        }}>
+          Drag to reposition
+        </div>
+      )}
     </div>
   )
 }
@@ -380,6 +410,10 @@ export default function TemplatePage() {
 
   const set = useCallback(<K extends keyof TemplateFields>(key: K, value: TemplateFields[K]) => {
     setFields(prev => ({ ...prev, [key]: value }))
+  }, [])
+
+  const onIllustrationDrag = useCallback((x: number, y: number) => {
+    setFields(prev => ({ ...prev, illustrationX: x, illustrationY: y }))
   }, [])
 
   useEffect(() => {
@@ -644,12 +678,12 @@ export default function TemplatePage() {
             <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image. The preview shows placement before you generate.</p>
             <div className="grid grid-cols-3 gap-1.5">
               {([
-                ['center',      'Centered',      'Fills the visual area'],
-                ['right-float', 'Right float',   'Right side, text left'],
-                ['background',  'Background',    'Faded behind content'],
-              ] as [IllustrationPosition, string, string][]).map(([v, label, desc]) => (
+                ['center',      'Centered',      'Fills the visual area',  50, 50],
+                ['right-float', 'Right float',   'Right side, text left',  75, 45],
+                ['background',  'Background',    'Faded behind content',   50, 50],
+              ] as [IllustrationPosition, string, string, number, number][]).map(([v, label, desc, dx, dy]) => (
                 <button key={v}
-                  onClick={() => { set('illustrationPosition', v); set('visualType', 'illustration-only') }}
+                  onClick={() => { set('illustrationPosition', v); set('visualType', 'illustration-only'); set('illustrationX', dx); set('illustrationY', dy) }}
                   className={cn('text-left rounded-xl border p-2.5 transition-colors',
                     fields.illustrationPosition === v && fields.visualType === 'illustration-only'
                       ? 'border-violet-400 bg-violet-50'
@@ -715,7 +749,7 @@ export default function TemplatePage() {
             style={{ width: 1080 * SCALE, height: 1350 * SCALE }}
           >
             <div style={{ transform: `scale(${SCALE})`, transformOrigin: 'top left', width: 1080, height: 1350 }}>
-              <PosterTemplate fields={fields} logoUrl={logoUrl} />
+              <PosterTemplate fields={fields} logoUrl={logoUrl} onIllustrationDrag={onIllustrationDrag} />
             </div>
           </div>
         </div>
