@@ -10,10 +10,11 @@ const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY ?? '' 
 export async function generateImageGemini(
   prompt: string,
   _aspectRatio: string = '4:5',
+  model: string = 'gemini-3.1-flash-image',
 ): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response = await (genAI.models as any).generateContent({
-    model: 'gemini-2.0-flash-preview-image-generation',
+    model,
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
       responseModalities: ['IMAGE', 'TEXT'],
@@ -33,6 +34,7 @@ export async function generateImageGeminiWithReference(
   prompt: string,
   _referenceUrl: string,
   aspectRatio: string = '4:5',
+  model: string = 'gemini-3.1-flash-image',
 ): Promise<string> {
-  return generateImageGemini(prompt, aspectRatio)
+  return generateImageGemini(prompt, aspectRatio, model)
 }

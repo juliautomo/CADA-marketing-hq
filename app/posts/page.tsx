@@ -173,7 +173,7 @@ function PostsPageInner() {
   const [summaryPosts, setSummaryPosts] = useState<QueuedPost[]>([])
   const [approvingId, setApprovingId]   = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [imageModel, setImageModel]     = useState<'gpt-image-1' | 'dall-e-3' | 'gemini-imagen'>('gpt-image-1')
+  const [imageModel, setImageModel]     = useState<'gpt-image-1' | 'dall-e-3' | 'gemini-nano-banana-2' | 'gemini-nano-banana-2-lite' | 'gemini-nano-banana-pro'>('gpt-image-1')
   const [promptModel, setPromptModel]   = useState<'claude' | 'gpt-4o' | 'gpt-4o-mini'>('claude')
   const [imageSize, setImageSize]       = useState<'1:1' | '4:5' | '9:16' | '16:9'>('4:5')
   const [imageQuality, setImageQuality] = useState<'low' | 'medium' | 'high'>('medium')
@@ -629,7 +629,9 @@ function PostsPageInner() {
                               className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
                               <option value="gpt-image-1">GPT Image 1 (default)</option>
                               <option value="dall-e-3">DALL·E 3</option>
-                              <option value="gemini-imagen">Gemini Flash</option>
+                              <option value="gemini-nano-banana-2">Nano Banana 2 (Gemini)</option>
+                              <option value="gemini-nano-banana-2-lite">Nano Banana 2 Lite (Gemini, fastest)</option>
+                              <option value="gemini-nano-banana-pro">Nano Banana Pro (Gemini, best quality)</option>
                             </select>
                           </div>
                           <div>
@@ -1374,7 +1376,9 @@ function PostCard({
                   >
                     <option value="gpt-image-1">GPT Image 1</option>
                     <option value="dall-e-3">DALL·E 3</option>
-                    <option value="gemini-imagen">Gemini Flash</option>
+                    <option value="gemini-nano-banana-2">Nano Banana 2 (Gemini)</option>
+                    <option value="gemini-nano-banana-2-lite">Nano Banana 2 Lite (Gemini)</option>
+                    <option value="gemini-nano-banana-pro">Nano Banana Pro (Gemini)</option>
                   </select>
                   <button onClick={() => onRegenerate(regenModel)} disabled={regenerating}
                     className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors">

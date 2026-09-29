@@ -169,8 +169,14 @@ export async function POST(req: NextRequest) {
       if (imageModel === 'dall-e-3') {
         return generateImageDalle3(prompt, imageSize as '1024x1024' | '1792x1024' | '1024x1792', dalle3Quality)
       }
-      if (imageModel === 'gemini-imagen') {
-        return generateImageGemini(prompt, (post.image_size as string) ?? '4:5')
+      if (imageModel === 'gemini-imagen' || imageModel === 'gemini-nano-banana-2' || imageModel === 'gemini-nano-banana-2-lite' || imageModel === 'gemini-nano-banana-pro') {
+        const geminiModelMap: Record<string, string> = {
+          'gemini-nano-banana-2':      'gemini-3.1-flash-image',
+          'gemini-nano-banana-2-lite': 'gemini-3.1-flash-lite-image',
+          'gemini-nano-banana-pro':    'gemini-3-pro-image',
+          'gemini-imagen':             'gemini-3.1-flash-image', // legacy alias
+        }
+        return generateImageGemini(prompt, (post.image_size as string) ?? '4:5', geminiModelMap[imageModel] ?? 'gemini-3.1-flash-image')
       }
       return referenceUrl
         ? generateImageWithReference(prompt, referenceUrl, imageSize as '1024x1024' | '1024x1536', quality)
