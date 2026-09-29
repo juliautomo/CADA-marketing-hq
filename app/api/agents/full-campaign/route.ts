@@ -151,7 +151,7 @@ List:
         BASE + '\nYou are a social media copywriter. Write ready-to-post content. Use EXACTLY the format below — no deviations.',
         `Generate exactly ${numPosts} social media posts for ${brandName} on the theme: “${parsed.theme}”
 Starting: ${parsed.startDate}
-Duration: ${weeks === 0 ? '1 day' : `${weeks} week${weeks > 1 ? 's' : ''}`} — spread posts evenly, one per scheduled day
+Duration: ${weeks === 0 ? `1 day — ALL posts on ${parsed.startDate}, do NOT use any other date` : `${weeks} week${weeks > 1 ? 's' : ''} — spread posts evenly, one per scheduled day`}
 Products to feature: ${brandProducts}
 Trend inspiration: ${trendText.slice(0, 400)}
 
@@ -192,8 +192,8 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
         const ctaMatch     = block.match(/CTA:\s*(.+)/i)
         const imageMatch   = block.match(/Image Prompt:\s*([\s\S]+?)(?=---|$)/i)
 
-        const daysApart = Math.round((i / Math.max(numPosts - 1, 1)) * (weeks * 7 - 1))
-        const dateStr = headerMatch?.[1] ?? format(addDays(new Date(parsed.startDate), daysApart), 'yyyy-MM-dd')
+        const daysApart = weeks === 0 ? 0 : Math.round((i / Math.max(numPosts - 1, 1)) * (weeks * 7 - 1))
+        const dateStr = weeks === 0 ? parsed.startDate : (headerMatch?.[1] ?? format(addDays(new Date(parsed.startDate), daysApart), 'yyyy-MM-dd'))
         const platform = headerMatch?.[2]?.trim().replace(/[^a-zA-Z]/g, '') ?? (i % 2 === 0 ? 'TikTok' : 'Instagram')
 
         return {
