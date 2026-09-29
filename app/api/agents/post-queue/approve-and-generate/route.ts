@@ -17,7 +17,7 @@ function parseSlides(prompt: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  const { id } = await req.json()
+  const { id, imageModel: imageModelOverride } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   const clientId = req.headers.get('x-client-id') ?? null
@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
 
   if (fetchErr || !post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
 
-  await db.from('cada_scheduled_posts').update({ status: 'generating' }).eq('id', id)
+  const generatingUpdate: Record<string, unknown> = { status: 'generating' }
+  if (imageModelOverride) generatingUpdate.image_model = imageModelOverride
+  await db.from('cada_scheduled_posts').update(generatingUpdate).eq('id', id)
 
   const imagePrompt = post.image_concept as string | null
 
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
     const quality       = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
     const referenceUrl  = ctx.referenceImageUrl
 
-    const imageModel  = (post.image_model as string) ?? 'gpt-image-1'
+    const imageModel  = imageModelOverride ?? (post.image_model as string) ?? 'gpt-image-1'
     const promptModel = (post.prompt_model as string) ?? 'claude'
 
     // Size maps per model

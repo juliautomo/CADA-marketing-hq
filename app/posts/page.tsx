@@ -308,13 +308,13 @@ function PostsPageInner() {
     } finally { setSaving(null) }
   }
 
-  async function regenerateImage(id: string) {
+  async function regenerateImage(id: string, imageModel?: string) {
     setRegeneratingId(id)
     try {
       await fetch('/api/agents/post-queue/approve-and-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, ...(imageModel ? { imageModel } : {}) }),
       })
       await loadPosts()
     } finally { setRegeneratingId(null) }
@@ -880,7 +880,7 @@ function PostsPageInner() {
                           editCaption={editCaption} editConcept={editConcept} editDate={editDate}
                           setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
                           onSchedule={() => handleAction(post.id, 'schedule')}
-                          onRegenerate={() => regenerateImage(post.id)} regenerating={regeneratingId === post.id}
+                          onRegenerate={(model) => regenerateImage(post.id, model)} regenerating={regeneratingId === post.id}
                           onReject={() => handleAction(post.id, 'reject')}
                           onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
                       ))}
@@ -1198,7 +1198,7 @@ function PostCard({
   onApprove?: () => void
   generatingImage?: boolean
   onSchedule?: () => void
-  onRegenerate?: () => void
+  onRegenerate?: (model: string) => void
   regenerating?: boolean
   onReject?: () => void
   onUnapprove?: () => void
@@ -1212,6 +1212,7 @@ function PostCard({
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const [conceptExpanded, setConceptExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [regenModel, setRegenModel] = useState<string>(() => (post.image_model as string) ?? 'gpt-image-1')
   const isEditing = editingId === post.id
   const statusCls = STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200'
   const statusLabel = STATUS_LABELS[post.status] ?? post.status
@@ -1363,11 +1364,23 @@ function PostCard({
                 </button>
               )}
               {onRegenerate && (
-                <button onClick={onRegenerate} disabled={regenerating}
-                  className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors">
-                  {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                  {regenerating ? 'Generating…' : 'Regenerate'}
-                </button>
+                <div className="flex gap-1.5 items-center">
+                  <select
+                    value={regenModel}
+                    onChange={e => setRegenModel(e.target.value)}
+                    disabled={regenerating}
+                    className="text-xs border border-violet-200 rounded-xl px-2 py-2 text-violet-700 bg-white focus:outline-none focus:ring-1 focus:ring-violet-300 disabled:opacity-40"
+                  >
+                    <option value="gpt-image-1">GPT Image 1</option>
+                    <option value="dall-e-3">DALL·E 3</option>
+                    <option value="gemini-imagen">Gemini Imagen 3</option>
+                  </select>
+                  <button onClick={() => onRegenerate(regenModel)} disabled={regenerating}
+                    className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors">
+                    {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    {regenerating ? 'Generating…' : 'Regenerate'}
+                  </button>
+                </div>
               )}
               {onUnapprove && (
                 <button onClick={onUnapprove} disabled={saving}
