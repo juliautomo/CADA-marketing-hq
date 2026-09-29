@@ -2,52 +2,37 @@ import { GoogleGenAI } from '@google/genai'
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY ?? '' })
 
-// Aspect ratio mapping for Imagen 3
-const ASPECT_RATIO_MAP: Record<string, string> = {
-  '1:1':  '1:1',
-  '4:5':  '4:5',
-  '9:16': '9:16',
-  '16:9': '16:9',
-  '1024x1024': '1:1',
-  '1024x1536': '4:5',
-}
-
 /**
- * Generate an image using Google Imagen 3 via the Gemini API.
- * Returns a base64 data URL (data:image/png;base64,...).
+ * Generate an image using Gemini 2.0 Flash image generation via generateContent.
+ * This uses the broadly-available Flash model rather than Imagen 3 (which has
+ * regional restrictions). Returns a base64 data URL.
  */
 export async function generateImageGemini(
   prompt: string,
-  aspectRatio: string = '4:5',
+  _aspectRatio: string = '4:5',
 ): Promise<string> {
-  const ratio = ASPECT_RATIO_MAP[aspectRatio] ?? '4:5'
-
-  const response = await genAI.models.generateImages({
-    model: 'imagen-3.0-generate-001',
-    prompt,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response = await (genAI.models as any).generateContent({
+    model: 'gemini-2.0-flash-preview-image-generation',
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
-      numberOfImages: 1,
-      aspectRatio: ratio,
-      outputMimeType: 'image/png',
+      responseModalities: ['IMAGE', 'TEXT'],
     },
   })
 
-  const imageBytes = response.generatedImages?.[0]?.image?.imageBytes
-  if (!imageBytes) throw new Error('Gemini Imagen returned no image data')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parts: any[] = response?.candidates?.[0]?.content?.parts ?? []
+  const imagePart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'))
+  if (!imagePart?.inlineData?.data) throw new Error('Gemini Flash returned no image data')
 
-  return `data:image/png;base64,${imageBytes}`
+  const { mimeType, data } = imagePart.inlineData
+  return `data:${mimeType};base64,${data}`
 }
 
-/**
- * Generate an image using Imagen 3 with a reference image for style/consistency.
- * Imagen 3 doesn't support image-to-image natively via this API, so the reference
- * image URL is appended to the prompt as a style description hint.
- */
 export async function generateImageGeminiWithReference(
   prompt: string,
   _referenceUrl: string,
   aspectRatio: string = '4:5',
 ): Promise<string> {
-  // Imagen 3 generate API is text-to-image only; reference is used as style context in prompt
   return generateImageGemini(prompt, aspectRatio)
 }

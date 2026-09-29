@@ -629,7 +629,7 @@ function PostsPageInner() {
                               className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
                               <option value="gpt-image-1">GPT Image 1 (default)</option>
                               <option value="dall-e-3">DALL·E 3</option>
-                              <option value="gemini-imagen">Gemini Imagen 3</option>
+                              <option value="gemini-imagen">Gemini Flash</option>
                             </select>
                           </div>
                           <div>
@@ -1374,7 +1374,7 @@ function PostCard({
                   >
                     <option value="gpt-image-1">GPT Image 1</option>
                     <option value="dall-e-3">DALL·E 3</option>
-                    <option value="gemini-imagen">Gemini Imagen 3</option>
+                    <option value="gemini-imagen">Gemini Flash</option>
                   </select>
                   <button onClick={() => onRegenerate(regenModel)} disabled={regenerating}
                     className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors">
