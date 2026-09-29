@@ -171,6 +171,7 @@ function PostsPageInner() {
   const [approvingId, setApprovingId]   = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [imageModel, setImageModel]     = useState<'gpt-image-1' | 'dall-e-3' | 'gemini-imagen'>('gpt-image-1')
+  const [promptModel, setPromptModel]   = useState<'claude' | 'gpt-4o' | 'gpt-4o-mini'>('claude')
   const [imageSize, setImageSize]       = useState<'1:1' | '4:5' | '9:16' | '16:9'>('4:5')
   const [imageQuality, setImageQuality] = useState<'low' | 'medium' | 'high'>('medium')
   const [postFormat, setPostFormat]     = useState<'auto' | 'single' | 'carousel'>('auto')
@@ -383,7 +384,7 @@ function PostsPageInner() {
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: weeksNum, platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat, imageModel }),
+        body: JSON.stringify({ prompt, startDate: startDate || undefined, numPosts, weeks: weeksNum, platforms: platforms.length > 0 ? platforms : ['TikTok', 'Instagram'], imageSize, imageQuality, postFormat, imageModel, promptModel }),
       })
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
@@ -657,6 +658,15 @@ function PostsPageInner() {
                               <option value="auto">Auto (AI decides)</option>
                               <option value="single">Single image</option>
                               <option value="carousel">Carousel</option>
+                            </select>
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-xs font-medium text-zinc-500 block mb-1.5">Prompt writing model</label>
+                            <select value={promptModel} onChange={e => setPromptModel(e.target.value as typeof promptModel)}
+                              className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                              <option value="claude">Claude (default)</option>
+                              <option value="gpt-4o">GPT-4o</option>
+                              <option value="gpt-4o-mini">GPT-4o mini (faster)</option>
                             </select>
                           </div>
                         </div>

@@ -157,3 +157,19 @@ export async function generateImageWithReferences(
   })
   return uploadBase64ToStorage(extractBase64Result(response.data))
 }
+
+export async function generateTextOpenAI(
+  systemPrompt: string,
+  userMessage: string,
+  model: 'gpt-4o' | 'gpt-4o-mini' = 'gpt-4o',
+): Promise<string> {
+  const client = getClient()
+  const response = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage },
+    ],
+  })
+  return response.choices[0]?.message?.content ?? ''
+}

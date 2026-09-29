@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { generateImage, generateImageWithReference, generateImageDalle3, uploadBase64ToStorage } from '@/lib/openai'
+import { generateImage, generateImageWithReference, generateImageDalle3, uploadBase64ToStorage, generateTextOpenAI } from '@/lib/openai'
 import { generateImageGemini } from '@/lib/gemini'
 import { getBrandContext } from '@/lib/brand'
 import { generateText } from '@/lib/anthropic'
@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
     const quality       = (ctx.raw.image_quality as 'low' | 'medium' | 'high') ?? 'medium'
     const referenceUrl  = ctx.referenceImageUrl
 
-    const imageModel = (post.image_model as string) ?? 'gpt-image-1'
+    const imageModel  = (post.image_model as string) ?? 'gpt-image-1'
+    const promptModel = (post.prompt_model as string) ?? 'claude'
 
     // Size maps per model
     const gptSizeMap: Record<string, '1024x1024' | '1024x1536'> = {
@@ -83,10 +84,12 @@ export async function POST(req: NextRequest) {
 
     const rewritePrompt = async (concept: string): Promise<string> => {
       if (!brandStyleGuide && !imageInstructions) return concept
-      return generateText(
-        `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`,
-        `BRAND VISUAL STYLE:\n${brandStyleGuide}${imageInstructions ? `\n\nIMAGE GENERATION RULES:\n${imageInstructions}` : ''}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept following the brand style and image generation rules above. Keep the same message and information. Output only the rewritten prompt.`
-      )
+      const sys = `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`
+      const usr = `BRAND VISUAL STYLE:\n${brandStyleGuide}${imageInstructions ? `\n\nIMAGE GENERATION RULES:\n${imageInstructions}` : ''}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept following the brand style and image generation rules above. Keep the same message and information. Output only the rewritten prompt.`
+      if (promptModel === 'gpt-4o' || promptModel === 'gpt-4o-mini') {
+        return generateTextOpenAI(sys, usr, promptModel)
+      }
+      return generateText(sys, usr)
     }
 
     // brand_logo_url may be stored as a JSON-encoded string ("\"https://...\"") — strip quotes
