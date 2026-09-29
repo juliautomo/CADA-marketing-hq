@@ -337,6 +337,9 @@ export default function TemplatePage() {
   const [illustrationModel, setIllustrationModel] = useState('gpt-image-1')
   const [generatingIllustration, setGeneratingIllustration] = useState(false)
   const [illustrationTransparent, setIllustrationTransparent] = useState(false)
+  const [illustrationError, setIllustrationError] = useState('')
+  const [loadPostError, setLoadPostError] = useState('')
+  const [exportError, setExportError] = useState('')
 
   // Canvas interaction
   const posterPreviewRef = useRef<HTMLDivElement | null>(null)
@@ -369,24 +372,36 @@ export default function TemplatePage() {
     const post = posts.find(p => p.id === postId)
     if (!post) return
     setLoadingPost(true)
+    setLoadPostError('')
     try {
       const res = await fetch('/api/template/parse-post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_concept: post.image_concept, caption: post.caption }) })
       const data = await res.json()
-      if (data.fields) {
-        const incoming = { ...data.fields }
-        if (incoming.visualType === 'illustration-only') incoming.visualType = 'none'
-        setFields(prev => ({ ...DEFAULT, ...incoming, illustrationUrl: prev.illustrationUrl, layout: DEFAULT_LAYOUT }))
+      if (!res.ok || !data.fields) {
+        setLoadPostError(data.error ?? 'Failed to parse post — try again.')
+        return
       }
+      const incoming = { ...data.fields }
+      if (incoming.visualType === 'illustration-only') incoming.visualType = 'none'
+      setFields(prev => ({ ...DEFAULT, ...incoming, illustrationUrl: prev.illustrationUrl, layout: DEFAULT_LAYOUT }))
+    } catch {
+      setLoadPostError('Network error — check your connection and try again.')
     } finally { setLoadingPost(false) }
   }
 
   async function generateIllustration() {
     if (!illustrationPrompt.trim()) return
     setGeneratingIllustration(true)
+    setIllustrationError('')
     try {
       const res = await fetch('/api/template/generate-illustration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: illustrationPrompt, model: illustrationModel, transparent: illustrationTransparent }) })
       const data = await res.json()
-      if (data.url) set('illustrationUrl', data.url)
+      if (!res.ok || !data.url) {
+        setIllustrationError(data.error ?? 'Generation failed — try again.')
+        return
+      }
+      set('illustrationUrl', data.url)
+    } catch {
+      setIllustrationError('Network error — check your connection and try again.')
     } finally { setGeneratingIllustration(false) }
   }
 
@@ -409,12 +424,16 @@ export default function TemplatePage() {
   async function handleExport() {
     if (!exportRef.current) return
     setExporting(true)
+    setExportError('')
     try {
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 1 })
       const a = document.createElement('a')
       a.href = dataUrl
       a.download = `belajarclaude-${fields.category.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.png`
       a.click()
+    } catch (err) {
+      setExportError('Export failed — try removing the illustration and exporting again.')
+      console.error('Export error:', err)
     } finally { setExporting(false) }
   }
 
@@ -539,10 +558,13 @@ export default function TemplatePage() {
           <h1 className="text-2xl font-bold text-zinc-900">Image Template</h1>
           <p className="text-sm text-zinc-500 mt-1">Design a post template, then export as PNG. Drag any element to reposition it.</p>
         </div>
-        <Button onClick={handleExport} disabled={exporting} className="gap-2">
-          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          {exporting ? 'Exporting…' : 'Download PNG'}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button onClick={handleExport} disabled={exporting} className="gap-2">
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {exporting ? 'Exporting…' : 'Download PNG'}
+          </Button>
+          {exportError && <p className="text-xs text-red-500">{exportError}</p>}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6 items-start">
@@ -612,6 +634,7 @@ export default function TemplatePage() {
                 {loadingPost ? 'Loading…' : 'Auto-fill'}
               </button>
             </div>
+            {loadPostError && <p className="text-xs text-red-500">{loadPostError}</p>}
           </Section>
 
           <div className="h-px bg-zinc-100" />
@@ -805,6 +828,7 @@ export default function TemplatePage() {
                 className="w-3.5 h-3.5 accent-violet-600 rounded" />
               <span className="text-[11px] text-zinc-500">Transparent background (PNG) — GPT Image 1 only</span>
             </label>
+            {illustrationError && <p className="text-xs text-red-500">{illustrationError}</p>}
             {fields.illustrationUrl && (
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
