@@ -913,8 +913,7 @@ function PostsPageInner() {
                         <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
                           editCaption={editCaption} editConcept={editConcept} editDate={editDate}
                           setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-                          onApprove={() => handleAction(post.id, 'approve')}
-                          generatingImage={generatingId === post.id}
+                          onRegenerate={(model) => regenerateImage(post.id, model)} regenerating={regeneratingId === post.id}
                           onRemove={() => handleDelete(post.id)}
                           onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
                       ))}
@@ -1380,7 +1379,7 @@ function PostCard({
                   <button onClick={() => onRegenerate(regenModel)} disabled={regenerating}
                     className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors">
                     {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                    {regenerating ? 'Generating…' : 'Regenerate'}
+                    {regenerating ? 'Generating…' : post.status === 'failed' ? 'Retry' : 'Regenerate'}
                   </button>
                 </div>
               )}
