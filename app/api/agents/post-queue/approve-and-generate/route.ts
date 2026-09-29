@@ -195,9 +195,9 @@ export async function POST(req: NextRequest) {
         finalPrompts.slice(1).map(generateWithStyle)
       )
       const rawUrls = [firstRaw, ...remainingRaw]
-      // Add padding then apply logo to all slides in parallel
-      const paddedUrls = await Promise.all(rawUrls.map(u => addPadding(u)))
-      const urls = await Promise.all(paddedUrls.map(applyLogo))
+      // Apply logo first (inside content area), then add white padding border
+      const loggedUrls = await Promise.all(rawUrls.map(applyLogo))
+      const urls = await Promise.all(loggedUrls.map(u => addPadding(u)))
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: urls[0], media_urls: urls, media_type: 'image' })
@@ -207,8 +207,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ post: data })
     } else {
       const rawUrl = await generate(finalPrompts[0])
-      const paddedUrl = await addPadding(rawUrl)
-      const mediaUrl = await applyLogo(paddedUrl)
+      // Apply logo first (inside content area), then add white padding border
+      const loggedUrl = await applyLogo(rawUrl)
+      const mediaUrl = await addPadding(loggedUrl)
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })

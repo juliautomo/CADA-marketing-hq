@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Settings, Save, CheckCircle2, Globe,
   Palette, Users, FileText, Sparkles, Eye, EyeOff, Loader2, Image, Upload, X, Building2,
+  Download, RefreshCw, ZoomIn,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -467,6 +468,7 @@ function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [preview, setPreview] = useState(false)
 
   async function handleFile(file: File) {
     setUploading(true)
@@ -486,6 +488,14 @@ function ImageUploadField({
     }
   }
 
+  function handleDownload() {
+    const a = document.createElement('a')
+    a.href = value
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    a.click()
+  }
+
   return (
     <div className="space-y-1.5">
       <label className="block text-xs font-semibold text-zinc-700">{label}</label>
@@ -500,18 +510,53 @@ function ImageUploadField({
       >
         {value ? (
           <div className="flex items-center gap-3 p-3">
-            <img src={value} alt={label} className="w-14 h-14 object-cover rounded-lg border border-zinc-200 flex-shrink-0" />
+            {/* Clickable thumbnail → preview */}
+            <button type="button" onClick={() => setPreview(true)} className="relative flex-shrink-0 group">
+              <img src={value} alt={label} className="w-14 h-14 object-contain rounded-lg border border-zinc-200 bg-white" />
+              <div className="absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <ZoomIn className="w-4 h-4 text-white" />
+              </div>
+            </button>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-emerald-700 truncate">Uploaded</p>
+              <p className="text-xs font-medium text-emerald-700">Uploaded</p>
               <p className="text-[10px] text-zinc-400 truncate">{value.split('/').pop()}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => onChange('')}
-              className="text-zinc-400 hover:text-red-500 transition-colors flex-shrink-0"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                type="button"
+                title="Preview"
+                onClick={() => setPreview(true)}
+                className="p-1.5 text-zinc-400 hover:text-violet-500 hover:bg-violet-50 rounded-lg transition-colors"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                title="Download"
+                onClick={handleDownload}
+                className="p-1.5 text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                title="Replace"
+                onClick={() => inputRef.current?.click()}
+                disabled={uploading}
+                className="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-40"
+              >
+                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                title="Delete"
+                onClick={() => onChange('')}
+                className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         ) : (
           <button
@@ -529,6 +574,48 @@ function ImageUploadField({
         )}
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
+      {/* Preview lightbox */}
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-6"
+          onClick={() => setPreview(false)}
+        >
+          <div className="relative max-w-sm w-full bg-white rounded-2xl p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-zinc-700">{label} preview</p>
+              <button type="button" onClick={() => setPreview(false)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="bg-zinc-100 rounded-xl p-4 flex items-center justify-center min-h-[160px]">
+              <img src={value} alt={label} className="max-h-64 max-w-full object-contain" />
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => { setPreview(false); inputRef.current?.click() }}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs border border-zinc-200 rounded-xl py-2 text-zinc-600 hover:bg-zinc-50 transition-colors"
+              >
+                <RefreshCw className="w-3 h-3" /> Replace
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs border border-zinc-200 rounded-xl py-2 text-zinc-600 hover:bg-zinc-50 transition-colors"
+              >
+                <Download className="w-3 h-3" /> Download
+              </button>
+              <button
+                type="button"
+                onClick={() => { onChange(''); setPreview(false) }}
+                className="flex items-center justify-center gap-1.5 px-3 text-xs border border-red-200 rounded-xl py-2 text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <X className="w-3 h-3" /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"
