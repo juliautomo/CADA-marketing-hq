@@ -79,7 +79,7 @@ const DEFAULT: TemplateFields = {
 
 // ─── Poster Template Component ────────────────────────────────────────────────
 
-function PosterTemplate({ fields, logoUrl, onVisualChange }: { fields: TemplateFields; logoUrl: string; onVisualChange?: (x: number, y: number, w: number, h: number) => void }) {
+function PosterTemplate({ fields, logoUrl, visualAreaRef }: { fields: TemplateFields; logoUrl: string; visualAreaRef?: React.RefObject<HTMLDivElement> }) {
   const W = 1080
   const H = 1350
 
@@ -151,13 +151,8 @@ function PosterTemplate({ fields, logoUrl, onVisualChange }: { fields: TemplateF
       </p>
 
       {/* Main visual */}
-      <div style={{ flex: 1, minHeight: 0, marginBottom: 28, position: 'relative' }}>
-        <DraggableResizable
-          x={fields.visualX} y={fields.visualY} w={fields.visualW} h={fields.visualH}
-          interactive={!!onVisualChange}
-          onMove={(nx, ny) => onVisualChange?.(nx, ny, fields.visualW, fields.visualH)}
-          onResize={(nw, nh) => onVisualChange?.(fields.visualX, fields.visualY, nw, nh)}
-        >
+      <div ref={visualAreaRef} style={{ flex: 1, minHeight: 0, marginBottom: 28, position: 'relative' }}>
+        <DraggableResizable x={fields.visualX} y={fields.visualY} w={fields.visualW} h={fields.visualH}>
           {fields.visualType === 'timeline' && <TimelineVisual items={fields.timeline} />}
           {fields.visualType === 'comparison' && <ComparisonVisual data={fields.comparison} />}
           {fields.visualType === 'checklist' && <ChecklistVisual items={fields.checklist} />}
@@ -220,89 +215,17 @@ function PosterTemplate({ fields, logoUrl, onVisualChange }: { fields: TemplateF
 
 // ─── Draggable + Resizable wrapper ───────────────────────────────────────────
 
-function DraggableResizable({
-  x, y, w, h, interactive, onMove, onResize, children,
-}: {
-  x: number; y: number; w: number; h: number
-  interactive?: boolean
-  onMove?: (x: number, y: number) => void
-  onResize?: (w: number, h: number) => void
-  children: React.ReactNode
+function DraggableResizable({ x, y, w, h, children }: {
+  x: number; y: number; w: number; h: number; children: React.ReactNode
 }) {
-  const selfRef = useRef<HTMLDivElement>(null)
-
-  const containerRect = () => selfRef.current?.parentElement?.getBoundingClientRect()
-
-  const startDrag = (e: React.MouseEvent) => {
-    if (!onMove) return
-    e.preventDefault(); e.stopPropagation()
-    const rect = containerRect(); if (!rect) return
-    const [sx, sy, smx, smy] = [x, y, e.clientX, e.clientY]
-    const onMv = (ev: MouseEvent) => onMove(
-      Math.max(0, Math.min(100 - w, sx + (ev.clientX - smx) / rect.width * 100)),
-      Math.max(0, Math.min(100 - h, sy + (ev.clientY - smy) / rect.height * 100)),
-    )
-    const onUp = () => { document.removeEventListener('mousemove', onMv); document.removeEventListener('mouseup', onUp) }
-    document.addEventListener('mousemove', onMv); document.addEventListener('mouseup', onUp)
-  }
-
-  const startResize = (e: React.MouseEvent) => {
-    if (!onResize) return
-    e.preventDefault(); e.stopPropagation()
-    const rect = containerRect(); if (!rect) return
-    const [sw, sh, smx, smy] = [w, h, e.clientX, e.clientY]
-    const onMv = (ev: MouseEvent) => onResize(
-      Math.max(20, Math.min(100 - x, sw + (ev.clientX - smx) / rect.width * 100)),
-      Math.max(20, Math.min(100 - y, sh + (ev.clientY - smy) / rect.height * 100)),
-    )
-    const onUp = () => { document.removeEventListener('mousemove', onMv); document.removeEventListener('mouseup', onUp) }
-    document.addEventListener('mousemove', onMv); document.addEventListener('mouseup', onUp)
-  }
-
   return (
-    <div ref={selfRef} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, width: `${w}%`, height: `${h}%` }}>
-      {/* drag overlay */}
-      {interactive && (
-        <div onMouseDown={startDrag} style={{
-          position: 'absolute', inset: 0, zIndex: 10, cursor: 'move',
-        }} />
-      )}
-      {/* content (pointer-events off so drag overlay works) */}
-      <div style={{ width: '100%', height: '100%', pointerEvents: interactive ? 'none' : 'auto', overflow: 'hidden' }}>
-        {children}
-      </div>
-      {/* dashed border + corner handles when interactive */}
-      {interactive && (
-        <>
-          <div style={{
-            position: 'absolute', inset: 0, border: '2px dashed rgba(91,63,196,0.45)',
-            borderRadius: 8, pointerEvents: 'none', zIndex: 11,
-          }} />
-          {/* SE resize */}
-          <div onMouseDown={startResize} style={{
-            position: 'absolute', bottom: -7, right: -7, width: 14, height: 14,
-            background: '#5B3FC4', border: '2.5px solid #fff', borderRadius: 4,
-            cursor: 'se-resize', zIndex: 20,
-          }} />
-          {/* NE resize */}
-          <div onMouseDown={(e) => {
-            if (!onResize) return
-            e.preventDefault(); e.stopPropagation()
-            const rect = containerRect(); if (!rect) return
-            const [sw, sh, smx, smy] = [w, h, e.clientX, e.clientY]
-            const onMv = (ev: MouseEvent) => onResize(
-              Math.max(20, Math.min(100 - x, sw + (ev.clientX - smx) / rect.width * 100)),
-              Math.max(20, Math.min(100 - y, sh - (ev.clientY - smy) / rect.height * 100)),
-            )
-            const onUp = () => { document.removeEventListener('mousemove', onMv); document.removeEventListener('mouseup', onUp) }
-            document.addEventListener('mousemove', onMv); document.addEventListener('mouseup', onUp)
-          }} style={{
-            position: 'absolute', top: -7, right: -7, width: 14, height: 14,
-            background: '#5B3FC4', border: '2.5px solid #fff', borderRadius: 4,
-            cursor: 'ne-resize', zIndex: 20,
-          }} />
-        </>
-      )}
+    <div style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, width: `${w}%`, height: `${h}%` }}>
+      <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>{children}</div>
+      {/* visual indicator only — drag is handled by the external overlay */}
+      <div style={{
+        position: 'absolute', inset: 0, border: '2px dashed rgba(91,63,196,0.4)',
+        borderRadius: 8, pointerEvents: 'none',
+      }} />
     </div>
   )
 }
@@ -449,8 +372,38 @@ export default function TemplatePage() {
     setFields(prev => ({ ...prev, [key]: value }))
   }, [])
 
-  const onVisualChange = useCallback((x: number, y: number, w: number, h: number) => {
-    setFields(prev => ({ ...prev, visualX: x, visualY: y, visualW: w, visualH: h }))
+  const visualAreaRef = useRef<HTMLDivElement>(null)
+  const fieldsRef = useRef(fields)
+  fieldsRef.current = fields
+  const [draggingVisual, setDraggingVisual] = useState(false)
+  const [overVisual, setOverVisual] = useState(false)
+
+
+  const handlePreviewMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!visualAreaRef.current) return
+    const va = visualAreaRef.current.getBoundingClientRect()
+    if (e.clientX < va.left || e.clientX > va.right || e.clientY < va.top || e.clientY > va.bottom) return
+    e.preventDefault()
+    setDraggingVisual(true)
+    const { visualX, visualY } = fieldsRef.current
+    const smx = e.clientX, smy = e.clientY
+    const onMv = (ev: MouseEvent) => {
+      const dxPct = (ev.clientX - smx) / va.width * 100
+      const dyPct = (ev.clientY - smy) / va.height * 100
+      setFields(prev => ({
+        ...prev,
+        visualX: Math.max(0, Math.min(100 - prev.visualW, visualX + dxPct)),
+        visualY: Math.max(0, Math.min(100 - prev.visualH, visualY + dyPct)),
+      }))
+    }
+    const onUp = () => { setDraggingVisual(false); document.removeEventListener('mousemove', onMv); document.removeEventListener('mouseup', onUp) }
+    document.addEventListener('mousemove', onMv); document.addEventListener('mouseup', onUp)
+  }, [])
+
+  const handlePreviewMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!visualAreaRef.current) return
+    const va = visualAreaRef.current.getBoundingClientRect()
+    setOverVisual(e.clientX >= va.left && e.clientX <= va.right && e.clientY >= va.top && e.clientY <= va.bottom)
   }, [])
 
   useEffect(() => {
@@ -814,18 +767,25 @@ export default function TemplatePage() {
           {/* Visible scaled preview */}
           <div
             className="border border-zinc-200 shadow-sm rounded-2xl overflow-hidden"
-            style={{ width: 1080 * SCALE, height: 1350 * SCALE }}
+            style={{ width: 1080 * SCALE, height: 1350 * SCALE, position: 'relative' }}
           >
             <div style={{ transform: `scale(${SCALE})`, transformOrigin: 'top left', width: 1080, height: 1350 }}>
-              <PosterTemplate fields={fields} logoUrl={logoUrl} onVisualChange={onVisualChange} />
+              <PosterTemplate fields={fields} logoUrl={logoUrl} visualAreaRef={visualAreaRef} />
             </div>
+            {/* Drag overlay — lives in screen space, not scaled space */}
+            <div
+              style={{ position: 'absolute', inset: 0, zIndex: 50, cursor: draggingVisual ? 'grabbing' : overVisual ? 'grab' : 'default' }}
+              onMouseDown={handlePreviewMouseDown}
+              onMouseMove={handlePreviewMouseMove}
+              onMouseLeave={() => setOverVisual(false)}
+            />
           </div>
         </div>
 
         {/* Hidden off-screen div used only for PNG export */}
         <div style={{ position: 'fixed', left: -9999, top: -9999, pointerEvents: 'none', zIndex: -1 }}>
           <div ref={posterRef} style={{ width: 1080, height: 1350 }}>
-            <PosterTemplate fields={fields} logoUrl={logoUrl} />
+            <PosterTemplate fields={fields} logoUrl={logoUrl} visualAreaRef={undefined} />
           </div>
         </div>
 
