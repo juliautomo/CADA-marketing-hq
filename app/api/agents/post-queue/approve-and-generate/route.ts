@@ -84,12 +84,15 @@ export async function POST(req: NextRequest) {
 
     const imageInstructions = ctx.raw.brand_image_instructions ?? ''
 
+    const GLOBAL_IMAGE_RULES = `- Never draw, generate, or include any brand logo, brand icon, or brand wordmark inside the image. The real logo will be composited onto the final image separately — do not invent or approximate it.
+- Never place a literal bullet point (•) or dot character before text labels, chip tags, or category badges. Labels should contain text only, no leading punctuation.
+- Do not add watermarks, copyright symbols, or placeholder icons.`
+
     const rewritePrompt = async (concept: string): Promise<string> => {
-      if (!brandStyleGuide && !imageInstructions) return concept
       const sys = `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`
-      const usr = `BRAND VISUAL STYLE:\n${brandStyleGuide}${imageInstructions ? `\n\nIMAGE GENERATION RULES:\n${imageInstructions}` : ''}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept following the brand style and image generation rules above. Keep the same message and information. Output only the rewritten prompt.`
+      const usr = `GLOBAL IMAGE RULES (always apply):\n${GLOBAL_IMAGE_RULES}${brandStyleGuide ? `\n\nBRAND VISUAL STYLE:\n${brandStyleGuide}` : ''}${imageInstructions ? `\n\nIMAGE GENERATION RULES:\n${imageInstructions}` : ''}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept following all rules above. Keep the same message and information. Output only the rewritten prompt.`
       if (promptModel === 'gpt-4o' || promptModel === 'gpt-4o-mini') {
-        return generateTextOpenAI(sys, usr, promptModel)
+        return generateTextOpenAI(sys, usr, promptModel as 'gpt-4o' | 'gpt-4o-mini')
       }
       return generateText(sys, usr)
     }
