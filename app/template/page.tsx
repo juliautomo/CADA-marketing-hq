@@ -628,10 +628,10 @@ export default function TemplatePage() {
                   <div key={prop}>
                     <div className="flex justify-between mb-1">
                       <label className="text-[10px] font-medium text-zinc-500">{label}</label>
-                      <span className="text-[10px] text-zinc-400">{Math.round((fields.layout[activeKey as keyof TemplateLayout] as Record<string, number>)[prop])}%</span>
+                      <span className="text-[10px] text-zinc-400">{Math.round((fields.layout[activeKey as keyof TemplateLayout] as unknown as Record<string, number>)[prop])}%</span>
                     </div>
                     <input type="range" min={min} max={max}
-                      value={(fields.layout[activeKey as keyof TemplateLayout] as Record<string, number>)[prop]}
+                      value={(fields.layout[activeKey as keyof TemplateLayout] as unknown as Record<string, number>)[prop]}
                       onChange={e => setLayout(activeKey as keyof TemplateLayout, { [prop]: Number(e.target.value) })}
                       className="w-full accent-violet-600 h-1" />
                   </div>
