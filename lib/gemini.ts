@@ -1,6 +1,9 @@
 import { GoogleGenAI } from '@google/genai'
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY ?? '' })
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GOOGLE_GEMINI_API_KEY ?? '',
+  httpOptions: { apiVersion: 'v1' },
+})
 
 // Aspect ratio mapping for Imagen 3
 const ASPECT_RATIO_MAP: Record<string, string> = {
