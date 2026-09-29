@@ -387,7 +387,7 @@ function PostsPageInner() {
 
     try {
       const isOneDay = weeks === '1day'
-      const numPosts = isOneDay ? platforms.length : Math.min(parseInt(weeks) * parseInt(postsPerWeek), 14)
+      const numPosts = isOneDay ? 1 : Math.min(parseInt(weeks) * parseInt(postsPerWeek), 14)
       const weeksNum = isOneDay ? 0 : parseInt(weeks)
       const res = await fetch('/api/agents/full-campaign', {
         method: 'POST',
