@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { toPng } from 'html-to-image'
-import { Download, RefreshCw, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Download, RefreshCw, Loader2, Plus, Trash2, Sparkles, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -293,11 +293,23 @@ function StepsVisual({ items }: { items: StepItem[] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+interface QueuePost { id: string; title: string | null; caption: string; image_concept: string | null; status: string }
+
 export default function TemplatePage() {
   const [fields, setFields] = useState<TemplateFields>(DEFAULT)
   const [logoUrl, setLogoUrl] = useState('')
   const [exporting, setExporting] = useState(false)
   const posterRef = useRef<HTMLDivElement>(null)
+
+  // Load from post
+  const [posts, setPosts] = useState<QueuePost[]>([])
+  const [loadingPost, setLoadingPost] = useState(false)
+  const [selectedPostId, setSelectedPostId] = useState('')
+
+  // Illustration generation
+  const [illustrationPrompt, setIllustrationPrompt] = useState('')
+  const [illustrationModel, setIllustrationModel] = useState('gpt-image-1')
+  const [generatingIllustration, setGeneratingIllustration] = useState(false)
 
   const set = useCallback(<K extends keyof TemplateFields>(key: K, value: TemplateFields[K]) => {
     setFields(prev => ({ ...prev, [key]: value }))
@@ -311,7 +323,49 @@ export default function TemplatePage() {
         setLogoUrl(raw.replace(/^"|"$/g, ''))
       })
       .catch(() => {})
+    fetch('/api/agents/post-queue')
+      .then(r => r.json())
+      .then(d => setPosts((d.posts ?? []).filter((p: QueuePost) => p.image_concept || p.caption)))
+      .catch(() => {})
   }, [])
+
+  async function loadFromPost(postId: string) {
+    const post = posts.find(p => p.id === postId)
+    if (!post) return
+    setLoadingPost(true)
+    try {
+      const res = await fetch('/api/template/parse-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_concept: post.image_concept, caption: post.caption }),
+      })
+      const data = await res.json()
+      if (data.fields) {
+        setFields(prev => ({ ...DEFAULT, ...data.fields, illustrationUrl: prev.illustrationUrl }))
+      }
+    } finally {
+      setLoadingPost(false)
+    }
+  }
+
+  async function generateIllustration() {
+    if (!illustrationPrompt.trim()) return
+    setGeneratingIllustration(true)
+    try {
+      const res = await fetch('/api/template/generate-illustration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: illustrationPrompt, model: illustrationModel }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        set('illustrationUrl', data.url)
+        set('visualType', 'illustration-only')
+      }
+    } finally {
+      setGeneratingIllustration(false)
+    }
+  }
 
   async function handleExport() {
     if (!posterRef.current) return
@@ -346,6 +400,35 @@ export default function TemplatePage() {
 
         {/* ── Left: form ── */}
         <div className="space-y-4 bg-white rounded-2xl border border-zinc-200 p-5">
+
+          {/* Load from post queue */}
+          <Section title="Load from post queue">
+            <p className="text-[10px] text-zinc-400 -mt-1">Pick a post and AI fills all the fields for you.</p>
+            <div className="flex gap-2">
+              <select
+                value={selectedPostId}
+                onChange={e => setSelectedPostId(e.target.value)}
+                className={cn(inputCls, 'flex-1')}
+              >
+                <option value="">— Choose a post —</option>
+                {posts.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.title ?? p.caption.slice(0, 50)} ({p.status})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => loadFromPost(selectedPostId)}
+                disabled={!selectedPostId || loadingPost}
+                className="flex items-center gap-1.5 text-xs font-medium bg-violet-600 text-white rounded-xl px-3 py-2 hover:bg-violet-500 disabled:opacity-40 transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                {loadingPost ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {loadingPost ? 'Loading…' : 'Auto-fill'}
+              </button>
+            </div>
+          </Section>
+
+          <div className="h-px bg-zinc-100" />
 
           <Section title="Text Content">
             <Field label="Category pill">
@@ -486,6 +569,51 @@ export default function TemplatePage() {
               </button>
             </Section>
           )}
+
+          <div className="h-px bg-zinc-100" />
+
+          {/* Illustration generator */}
+          <Section title="Generate illustration (AI)">
+            <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image to use as the main visual. Switches visual type to &quot;Illustration only&quot;.</p>
+            <textarea
+              value={illustrationPrompt}
+              onChange={e => setIllustrationPrompt(e.target.value)}
+              rows={2}
+              placeholder='e.g. "A friendly purple 3D robot sitting at a laptop, looking happy and productive"'
+              className={cn(inputCls, 'resize-none')}
+            />
+            <div className="flex gap-2 items-center">
+              <select
+                value={illustrationModel}
+                onChange={e => setIllustrationModel(e.target.value)}
+                className={cn(inputCls, 'flex-1')}
+              >
+                <option value="gpt-image-1">GPT Image 1</option>
+                <option value="dall-e-3">DALL·E 3</option>
+                <option value="gemini-nano-banana-2">Nano Banana 2 (Gemini)</option>
+                <option value="gemini-nano-banana-2-lite">Nano Banana 2 Lite</option>
+                <option value="gemini-nano-banana-pro">Nano Banana Pro</option>
+              </select>
+              <button
+                onClick={generateIllustration}
+                disabled={!illustrationPrompt.trim() || generatingIllustration}
+                className="flex items-center gap-1.5 text-xs font-medium bg-violet-600 text-white rounded-xl px-3 py-2 hover:bg-violet-500 disabled:opacity-40 transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                {generatingIllustration ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                {generatingIllustration ? 'Generating…' : 'Generate'}
+              </button>
+            </div>
+            {fields.illustrationUrl && (
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={fields.illustrationUrl} alt="Illustration" className="w-full rounded-xl border border-zinc-200 object-contain max-h-40" />
+                <button onClick={() => set('illustrationUrl', '')}
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500 rounded-full p-1 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </Section>
 
         </div>
 
