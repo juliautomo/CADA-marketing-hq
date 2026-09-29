@@ -566,15 +566,17 @@ function PostsPageInner() {
                           <option value="4">4 weeks</option>
                         </select>
                       </div>
-                      <div>
-                        <label className="text-xs font-medium text-zinc-500 block mb-1.5">Frequency</label>
-                        <select value={postsPerWeek} onChange={e => setPostsPerWeek(e.target.value)}
-                          className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
-                          <option value="3">3× / week</option>
-                          <option value="5">5× / week</option>
-                          <option value="7">Daily</option>
-                        </select>
-                      </div>
+                      {weeks !== '1day' && (
+                        <div>
+                          <label className="text-xs font-medium text-zinc-500 block mb-1.5">Frequency</label>
+                          <select value={postsPerWeek} onChange={e => setPostsPerWeek(e.target.value)}
+                            className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                            <option value="3">3× / week</option>
+                            <option value="5">5× / week</option>
+                            <option value="7">Daily</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     {/* Platform selector */}
