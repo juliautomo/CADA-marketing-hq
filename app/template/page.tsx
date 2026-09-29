@@ -715,6 +715,35 @@ export default function TemplatePage() {
 
           <div className="h-px bg-zinc-100" />
 
+          {/* Visual position & size */}
+          <Section title="Visual position & size">
+            <p className="text-[10px] text-zinc-400 -mt-1">Adjust where the visual sits inside the poster. 0% = top/left, 100% = full width/height.</p>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                ['X position', 'visualX', 0, 80] as const,
+                ['Y position', 'visualY', 0, 80] as const,
+                ['Width',      'visualW', 20, 100] as const,
+                ['Height',     'visualH', 20, 100] as const,
+              ]).map(([label, key, min, max]) => (
+                <div key={key}>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-[10px] font-medium text-zinc-500">{label}</label>
+                    <span className="text-[10px] text-zinc-400">{Math.round(fields[key])}%</span>
+                  </div>
+                  <input type="range" min={min} max={max} value={fields[key]}
+                    onChange={e => set(key, Number(e.target.value))}
+                    className="w-full accent-violet-600 h-1" />
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setFields(prev => ({ ...prev, visualX: 0, visualY: 0, visualW: 100, visualH: 100 }))}
+              className="text-[10px] text-violet-500 hover:text-violet-700 transition-colors">
+              Reset to full area
+            </button>
+          </Section>
+
+          <div className="h-px bg-zinc-100" />
+
           {/* Illustration generator */}
           <Section title="Generate illustration (AI)">
             <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image. The preview shows placement before you generate.</p>
@@ -780,11 +809,7 @@ export default function TemplatePage() {
 
         {/* ── Right: live preview ── */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-400">Preview at {Math.round(SCALE * 100)}% · Final size 1080×1350px · Drag visual to move · Corner handles to resize</p>
-            <button onClick={() => setFields(prev => ({ ...prev, visualX: 0, visualY: 0, visualW: 100, visualH: 100 }))}
-              className="text-xs text-violet-500 hover:text-violet-700 transition-colors">Reset position</button>
-          </div>
+          <p className="text-xs text-zinc-400">Preview at {Math.round(SCALE * 100)}% · Final size 1080×1350px</p>
 
           {/* Visible scaled preview */}
           <div
