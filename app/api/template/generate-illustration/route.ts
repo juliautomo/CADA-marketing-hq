@@ -7,7 +7,7 @@ import { getBrandContext } from '@/lib/brand'
 import { generateText } from '@/lib/anthropic'
 
 export async function POST(req: NextRequest) {
-  const { prompt, model = 'gpt-image-1' } = await req.json()
+  const { prompt, model = 'gpt-image-1', transparent = false } = await req.json()
   if (!prompt) return NextResponse.json({ error: 'prompt required' }, { status: 400 })
 
   const clientId = req.headers.get('x-client-id') ?? null
@@ -44,9 +44,9 @@ Rewrite as a focused illustration prompt. Output only the prompt.`
     const { generateImageDalle3 } = await import('@/lib/openai')
     url = await generateImageDalle3(rewritten, '1024x1024', 'standard')
   } else {
-    url = referenceUrl
+    url = referenceUrl && !transparent
       ? await generateImageWithReference(rewritten, referenceUrl, '1024x1024', 'medium')
-      : await generateImage(rewritten, '1024x1024', 'medium')
+      : await generateImage(rewritten, '1024x1024', 'medium', transparent)
   }
 
   // Upload base64 data URLs to storage so they're accessible via <img>

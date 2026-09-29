@@ -327,6 +327,7 @@ function IllustrationVisual({ url, position }: { url: string; position: Illustra
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+interface Draft { name: string; savedAt: string; fields: TemplateFields }
 interface QueuePost { id: string; title: string | null; caption: string; image_concept: string | null; status: string; cada_campaigns?: { name: string } | null }
 
 export default function TemplatePage() {
@@ -342,6 +343,7 @@ export default function TemplatePage() {
   const [illustrationPrompt, setIllustrationPrompt] = useState('')
   const [illustrationModel, setIllustrationModel] = useState('gpt-image-1')
   const [generatingIllustration, setGeneratingIllustration] = useState(false)
+  const [illustrationTransparent, setIllustrationTransparent] = useState(false)
 
   // Canvas interaction
   const posterPreviewRef = useRef<HTMLDivElement | null>(null)
@@ -389,9 +391,9 @@ export default function TemplatePage() {
     if (!illustrationPrompt.trim()) return
     setGeneratingIllustration(true)
     try {
-      const res = await fetch('/api/template/generate-illustration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: illustrationPrompt, model: illustrationModel }) })
+      const res = await fetch('/api/template/generate-illustration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: illustrationPrompt, model: illustrationModel, transparent: illustrationTransparent }) })
       const data = await res.json()
-      if (data.url) { set('illustrationUrl', data.url) }
+      if (data.url) set('illustrationUrl', data.url)
     } finally { setGeneratingIllustration(false) }
   }
 
@@ -490,6 +492,54 @@ export default function TemplatePage() {
 
   const SCALE = 0.42
 
+  // ── Drafts (localStorage) ────────────────────────────────────────────────
+
+  const [drafts, setDrafts] = useState<Draft[]>(() => {
+    try { return JSON.parse(localStorage.getItem('template-drafts') ?? '[]') } catch { return [] }
+  })
+  const [draftName, setDraftName] = useState('')
+  const [showDraftInput, setShowDraftInput] = useState(false)
+
+  // Auto-save on every fields change
+  useEffect(() => {
+    try { localStorage.setItem('template-autosave', JSON.stringify(fields)) } catch {}
+  }, [fields])
+
+  // Restore autosave on first load (only if fields are still default)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('template-autosave')
+      if (saved) {
+        const parsed = JSON.parse(saved) as TemplateFields
+        // Only restore if there's actually something non-default (headline changed)
+        if (parsed.headline && parsed.headline !== DEFAULT.headline) {
+          setFields(parsed)
+        }
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function saveDraft() {
+    const name = draftName.trim() || `Draft ${new Date().toLocaleString('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    const draft: Draft = { name, savedAt: new Date().toISOString(), fields }
+    const updated = [draft, ...drafts.filter(d => d.name !== name)].slice(0, 20)
+    setDrafts(updated)
+    try { localStorage.setItem('template-drafts', JSON.stringify(updated)) } catch {}
+    setDraftName('')
+    setShowDraftInput(false)
+  }
+
+  function loadDraft(draft: Draft) {
+    setFields(draft.fields)
+  }
+
+  function deleteDraft(name: string) {
+    const updated = drafts.filter(d => d.name !== name)
+    setDrafts(updated)
+    try { localStorage.setItem('template-drafts', JSON.stringify(updated)) } catch {}
+  }
+
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -507,6 +557,51 @@ export default function TemplatePage() {
 
         {/* ── Left: form ── */}
         <div className="space-y-4 bg-white rounded-2xl border border-zinc-200 p-5">
+
+          <Section title="Drafts">
+            <p className="text-[10px] text-zinc-400 -mt-1">Auto-saved to your browser. Save named drafts to switch between designs.</p>
+            <div className="flex gap-2">
+              {showDraftInput ? (
+                <>
+                  <input value={draftName} onChange={e => setDraftName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveDraft(); if (e.key === 'Escape') setShowDraftInput(false) }}
+                    placeholder="Draft name…" autoFocus className={cn(inputCls, 'flex-1')} />
+                  <button onClick={saveDraft}
+                    className="text-xs font-medium bg-violet-600 text-white rounded-xl px-3 py-2 hover:bg-violet-500 transition-colors whitespace-nowrap flex-shrink-0">
+                    Save
+                  </button>
+                  <button onClick={() => setShowDraftInput(false)}
+                    className="text-xs text-zinc-400 hover:text-zinc-600 rounded-xl px-2 py-2 transition-colors flex-shrink-0">
+                    ✕
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setShowDraftInput(true)}
+                  className="text-xs font-medium border border-zinc-200 text-zinc-600 hover:bg-zinc-50 rounded-xl px-3 py-2 transition-colors">
+                  + Save draft
+                </button>
+              )}
+            </div>
+            {drafts.length > 0 && (
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {drafts.map(d => (
+                  <div key={d.name} className="flex items-center gap-2 group">
+                    <button onClick={() => loadDraft(d)}
+                      className="flex-1 text-left text-xs px-3 py-2 rounded-lg border border-transparent hover:bg-violet-50 hover:border-violet-200 transition-colors text-zinc-600 hover:text-violet-700 truncate">
+                      <span className="font-medium">{d.name}</span>
+                      <span className="text-zinc-400 ml-2">{new Date(d.savedAt).toLocaleDateString('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </button>
+                    <button onClick={() => deleteDraft(d.name)}
+                      className="opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-red-400 transition-all flex-shrink-0 p-1">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
+          <div className="h-px bg-zinc-100" />
 
           <Section title="Load from post queue">
             <p className="text-[10px] text-zinc-400 -mt-1">Pick a post and AI fills all the fields for you.</p>
@@ -713,6 +808,11 @@ export default function TemplatePage() {
                 {generatingIllustration ? 'Generating…' : 'Generate'}
               </button>
             </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={illustrationTransparent} onChange={e => setIllustrationTransparent(e.target.checked)}
+                className="w-3.5 h-3.5 accent-violet-600 rounded" />
+              <span className="text-[11px] text-zinc-500">Transparent background (PNG) — GPT Image 1 only</span>
+            </label>
             {fields.illustrationUrl && (
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

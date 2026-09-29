@@ -36,6 +36,7 @@ export async function generateImage(
   prompt: string,
   size: '1024x1024' | '1024x1536' = '1024x1024',
   quality: 'low' | 'medium' | 'high' = 'medium',
+  transparent = false,
 ): Promise<string> {
   const response = await getClient().images.generate({
     model: 'gpt-image-1',
@@ -43,7 +44,9 @@ export async function generateImage(
     n: 1,
     size,
     quality,
-  })
+    ...(transparent ? { background: 'transparent', output_format: 'png' } : {}),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any)
   return uploadBase64ToStorage(extractBase64Result(response.data))
 }
 
