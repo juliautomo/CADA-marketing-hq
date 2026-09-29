@@ -29,8 +29,10 @@ interface TemplateFields {
   tipsText: string
   illustrationUrl: string
   illustrationPosition: IllustrationPosition
-  illustrationX: number
-  illustrationY: number
+  visualX: number
+  visualY: number
+  visualW: number
+  visualH: number
 }
 
 const DEFAULT: TemplateFields = {
@@ -69,13 +71,15 @@ const DEFAULT: TemplateFields = {
   tipsText: 'Simpan template Claude favoritmu untuk tugas harian yang sering diulang.',
   illustrationUrl: '',
   illustrationPosition: 'center',
-  illustrationX: 50,
-  illustrationY: 50,
+  visualX: 0,
+  visualY: 0,
+  visualW: 100,
+  visualH: 100,
 }
 
 // ─── Poster Template Component ────────────────────────────────────────────────
 
-function PosterTemplate({ fields, logoUrl, onIllustrationDrag }: { fields: TemplateFields; logoUrl: string; onIllustrationDrag?: (x: number, y: number) => void }) {
+function PosterTemplate({ fields, logoUrl, onVisualChange }: { fields: TemplateFields; logoUrl: string; onVisualChange?: (x: number, y: number, w: number, h: number) => void }) {
   const W = 1080
   const H = 1350
 
@@ -147,20 +151,21 @@ function PosterTemplate({ fields, logoUrl, onIllustrationDrag }: { fields: Templ
       </p>
 
       {/* Main visual */}
-      <div style={{ flex: 1, minHeight: 0, marginBottom: 28 }}>
-        {fields.visualType === 'timeline' && <TimelineVisual items={fields.timeline} />}
-        {fields.visualType === 'comparison' && <ComparisonVisual data={fields.comparison} />}
-        {fields.visualType === 'checklist' && <ChecklistVisual items={fields.checklist} />}
-        {fields.visualType === 'steps' && <StepsVisual items={fields.steps} />}
-        {fields.visualType === 'illustration-only' && (
-          <IllustrationVisual
-            url={fields.illustrationUrl}
-            position={fields.illustrationPosition}
-            x={fields.illustrationX}
-            y={fields.illustrationY}
-            onPositionChange={onIllustrationDrag}
-          />
-        )}
+      <div style={{ flex: 1, minHeight: 0, marginBottom: 28, position: 'relative' }}>
+        <DraggableResizable
+          x={fields.visualX} y={fields.visualY} w={fields.visualW} h={fields.visualH}
+          interactive={!!onVisualChange}
+          onMove={(nx, ny) => onVisualChange?.(nx, ny, fields.visualW, fields.visualH)}
+          onResize={(nw, nh) => onVisualChange?.(fields.visualX, fields.visualY, nw, nh)}
+        >
+          {fields.visualType === 'timeline' && <TimelineVisual items={fields.timeline} />}
+          {fields.visualType === 'comparison' && <ComparisonVisual data={fields.comparison} />}
+          {fields.visualType === 'checklist' && <ChecklistVisual items={fields.checklist} />}
+          {fields.visualType === 'steps' && <StepsVisual items={fields.steps} />}
+          {fields.visualType === 'illustration-only' && (
+            <IllustrationVisual url={fields.illustrationUrl} position={fields.illustrationPosition} />
+          )}
+        </DraggableResizable>
       </div>
 
       {/* Tips Praktis bar */}
@@ -209,6 +214,95 @@ function PosterTemplate({ fields, logoUrl, onIllustrationDrag }: { fields: Templ
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Draggable + Resizable wrapper ───────────────────────────────────────────
+
+function DraggableResizable({
+  x, y, w, h, interactive, onMove, onResize, children,
+}: {
+  x: number; y: number; w: number; h: number
+  interactive?: boolean
+  onMove?: (x: number, y: number) => void
+  onResize?: (w: number, h: number) => void
+  children: React.ReactNode
+}) {
+  const selfRef = useRef<HTMLDivElement>(null)
+
+  const containerRect = () => selfRef.current?.parentElement?.getBoundingClientRect()
+
+  const startDrag = (e: React.MouseEvent) => {
+    if (!onMove) return
+    e.preventDefault(); e.stopPropagation()
+    const rect = containerRect(); if (!rect) return
+    const [sx, sy, smx, smy] = [x, y, e.clientX, e.clientY]
+    const onMv = (ev: MouseEvent) => onMove(
+      Math.max(0, Math.min(100 - w, sx + (ev.clientX - smx) / rect.width * 100)),
+      Math.max(0, Math.min(100 - h, sy + (ev.clientY - smy) / rect.height * 100)),
+    )
+    const onUp = () => { document.removeEventListener('mousemove', onMv); document.removeEventListener('mouseup', onUp) }
+    document.addEventListener('mousemove', onMv); document.addEventListener('mouseup', onUp)
+  }
+
+  const startResize = (e: React.MouseEvent) => {
+    if (!onResize) return
+    e.preventDefault(); e.stopPropagation()
+    const rect = containerRect(); if (!rect) return
+    const [sw, sh, smx, smy] = [w, h, e.clientX, e.clientY]
+    const onMv = (ev: MouseEvent) => onResize(
+      Math.max(20, Math.min(100 - x, sw + (ev.clientX - smx) / rect.width * 100)),
+      Math.max(20, Math.min(100 - y, sh + (ev.clientY - smy) / rect.height * 100)),
+    )
+    const onUp = () => { document.removeEventListener('mousemove', onMv); document.removeEventListener('mouseup', onUp) }
+    document.addEventListener('mousemove', onMv); document.addEventListener('mouseup', onUp)
+  }
+
+  return (
+    <div ref={selfRef} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, width: `${w}%`, height: `${h}%` }}>
+      {/* drag overlay */}
+      {interactive && (
+        <div onMouseDown={startDrag} style={{
+          position: 'absolute', inset: 0, zIndex: 10, cursor: 'move',
+        }} />
+      )}
+      {/* content (pointer-events off so drag overlay works) */}
+      <div style={{ width: '100%', height: '100%', pointerEvents: interactive ? 'none' : 'auto', overflow: 'hidden' }}>
+        {children}
+      </div>
+      {/* dashed border + corner handles when interactive */}
+      {interactive && (
+        <>
+          <div style={{
+            position: 'absolute', inset: 0, border: '2px dashed rgba(91,63,196,0.45)',
+            borderRadius: 8, pointerEvents: 'none', zIndex: 11,
+          }} />
+          {/* SE resize */}
+          <div onMouseDown={startResize} style={{
+            position: 'absolute', bottom: -7, right: -7, width: 14, height: 14,
+            background: '#5B3FC4', border: '2.5px solid #fff', borderRadius: 4,
+            cursor: 'se-resize', zIndex: 20,
+          }} />
+          {/* NE resize */}
+          <div onMouseDown={(e) => {
+            if (!onResize) return
+            e.preventDefault(); e.stopPropagation()
+            const rect = containerRect(); if (!rect) return
+            const [sw, sh, smx, smy] = [w, h, e.clientX, e.clientY]
+            const onMv = (ev: MouseEvent) => onResize(
+              Math.max(20, Math.min(100 - x, sw + (ev.clientX - smx) / rect.width * 100)),
+              Math.max(20, Math.min(100 - y, sh - (ev.clientY - smy) / rect.height * 100)),
+            )
+            const onUp = () => { document.removeEventListener('mousemove', onMv); document.removeEventListener('mouseup', onUp) }
+            document.addEventListener('mousemove', onMv); document.addEventListener('mouseup', onUp)
+          }} style={{
+            position: 'absolute', top: -7, right: -7, width: 14, height: 14,
+            background: '#5B3FC4', border: '2.5px solid #fff', borderRadius: 4,
+            cursor: 'ne-resize', zIndex: 20,
+          }} />
+        </>
+      )}
     </div>
   )
 }
@@ -301,41 +395,11 @@ function StepsVisual({ items }: { items: StepItem[] }) {
   )
 }
 
-function IllustrationVisual({
-  url, position, x = 50, y = 50, onPositionChange,
-}: {
-  url: string; position: IllustrationPosition
-  x?: number; y?: number
-  onPositionChange?: (x: number, y: number) => void
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [dragging, setDragging] = useState(false)
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!onPositionChange || !containerRef.current) return
-    e.preventDefault()
-    setDragging(true)
-    const rect = containerRef.current.getBoundingClientRect()
-    const onMove = (ev: MouseEvent) => {
-      const nx = Math.max(5, Math.min(95, (ev.clientX - rect.left) / rect.width * 100))
-      const ny = Math.max(5, Math.min(95, (ev.clientY - rect.top) / rect.height * 100))
-      onPositionChange(nx, ny)
-    }
-    const onUp = () => {
-      setDragging(false)
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }, [onPositionChange])
-
-  const isBackground = position === 'background'
-
+function IllustrationVisual({ url, position }: { url: string; position: IllustrationPosition }) {
   if (!url) {
     return (
       <div style={{
-        width: '100%', height: '100%', minHeight: 280,
+        width: '100%', height: '100%', minHeight: 200,
         border: '2.5px dashed #C4B5FD', borderRadius: 24,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         background: '#FAFAFF', gap: 12,
@@ -343,48 +407,23 @@ function IllustrationVisual({
         <div style={{ fontSize: 48 }}>🖼️</div>
         <p style={{ fontSize: 16, color: '#A78BFA', fontWeight: 600, margin: 0 }}>Illustration appears here</p>
         <p style={{ fontSize: 13, color: '#C4B5FD', margin: 0 }}>
-          {position === 'center' && 'Centered — drag to reposition after generating'}
-          {position === 'right-float' && 'Right side default — drag after generating'}
-          {position === 'background' && 'Faded behind all content'}
+          {position === 'center' && 'Centered'}
+          {position === 'right-float' && 'Right side'}
+          {position === 'background' && 'Faded background'}
         </p>
       </div>
     )
   }
-
+  const isBackground = position === 'background'
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={url}
-        alt=""
-        draggable={false}
-        onMouseDown={onPositionChange ? handleMouseDown : undefined}
-        style={{
-          position: 'absolute',
-          left: `${x}%`,
-          top: `${y}%`,
-          transform: 'translate(-50%, -50%)',
-          maxWidth: isBackground ? '100%' : '70%',
-          maxHeight: isBackground ? '100%' : '90%',
-          width: isBackground ? '100%' : 'auto',
-          height: isBackground ? '100%' : 'auto',
-          objectFit: 'contain',
-          opacity: isBackground ? 0.15 : 1,
-          borderRadius: 16,
-          cursor: onPositionChange ? (dragging ? 'grabbing' : 'grab') : 'default',
-          userSelect: 'none',
-        }}
-      />
-      {onPositionChange && !dragging && (
-        <div style={{
-          position: 'absolute', bottom: 8, right: 8, pointerEvents: 'none',
-          background: 'rgba(91,63,196,0.75)', color: '#fff',
-          fontSize: 11, fontWeight: 600, borderRadius: 8, padding: '3px 10px',
-        }}>
-          Drag to reposition
-        </div>
-      )}
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt="" draggable={false} style={{
+      width: '100%', height: '100%',
+      objectFit: 'contain',
+      opacity: isBackground ? 0.15 : 1,
+      borderRadius: 16,
+      display: 'block',
+    }} />
   )
 }
 
@@ -412,8 +451,8 @@ export default function TemplatePage() {
     setFields(prev => ({ ...prev, [key]: value }))
   }, [])
 
-  const onIllustrationDrag = useCallback((x: number, y: number) => {
-    setFields(prev => ({ ...prev, illustrationX: x, illustrationY: y }))
+  const onVisualChange = useCallback((x: number, y: number, w: number, h: number) => {
+    setFields(prev => ({ ...prev, visualX: x, visualY: y, visualW: w, visualH: h }))
   }, [])
 
   useEffect(() => {
@@ -678,12 +717,12 @@ export default function TemplatePage() {
             <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image. The preview shows placement before you generate.</p>
             <div className="grid grid-cols-3 gap-1.5">
               {([
-                ['center',      'Centered',      'Fills the visual area',  50, 50],
-                ['right-float', 'Right float',   'Right side, text left',  75, 45],
-                ['background',  'Background',    'Faded behind content',   50, 50],
-              ] as [IllustrationPosition, string, string, number, number][]).map(([v, label, desc, dx, dy]) => (
+                ['center',      'Centered',      'Fills the visual area'],
+                ['right-float', 'Right float',   'Right side, text left'],
+                ['background',  'Background',    'Faded behind content'],
+              ] as [IllustrationPosition, string, string][]).map(([v, label, desc]) => (
                 <button key={v}
-                  onClick={() => { set('illustrationPosition', v); set('visualType', 'illustration-only'); set('illustrationX', dx); set('illustrationY', dy) }}
+                  onClick={() => { set('illustrationPosition', v); set('visualType', 'illustration-only') }}
                   className={cn('text-left rounded-xl border p-2.5 transition-colors',
                     fields.illustrationPosition === v && fields.visualType === 'illustration-only'
                       ? 'border-violet-400 bg-violet-50'
@@ -739,8 +778,9 @@ export default function TemplatePage() {
         {/* ── Right: live preview ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-400">Preview at {Math.round(SCALE * 100)}% · Final size 1080×1350px</p>
-            <p className="text-xs text-zinc-400">Click Download to get full-resolution PNG</p>
+            <p className="text-xs text-zinc-400">Preview at {Math.round(SCALE * 100)}% · Final size 1080×1350px · Drag visual to move · Corner handles to resize</p>
+            <button onClick={() => setFields(prev => ({ ...prev, visualX: 0, visualY: 0, visualW: 100, visualH: 100 }))}
+              className="text-xs text-violet-500 hover:text-violet-700 transition-colors">Reset position</button>
           </div>
 
           {/* Visible scaled preview */}
@@ -749,7 +789,7 @@ export default function TemplatePage() {
             style={{ width: 1080 * SCALE, height: 1350 * SCALE }}
           >
             <div style={{ transform: `scale(${SCALE})`, transformOrigin: 'top left', width: 1080, height: 1350 }}>
-              <PosterTemplate fields={fields} logoUrl={logoUrl} onIllustrationDrag={onIllustrationDrag} />
+              <PosterTemplate fields={fields} logoUrl={logoUrl} onVisualChange={onVisualChange} />
             </div>
           </div>
         </div>
