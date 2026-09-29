@@ -774,13 +774,22 @@ function SettingsContent() {
   async function handleSave() {
     setSaving(true)
     setSaved(false)
-    const endpoint = tab === 'connections' ? '/api/settings/connections' : '/api/settings/brand'
-    const body = tab === 'connections' ? connections : tab === 'visual-kit' ? visualKit : brand
-    await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    // Always save brand + visual kit together so no tab's data is lost
+    const saves: Promise<unknown>[] = [
+      fetch('/api/settings/brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...brand, ...visualKit }),
+      }),
+    ]
+    if (tab === 'connections') {
+      saves.push(fetch('/api/settings/connections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(connections),
+      }))
+    }
+    await Promise.all(saves)
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
