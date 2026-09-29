@@ -307,24 +307,6 @@ function StepsVisual({ items }: { items: StepItem[] }) {
   )
 }
 
-function IllustrationVisual({ url, position }: { url: string; position: IllustrationPosition }) {
-  if (!url) {
-    return (
-      <div style={{ width: '100%', height: '100%', minHeight: 200, border: '2.5px dashed #C4B5FD', borderRadius: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAFAFF', gap: 12 }}>
-        <div style={{ fontSize: 48 }}>🖼️</div>
-        <p style={{ fontSize: 16, color: '#A78BFA', fontWeight: 600, margin: 0 }}>Illustration appears here</p>
-        <p style={{ fontSize: 13, color: '#C4B5FD', margin: 0 }}>
-          {position === 'center' && 'Centered'}{position === 'right-float' && 'Right side'}{position === 'background' && 'Faded background'}
-        </p>
-      </div>
-    )
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: position === 'background' ? 0.15 : 1, borderRadius: 16, display: 'block' }} />
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 interface Draft { name: string; savedAt: string; fields: TemplateFields }
@@ -380,10 +362,10 @@ export default function TemplatePage() {
       const res = await fetch('/api/template/parse-post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_concept: post.image_concept, caption: post.caption }) })
       const data = await res.json()
       if (data.fields) {
-    const incoming = { ...data.fields }
-    if (incoming.visualType === 'illustration-only') incoming.visualType = 'none'
-    setFields(prev => ({ ...DEFAULT, ...incoming, illustrationUrl: prev.illustrationUrl, layout: DEFAULT_LAYOUT }))
-  }
+        const incoming = { ...data.fields }
+        if (incoming.visualType === 'illustration-only') incoming.visualType = 'none'
+        setFields(prev => ({ ...DEFAULT, ...incoming, illustrationUrl: prev.illustrationUrl, layout: DEFAULT_LAYOUT }))
+      }
     } finally { setLoadingPost(false) }
   }
 
@@ -513,7 +495,8 @@ export default function TemplatePage() {
         const parsed = JSON.parse(saved) as TemplateFields
         // Only restore if there's actually something non-default (headline changed)
         if (parsed.headline && parsed.headline !== DEFAULT.headline) {
-          setFields(parsed)
+          // Merge layout with DEFAULT_LAYOUT so new keys added after the save still exist
+          setFields({ ...parsed, layout: { ...DEFAULT_LAYOUT, ...parsed.layout } })
         }
       }
     } catch {}
@@ -531,7 +514,7 @@ export default function TemplatePage() {
   }
 
   function loadDraft(draft: Draft) {
-    setFields(draft.fields)
+    setFields({ ...draft.fields, layout: { ...DEFAULT_LAYOUT, ...draft.fields.layout } })
   }
 
   function deleteDraft(name: string) {
@@ -589,7 +572,7 @@ export default function TemplatePage() {
                     <button onClick={() => loadDraft(d)}
                       className="flex-1 text-left text-xs px-3 py-2 rounded-lg border border-transparent hover:bg-violet-50 hover:border-violet-200 transition-colors text-zinc-600 hover:text-violet-700 truncate">
                       <span className="font-medium">{d.name}</span>
-                      <span className="text-zinc-400 ml-2">{new Date(d.savedAt).toLocaleDateString('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-zinc-400 ml-2">{new Date(d.savedAt).toLocaleString('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                     </button>
                     <button onClick={() => deleteDraft(d.name)}
                       className="opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-red-400 transition-all flex-shrink-0 p-1">
