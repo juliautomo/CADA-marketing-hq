@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type VisualType = 'timeline' | 'comparison' | 'checklist' | 'steps' | 'illustration-only'
+type IllustrationPosition = 'center' | 'right-float' | 'background'
 
 interface TimelineItem { time: string; text: string }
 interface ComparisonItem { left: string; right: string }
@@ -27,6 +28,7 @@ interface TemplateFields {
   steps: StepItem[]
   tipsText: string
   illustrationUrl: string
+  illustrationPosition: IllustrationPosition
 }
 
 const DEFAULT: TemplateFields = {
@@ -64,11 +66,12 @@ const DEFAULT: TemplateFields = {
   ],
   tipsText: 'Simpan template Claude favoritmu untuk tugas harian yang sering diulang.',
   illustrationUrl: '',
+  illustrationPosition: 'center',
 }
 
 // ─── Poster Template Component ────────────────────────────────────────────────
 
-function PosterTemplate({ fields, logoUrl, scale = 1 }: { fields: TemplateFields; logoUrl: string; scale?: number }) {
+function PosterTemplate({ fields, logoUrl }: { fields: TemplateFields; logoUrl: string }) {
   const W = 1080
   const H = 1350
 
@@ -147,9 +150,8 @@ function PosterTemplate({ fields, logoUrl, scale = 1 }: { fields: TemplateFields
         {fields.visualType === 'comparison' && <ComparisonVisual data={fields.comparison} />}
         {fields.visualType === 'checklist' && <ChecklistVisual items={fields.checklist} />}
         {fields.visualType === 'steps' && <StepsVisual items={fields.steps} />}
-        {fields.visualType === 'illustration-only' && fields.illustrationUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={fields.illustrationUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        {fields.visualType === 'illustration-only' && (
+          <IllustrationVisual url={fields.illustrationUrl} position={fields.illustrationPosition} />
         )}
       </div>
 
@@ -287,6 +289,71 @@ function StepsVisual({ items }: { items: StepItem[] }) {
           <p style={{ fontSize: 17, color: '#27232D', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>{item.text}</p>
         </div>
       ))}
+    </div>
+  )
+}
+
+function IllustrationVisual({ url, position }: { url: string; position: IllustrationPosition }) {
+  const placeholder = (
+    <div style={{
+      width: '100%', height: '100%', minHeight: 280,
+      border: '2.5px dashed #C4B5FD', borderRadius: 24,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      background: '#FAFAFF', gap: 12,
+    }}>
+      <div style={{ fontSize: 48 }}>🖼️</div>
+      <p style={{ fontSize: 16, color: '#A78BFA', fontWeight: 600, margin: 0 }}>Illustration appears here</p>
+      <p style={{ fontSize: 13, color: '#C4B5FD', margin: 0 }}>
+        {position === 'center' && 'Centered in this area'}
+        {position === 'right-float' && 'Floating right — text wraps left'}
+        {position === 'background' && 'Faded behind all content'}
+      </p>
+    </div>
+  )
+
+  if (!url) return placeholder
+
+  if (position === 'center') {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 16 }} />
+    )
+  }
+
+  if (position === 'right-float') {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="" style={{
+          position: 'absolute', right: 0, top: 0, bottom: 0,
+          width: '48%', height: '100%', objectFit: 'contain', borderRadius: 16,
+        }} />
+        <div style={{
+          position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+          width: '48%', display: 'flex', flexDirection: 'column', gap: 8,
+        }}>
+          <p style={{ fontSize: 14, color: '#A78BFA', fontWeight: 600, margin: 0 }}>← Text / cards go here</p>
+          <p style={{ fontSize: 13, color: '#C4B5FD', margin: 0 }}>Add a checklist or steps to fill this side</p>
+        </div>
+      </div>
+    )
+  }
+
+  // background
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        objectFit: 'contain', opacity: 0.15, borderRadius: 16,
+      }} />
+      <div style={{
+        position: 'relative', zIndex: 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100%', minHeight: 280,
+      }}>
+        <p style={{ fontSize: 14, color: '#7C3AED', fontWeight: 600 }}>Faded background — overlay content here</p>
+      </div>
     </div>
   )
 }
@@ -574,7 +641,25 @@ export default function TemplatePage() {
 
           {/* Illustration generator */}
           <Section title="Generate illustration (AI)">
-            <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image to use as the main visual. Switches visual type to &quot;Illustration only&quot;.</p>
+            <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image. The preview shows placement before you generate.</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {([
+                ['center',      'Centered',      'Fills the visual area'],
+                ['right-float', 'Right float',   'Right side, text left'],
+                ['background',  'Background',    'Faded behind content'],
+              ] as [IllustrationPosition, string, string][]).map(([v, label, desc]) => (
+                <button key={v}
+                  onClick={() => { set('illustrationPosition', v); set('visualType', 'illustration-only') }}
+                  className={cn('text-left rounded-xl border p-2.5 transition-colors',
+                    fields.illustrationPosition === v && fields.visualType === 'illustration-only'
+                      ? 'border-violet-400 bg-violet-50'
+                      : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+                  )}>
+                  <p className={cn('text-xs font-semibold', fields.illustrationPosition === v && fields.visualType === 'illustration-only' ? 'text-violet-700' : 'text-zinc-600')}>{label}</p>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">{desc}</p>
+                </button>
+              ))}
+            </div>
             <textarea
               value={illustrationPrompt}
               onChange={e => setIllustrationPrompt(e.target.value)}
