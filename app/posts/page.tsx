@@ -29,6 +29,8 @@ interface QueuedPost {
   media_type: string | null
   error_message: string | null
   campaign_id: string | null
+  image_model: string | null
+  prompt_model: string | null
   cada_campaigns?: { name: string; created_at: string } | null
 }
 
