@@ -427,7 +427,7 @@ function IllustrationVisual({ url, position }: { url: string; position: Illustra
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-interface QueuePost { id: string; title: string | null; caption: string; image_concept: string | null; status: string }
+interface QueuePost { id: string; title: string | null; caption: string; image_concept: string | null; status: string; cada_campaigns?: { name: string } | null }
 
 export default function TemplatePage() {
   const [fields, setFields] = useState<TemplateFields>(DEFAULT)
@@ -556,7 +556,7 @@ export default function TemplatePage() {
                 <option value="">— Choose a post —</option>
                 {posts.map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.title ?? p.caption.slice(0, 50)} ({p.status})
+                    {p.cada_campaigns?.name ? `${p.cada_campaigns.name} · ` : ''}{p.title ?? p.caption.slice(0, 40)} ({p.status})
                   </option>
                 ))}
               </select>
