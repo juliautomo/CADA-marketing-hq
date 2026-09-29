@@ -158,10 +158,7 @@ export async function POST(req: NextRequest) {
         colorDesc   && `COLORS: ${colorDesc}`,
         negatives   && `DO NOT include: ${negatives}`,
       ].filter(Boolean).join('\n')
-      // Frame instruction: AI models respond better to "card on white background" framing
-      // than abstract "leave padding" instructions — guarantees visible margin on all sides
-      const frameInstruction = `FRAMING: The entire design is a rounded card or poster displayed on a pure white canvas. The white canvas extends at least 6% beyond each edge of the card — top, bottom, left and right — creating a visible white border on all sides. No content or text touches the outer white area.`
-      const base2 = `${frameInstruction}\n\nCONTENT: ${base}`
+      const base2 = `CONTENT: ${base}`
       return styleDirective ? `${styleDirective}\n\n${base2}` : base2
     }
 
