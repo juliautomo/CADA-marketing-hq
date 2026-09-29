@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type VisualType = 'timeline' | 'comparison' | 'checklist' | 'steps' | 'illustration-only'
+type VisualType = 'timeline' | 'comparison' | 'checklist' | 'steps' | 'none'
 type IllustrationPosition = 'center' | 'right-float' | 'background'
 
 interface TimelineItem { time: string; text: string }
@@ -25,6 +25,7 @@ interface TemplateLayout {
   subheadline: ElLayout
   body: ElLayout
   visual: VisualLayout
+  illustration: VisualLayout
   tips: ElLayout
   footer: ElLayout
 }
@@ -46,14 +47,15 @@ interface TemplateFields {
 }
 
 const DEFAULT_LAYOUT: TemplateLayout = {
-  logo:        { x: 6.7, y: 4.4,  w: 35   },
-  pill:        { x: 6.7, y: 9.0,  w: 55   },
-  headline:    { x: 6.7, y: 13.0, w: 86.6 },
-  subheadline: { x: 6.7, y: 19.2, w: 86.6 },
-  body:        { x: 6.7, y: 23.0, w: 86.6 },
-  visual:      { x: 6.7, y: 29.5, w: 86.6, h: 38.0 },
-  tips:        { x: 6.7, y: 69.6, w: 86.6 },
-  footer:      { x: 6.7, y: 76.3, w: 86.6 },
+  logo:         { x: 6.7, y: 4.4,  w: 35   },
+  pill:         { x: 6.7, y: 9.0,  w: 55   },
+  headline:     { x: 6.7, y: 13.0, w: 86.6 },
+  subheadline:  { x: 6.7, y: 19.2, w: 86.6 },
+  body:         { x: 6.7, y: 23.0, w: 86.6 },
+  visual:       { x: 6.7, y: 29.5, w: 86.6, h: 38.0 },
+  illustration: { x: 55,  y: 28.0, w: 38,   h: 42.0 },
+  tips:         { x: 6.7, y: 69.6, w: 86.6 },
+  footer:       { x: 6.7, y: 76.3, w: 86.6 },
 }
 
 const DEFAULT: TemplateFields = {
@@ -100,7 +102,7 @@ const ELEMENT_KEYS = Object.keys(DEFAULT_LAYOUT) as (keyof TemplateLayout)[]
 const ELEMENT_LABELS: Record<keyof TemplateLayout, string> = {
   logo: 'Logo', pill: 'Category pill', headline: 'Headline',
   subheadline: 'Subheadline', body: 'Body text', visual: 'Visual area',
-  tips: 'Tips bar', footer: 'Footer',
+  illustration: 'Illustration', tips: 'Tips bar', footer: 'Footer',
 }
 
 // ─── Poster Template (free-form canvas) ──────────────────────────────────────
@@ -173,12 +175,21 @@ function PosterTemplate({
 
       {/* Visual */}
       <div ref={setElementRef?.('visual')} style={abs('visual')}>
-        {fields.visualType === 'timeline'          && <TimelineVisual items={fields.timeline} />}
-        {fields.visualType === 'comparison'        && <ComparisonVisual data={fields.comparison} />}
-        {fields.visualType === 'checklist'         && <ChecklistVisual items={fields.checklist} />}
-        {fields.visualType === 'steps'             && <StepsVisual items={fields.steps} />}
-        {fields.visualType === 'illustration-only' && <IllustrationVisual url={fields.illustrationUrl} position={fields.illustrationPosition} />}
+        {fields.visualType === 'timeline'   && <TimelineVisual items={fields.timeline} />}
+        {fields.visualType === 'comparison' && <ComparisonVisual data={fields.comparison} />}
+        {fields.visualType === 'checklist'  && <ChecklistVisual items={fields.checklist} />}
+        {fields.visualType === 'steps'      && <StepsVisual items={fields.steps} />}
       </div>
+
+      {/* Illustration overlay — shown whenever a URL is set, any visual type */}
+      {fields.illustrationUrl && (
+        <div ref={setElementRef?.('illustration')} style={abs('illustration')}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={fields.illustrationUrl} alt="" draggable={false}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block',
+              opacity: fields.illustrationPosition === 'background' ? 0.15 : 1 }} />
+        </div>
+      )}
 
       {/* Tips bar */}
       {fields.tipsText && (
@@ -366,7 +377,11 @@ export default function TemplatePage() {
     try {
       const res = await fetch('/api/template/parse-post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_concept: post.image_concept, caption: post.caption }) })
       const data = await res.json()
-      if (data.fields) setFields(prev => ({ ...DEFAULT, ...data.fields, illustrationUrl: prev.illustrationUrl, layout: DEFAULT_LAYOUT }))
+      if (data.fields) {
+    const incoming = { ...data.fields }
+    if (incoming.visualType === 'illustration-only') incoming.visualType = 'none'
+    setFields(prev => ({ ...DEFAULT, ...incoming, illustrationUrl: prev.illustrationUrl, layout: DEFAULT_LAYOUT }))
+  }
     } finally { setLoadingPost(false) }
   }
 
@@ -376,7 +391,7 @@ export default function TemplatePage() {
     try {
       const res = await fetch('/api/template/generate-illustration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: illustrationPrompt, model: illustrationModel }) })
       const data = await res.json()
-      if (data.url) { set('illustrationUrl', data.url); set('visualType', 'illustration-only') }
+      if (data.url) { set('illustrationUrl', data.url) }
     } finally { setGeneratingIllustration(false) }
   }
 
@@ -539,7 +554,7 @@ export default function TemplatePage() {
                 ['comparison', 'Before / After'],
                 ['checklist', 'Checklist'],
                 ['steps', 'Steps'],
-                ['illustration-only', 'Illustration only'],
+                ['none', 'None (illustration only)'],
               ] as [VisualType, string][]).map(([v, label]) => (
                 <button key={v} onClick={() => set('visualType', v)}
                   className={cn('text-xs rounded-xl border py-2.5 px-3 text-left transition-colors font-medium',
@@ -665,18 +680,18 @@ export default function TemplatePage() {
 
           {/* Illustration generator */}
           <Section title="Generate illustration (AI)">
-            <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image. Switches visual type to &quot;Illustration only&quot;.</p>
+            <p className="text-[10px] text-zinc-400 -mt-1">Generate a 3D hero image. It overlays on top of any visual type — drag it to reposition on the canvas.</p>
             <div className="grid grid-cols-3 gap-1.5">
               {([
                 ['center',      'Centered',    'Fills the visual area'],
                 ['right-float', 'Right float', 'Right side, text left'],
                 ['background',  'Background',  'Faded behind content'],
               ] as [IllustrationPosition, string, string][]).map(([v, label, desc]) => (
-                <button key={v} onClick={() => { set('illustrationPosition', v); set('visualType', 'illustration-only') }}
+                <button key={v} onClick={() => set('illustrationPosition', v)}
                   className={cn('text-left rounded-xl border p-2.5 transition-colors',
-                    fields.illustrationPosition === v && fields.visualType === 'illustration-only' ? 'border-violet-400 bg-violet-50' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+                    fields.illustrationPosition === v ? 'border-violet-400 bg-violet-50' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
                   )}>
-                  <p className={cn('text-xs font-semibold', fields.illustrationPosition === v && fields.visualType === 'illustration-only' ? 'text-violet-700' : 'text-zinc-600')}>{label}</p>
+                  <p className={cn('text-xs font-semibold', fields.illustrationPosition === v ? 'text-violet-700' : 'text-zinc-600')}>{label}</p>
                   <p className="text-[10px] text-zinc-400 mt-0.5">{desc}</p>
                 </button>
               ))}
@@ -702,10 +717,16 @@ export default function TemplatePage() {
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={fields.illustrationUrl} alt="Illustration" className="w-full rounded-xl border border-zinc-200 object-contain max-h-40" />
-                <button onClick={() => set('illustrationUrl', '')}
-                  className="absolute top-2 right-2 bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500 rounded-full p-1 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <a href={fields.illustrationUrl} download="illustration.png" target="_blank" rel="noreferrer"
+                    className="bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600 rounded-full p-1 transition-colors">
+                    <Download className="w-3.5 h-3.5" />
+                  </a>
+                  <button onClick={() => set('illustrationUrl', '')}
+                    className="bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500 rounded-full p-1 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
           </Section>
