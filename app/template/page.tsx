@@ -10,6 +10,13 @@ import { cn } from '@/lib/utils'
 
 type VisualType = 'timeline' | 'comparison' | 'checklist' | 'steps' | 'none'
 type IllustrationPosition = 'center' | 'right-float' | 'background'
+type CanvasSize = '4:5' | '1:1' | '9:16'
+
+const CANVAS_DIMS: Record<CanvasSize, { w: number; h: number }> = {
+  '4:5':  { w: 1080, h: 1350 },
+  '1:1':  { w: 1080, h: 1080 },
+  '9:16': { w: 1080, h: 1920 },
+}
 
 interface TimelineItem { time: string; text: string }
 interface ComparisonItem { left: string; right: string }
@@ -56,6 +63,37 @@ const DEFAULT_LAYOUT: TemplateLayout = {
   illustration: { x: 55,  y: 28.0, w: 38,   h: 42.0 },
   tips:         { x: 6.7, y: 69.6, w: 86.6 },
   footer:       { x: 6.7, y: 76.3, w: 86.6 },
+}
+
+// Layouts tuned for each canvas ratio — elements redistributed to fill the space
+const DEFAULT_LAYOUT_1x1: TemplateLayout = {
+  logo:         { x: 6.7, y: 5.5,  w: 35   },
+  pill:         { x: 6.7, y: 12.0, w: 55   },
+  headline:     { x: 6.7, y: 17.5, w: 86.6 },
+  subheadline:  { x: 6.7, y: 28.0, w: 86.6 },
+  body:         { x: 6.7, y: 36.0, w: 86.6 },
+  visual:       { x: 6.7, y: 44.0, w: 86.6, h: 28.0 },
+  illustration: { x: 55,  y: 42.0, w: 38,   h: 34.0 },
+  tips:         { x: 6.7, y: 74.5, w: 86.6 },
+  footer:       { x: 6.7, y: 84.0, w: 86.6 },
+}
+
+const DEFAULT_LAYOUT_9x16: TemplateLayout = {
+  logo:         { x: 6.7, y: 3.5,  w: 35   },
+  pill:         { x: 6.7, y: 7.0,  w: 55   },
+  headline:     { x: 6.7, y: 10.0, w: 86.6 },
+  subheadline:  { x: 6.7, y: 15.5, w: 86.6 },
+  body:         { x: 6.7, y: 19.0, w: 86.6 },
+  visual:       { x: 6.7, y: 23.5, w: 86.6, h: 42.0 },
+  illustration: { x: 55,  y: 22.0, w: 38,   h: 46.0 },
+  tips:         { x: 6.7, y: 67.5, w: 86.6 },
+  footer:       { x: 6.7, y: 73.0, w: 86.6 },
+}
+
+const SIZE_LAYOUTS: Record<CanvasSize, TemplateLayout> = {
+  '4:5':  DEFAULT_LAYOUT,
+  '1:1':  DEFAULT_LAYOUT_1x1,
+  '9:16': DEFAULT_LAYOUT_9x16,
 }
 
 const DEFAULT: TemplateFields = {
@@ -108,12 +146,14 @@ const ELEMENT_LABELS: Record<keyof TemplateLayout, string> = {
 // ─── Poster Template (free-form canvas) ──────────────────────────────────────
 
 function PosterTemplate({
-  fields, logoUrl, posterRef: posterRefProp, setElementRef,
+  fields, logoUrl, posterRef: posterRefProp, setElementRef, canvasW = 1080, canvasH = 1350,
 }: {
   fields: TemplateFields
   logoUrl: string
   posterRef?: React.RefObject<HTMLDivElement | null>
   setElementRef?: (key: string) => (el: HTMLDivElement | null) => void
+  canvasW?: number
+  canvasH?: number
 }) {
   const L = fields.layout
 
@@ -127,7 +167,7 @@ function PosterTemplate({
 
   return (
     <div ref={posterRefProp} style={{
-      width: 1080, height: 1350, background: '#FFFFFF', position: 'relative',
+      width: canvasW, height: canvasH, background: '#FFFFFF', position: 'relative',
       overflow: 'hidden', fontFamily: "'Inter','Helvetica Neue',Arial,sans-serif",
     }}>
       {/* Logo */}
@@ -325,9 +365,15 @@ export default function TemplatePage() {
     }
     return DEFAULT
   })
+  const [canvasSize, setCanvasSize] = useState<CanvasSize>('4:5')
   const [logoUrl, setLogoUrl] = useState('')
   const [exporting, setExporting] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
+
+  function switchCanvasSize(size: CanvasSize) {
+    setCanvasSize(size)
+    setFields(prev => ({ ...prev, layout: SIZE_LAYOUTS[size] }))
+  }
 
   const [posts, setPosts] = useState<QueuePost[]>([])
   const [loadingPost, setLoadingPost] = useState(false)
@@ -518,7 +564,9 @@ export default function TemplatePage() {
     if (!isDragging) setCursorStyle('default')
   }, [isDragging])
 
-  const SCALE = 0.42
+  const { w: canvasW, h: canvasH } = CANVAS_DIMS[canvasSize]
+  // Keep the preview at a fixed display width (~454px) regardless of canvas ratio
+  const SCALE = 454 / canvasW
 
   // ── Drafts (localStorage) ────────────────────────────────────────────────
 
@@ -851,12 +899,24 @@ export default function TemplatePage() {
 
         {/* ── Right: live preview ── */}
         <div className="space-y-3">
-          <p className="text-xs text-zinc-400">Preview at {Math.round(SCALE * 100)}% · Final size 1080×1350px · Hover any element to grab and drag it</p>
+          {/* Size picker */}
+          <div className="flex items-center gap-2">
+            {(['4:5', '1:1', '9:16'] as CanvasSize[]).map(s => (
+              <button key={s} onClick={() => switchCanvasSize(s)}
+                className={cn('text-xs font-medium border rounded-lg px-3 py-1.5 transition-colors',
+                  canvasSize === s ? 'bg-violet-600 text-white border-violet-600' : 'text-zinc-500 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+                )}>
+                {s}
+              </button>
+            ))}
+            <span className="text-xs text-zinc-400 ml-1">{canvasW}×{canvasH}px</span>
+          </div>
+          <p className="text-xs text-zinc-400">Preview at {Math.round(SCALE * 100)}% · Hover any element to grab and drag it</p>
 
           <div className="border border-zinc-200 shadow-sm rounded-2xl overflow-hidden"
-            style={{ width: 1080 * SCALE, height: 1350 * SCALE, position: 'relative' }}>
-            <div style={{ transform: `scale(${SCALE})`, transformOrigin: 'top left', width: 1080, height: 1350 }}>
-              <PosterTemplate fields={fields} logoUrl={logoUrl} posterRef={posterPreviewRef} setElementRef={setElementRef} />
+            style={{ width: canvasW * SCALE, height: canvasH * SCALE, position: 'relative' }}>
+            <div style={{ transform: `scale(${SCALE})`, transformOrigin: 'top left', width: canvasW, height: canvasH }}>
+              <PosterTemplate fields={fields} logoUrl={logoUrl} posterRef={posterPreviewRef} setElementRef={setElementRef} canvasW={canvasW} canvasH={canvasH} />
             </div>
             {/* Screen-space drag overlay */}
             <div style={{ position: 'absolute', inset: 0, zIndex: 50, cursor: cursorStyle }}
@@ -869,8 +929,8 @@ export default function TemplatePage() {
 
         {/* Hidden export div */}
         <div style={{ position: 'fixed', left: -9999, top: -9999, pointerEvents: 'none', zIndex: -1 }}>
-          <div ref={exportRef} style={{ width: 1080, height: 1350 }}>
-            <PosterTemplate fields={fields} logoUrl={logoUrl} />
+          <div ref={exportRef} style={{ width: canvasW, height: canvasH }}>
+            <PosterTemplate fields={fields} logoUrl={logoUrl} canvasW={canvasW} canvasH={canvasH} />
           </div>
         </div>
 
