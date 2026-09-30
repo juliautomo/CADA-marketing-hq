@@ -896,7 +896,8 @@ function PostsPageInner() {
                           onSchedule={() => handleAction(post.id, 'schedule')}
                           onRegenerate={(model, fixNote) => regenerateImage(post.id, model, fixNote)} regenerating={regeneratingId === post.id}
                           onReject={() => handleAction(post.id, 'reject')}
-                          onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+                          onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
+                          onRefresh={loadPosts} />
                       ))}
                     </div>
                   )}
@@ -927,7 +928,8 @@ function PostsPageInner() {
                           setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
                           onRegenerate={(model, fixNote) => regenerateImage(post.id, model, fixNote)} regenerating={regeneratingId === post.id}
                           onRemove={() => handleDelete(post.id)}
-                          onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
+                          onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)}
+                          onRefresh={loadPosts} />
                       ))}
                     </div>
                   )}
@@ -1197,7 +1199,7 @@ function PostCard({
   post, saving, editingId,
   editCaption, editConcept, editDate,
   setEditCaption, setEditConcept, setEditDate,
-  onApprove, generatingImage, onSchedule, onRegenerate, regenerating, onReject, onUnapprove, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow,
+  onApprove, generatingImage, onSchedule, onRegenerate, regenerating, onReject, onUnapprove, onRemove, onEdit, onSaveEdit, onCancelEdit, onPublishNow, publishingNow, onRefresh,
 }: {
   post: QueuedPost
   saving: boolean
@@ -1221,6 +1223,7 @@ function PostCard({
   onCancelEdit?: () => void
   onPublishNow?: () => void
   publishingNow?: boolean
+  onRefresh?: () => void
 }) {
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const [conceptExpanded, setConceptExpanded] = useState(false)
@@ -1249,13 +1252,15 @@ function PostCard({
   async function restoreRevision(revisionId: string) {
     setRestoringId(revisionId)
     try {
-      await fetch('/api/agents/post-queue/revisions', {
+      const res = await fetch('/api/agents/post-queue/revisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ post_id: post.id, revision_id: revisionId }),
       })
-      // Reload the page to reflect the restored image
-      window.location.reload()
+      if (res.ok) {
+        setShowRevisions(false)
+        onRefresh?.()
+      }
     } finally {
       setRestoringId(null)
     }
