@@ -212,6 +212,16 @@ export async function POST(req: NextRequest) {
         .eq('id', id)
         .select()
         .single()
+      // Save revision history
+      await db.from('cada_image_revisions').insert({
+        post_id: id,
+        client_id: (post.client_id as string | null) ?? clientId,
+        media_url: urls[0],
+        media_urls: urls,
+        image_model: imageModel,
+        prompt_used: finalPrompts.join('\n\n---\n\n'),
+        correction_note: correctionNote ?? null,
+      })
       return NextResponse.json({ post: data })
     } else {
       const rawUrl = await generate(finalPrompts[0])
@@ -224,6 +234,16 @@ export async function POST(req: NextRequest) {
         .eq('id', id)
         .select()
         .single()
+      // Save revision history
+      await db.from('cada_image_revisions').insert({
+        post_id: id,
+        client_id: (post.client_id as string | null) ?? clientId,
+        media_url: mediaUrl,
+        media_urls: null,
+        image_model: imageModel,
+        prompt_used: finalPrompts[0],
+        correction_note: correctionNote ?? null,
+      })
       return NextResponse.json({ post: data })
     }
   } catch (err) {

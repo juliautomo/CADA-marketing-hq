@@ -15,6 +15,16 @@ import { cn } from '@/lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface ImageRevision {
+  id: string
+  media_url: string
+  media_urls: string[] | null
+  image_model: string | null
+  prompt_used: string | null
+  correction_note: string | null
+  created_at: string
+}
+
 interface QueuedPost {
   id: string
   title: string | null
@@ -1217,7 +1227,39 @@ function PostCard({
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [regenModel, setRegenModel] = useState<string>(() => (post.image_model as string) ?? 'gpt-image-1')
   const [fixNote, setFixNote] = useState('')
+  const [showRevisions, setShowRevisions] = useState(false)
+  const [revisions, setRevisions] = useState<ImageRevision[] | null>(null)
+  const [loadingRevisions, setLoadingRevisions] = useState(false)
+  const [restoringId, setRestoringId] = useState<string | null>(null)
   const isEditing = editingId === post.id
+
+  async function loadRevisions() {
+    if (revisions !== null) { setShowRevisions(v => !v); return }
+    setLoadingRevisions(true)
+    setShowRevisions(true)
+    try {
+      const res = await fetch(`/api/agents/post-queue/revisions?post_id=${post.id}`)
+      const json = await res.json()
+      setRevisions(json.revisions ?? [])
+    } finally {
+      setLoadingRevisions(false)
+    }
+  }
+
+  async function restoreRevision(revisionId: string) {
+    setRestoringId(revisionId)
+    try {
+      await fetch('/api/agents/post-queue/revisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: post.id, revision_id: revisionId }),
+      })
+      // Reload the page to reflect the restored image
+      window.location.reload()
+    } finally {
+      setRestoringId(null)
+    }
+  }
   const statusCls = STATUS_COLORS[post.status] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200'
   const statusLabel = STATUS_LABELS[post.status] ?? post.status
   const isImageReview = post.status === 'image_review'
@@ -1421,6 +1463,12 @@ function PostCard({
                   <Edit2 className="w-3 h-3" /> Edit
                 </button>
               )}
+              {(post.media_url || post.status === 'image_review') && (
+                <button onClick={loadRevisions}
+                  className="flex items-center justify-center gap-1.5 px-3 text-xs text-zinc-400 border border-zinc-200 rounded-xl py-2 hover:bg-zinc-50 transition-colors">
+                  <History className="w-3 h-3" /> History
+                </button>
+              )}
               {onRemove && (
                 <button onClick={onRemove} disabled={saving}
                   className="flex items-center justify-center gap-1.5 px-3 text-xs text-zinc-400 hover:text-red-500 border border-zinc-200 rounded-xl py-2 hover:bg-red-50 transition-colors">
@@ -1430,6 +1478,58 @@ function PostCard({
             </div>
           )}
         </>
+      )}
+
+      {/* ── Revision history panel ── */}
+      {showRevisions && (
+        <div className="border-t border-zinc-100 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wide flex items-center gap-1">
+              <History className="w-3 h-3" /> Image history
+            </p>
+            <button onClick={() => setShowRevisions(false)} className="text-zinc-400 hover:text-zinc-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {loadingRevisions && <p className="text-xs text-zinc-400">Loading…</p>}
+          {revisions && revisions.length === 0 && (
+            <p className="text-xs text-zinc-400 italic">No history yet — generate an image first.</p>
+          )}
+          {revisions && revisions.length > 0 && (
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+              {revisions.map((rev, i) => (
+                <div key={rev.id} className="flex gap-2 items-start bg-zinc-50 rounded-xl p-2">
+                  <button onClick={() => setLightbox(rev.media_url)} className="flex-shrink-0 group relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={rev.media_url} alt="" className="w-14 h-14 rounded-lg object-cover border border-zinc-200 group-hover:opacity-80 transition-opacity" />
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <ExternalLink className="w-3 h-3 text-white drop-shadow" />
+                    </span>
+                  </button>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {i === 0 && <span className="text-[10px] bg-violet-100 text-violet-600 rounded-full px-2 py-0.5 font-medium">Latest</span>}
+                      {rev.image_model && <span className="text-[10px] text-zinc-400">{rev.image_model}</span>}
+                      <span className="text-[10px] text-zinc-300">{format(parseISO(rev.created_at), 'MMM d, h:mm a')}</span>
+                    </div>
+                    {rev.correction_note && (
+                      <p className="text-[11px] text-zinc-500 italic line-clamp-2">&ldquo;{rev.correction_note}&rdquo;</p>
+                    )}
+                    {i > 0 && (
+                      <button
+                        onClick={() => restoreRevision(rev.id)}
+                        disabled={restoringId === rev.id}
+                        className="text-[11px] text-violet-600 hover:underline disabled:opacity-40"
+                      >
+                        {restoringId === rev.id ? 'Restoring…' : 'Restore this version'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
