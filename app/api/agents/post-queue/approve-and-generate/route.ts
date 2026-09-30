@@ -88,7 +88,9 @@ export async function POST(req: NextRequest) {
 
     const GLOBAL_IMAGE_RULES = `- Never draw, generate, or include any brand logo, brand icon, or brand wordmark inside the image. The real logo will be composited onto the final image separately — do not invent or approximate it.
 - Never place a literal bullet point (•) or dot character before text labels, chip tags, or category badges. Labels should contain text only, no leading punctuation.
-- Do not add watermarks, copyright symbols, or placeholder icons.`
+- Do not add watermarks, copyright symbols, or placeholder icons.
+- The design must fill the entire canvas edge-to-edge with no dark side borders, gutters, or outer margins.
+- All content — including the footer row — must fit fully within the canvas. Leave adequate bottom padding so the footer is never clipped or cut off.`
 
     const rewritePrompt = async (concept: string): Promise<string> => {
       const sys = `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`
