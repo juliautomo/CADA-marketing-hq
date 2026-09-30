@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
 - Never place a literal bullet point (•) or dot character before text labels, chip tags, or category badges. Labels should contain text only, no leading punctuation.
 - Do not add watermarks, copyright symbols, or placeholder icons.
 - The canvas background must fill edge-to-edge — no dark strips, dark side bands, or letterboxing around the design.
+- Do NOT render the design as a floating card or poster on a background. The design IS the full canvas — fill it directly. No outer rounded card, no shadow border around the whole composition.
 - All content — including the footer row — must fit fully within the canvas with sufficient bottom clearance so nothing is clipped or cut off.`
 
     const rewritePrompt = async (concept: string): Promise<string> => {
