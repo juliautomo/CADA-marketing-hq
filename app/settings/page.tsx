@@ -1227,7 +1227,15 @@ function SettingsContent() {
               <div className="flex items-center gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => updateVisualKit('use_reference_image', visualKit.use_reference_image === 'false' ? 'true' : 'false')}
+                  onClick={() => {
+                    const next = visualKit.use_reference_image === 'false' ? 'true' : 'false'
+                    updateVisualKit('use_reference_image', next)
+                    fetch('/api/settings/brand', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ ...brand, ...visualKit, use_reference_image: next }),
+                    })
+                  }}
                   className={cn(
                     'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
                     visualKit.use_reference_image !== 'false' ? 'bg-violet-600' : 'bg-zinc-200'
