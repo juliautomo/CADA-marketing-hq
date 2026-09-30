@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     const imageInstructions = ctx.raw.brand_image_instructions ?? ''
 
     const GLOBAL_IMAGE_RULES = `- Never draw, generate, or include any brand logo, brand icon, or brand wordmark inside the image. The real logo will be composited onto the final image separately — do not invent or approximate it.
-- Never place a literal bullet point (•) or dot character before text labels, chip tags, or category badges. Labels should contain text only, no leading punctuation.
+- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
 - Do not add watermarks, copyright symbols, or placeholder icons.
 - The canvas background must fill edge-to-edge — no dark strips, dark side bands, or letterboxing around the design.
 - Do NOT render the design as a floating card or poster on a background. The design IS the full canvas — fill it directly. No outer rounded card, no shadow border around the whole composition.
