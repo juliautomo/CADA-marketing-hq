@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     const imageInstructions = ctx.raw.brand_image_instructions ?? ''
 
-    const GLOBAL_IMAGE_RULES = `- Never draw, generate, or include any brand logo, brand icon, or brand wordmark inside the image. The real logo will be composited onto the final image separately — do not invent or approximate it.
+    const GLOBAL_IMAGE_RULES = `- Never invent, approximate, or recreate a brand logo as drawn art or text. If the layout calls for a logo position, leave that area as clean empty space — the real logo will be composited onto the image by code after generation.
 - Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
 - Do not add watermarks, copyright symbols, or placeholder icons.
 - The canvas background must fill edge-to-edge — no dark strips, dark side bands, or letterboxing around the design.
