@@ -1230,6 +1230,11 @@ function PostCard({
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [regenModel, setRegenModel] = useState<string>(() => (post.image_model as string) ?? 'gpt-image-1')
   const [fixNote, setFixNote] = useState('')
+  const prevRegenerating = useRef(false)
+  useEffect(() => {
+    if (prevRegenerating.current && !regenerating) setFixNote('')
+    prevRegenerating.current = regenerating ?? false
+  }, [regenerating])
   const [showRevisions, setShowRevisions] = useState(false)
   const [revisions, setRevisions] = useState<ImageRevision[] | null>(null)
   const [loadingRevisions, setLoadingRevisions] = useState(false)
@@ -1436,7 +1441,7 @@ function PostCard({
                       <option value="gemini-nano-banana-2-lite">Nano Banana 2 Lite (Gemini)</option>
                       <option value="gemini-nano-banana-pro">Nano Banana Pro (Gemini)</option>
                     </select>
-                    <button onClick={() => { onRegenerate(regenModel, fixNote.trim() || undefined); setFixNote('') }} disabled={regenerating}
+                    <button onClick={() => { onRegenerate(regenModel, fixNote.trim() || undefined) }} disabled={regenerating}
                       className="flex items-center justify-center gap-1.5 px-3 text-xs text-violet-600 border border-violet-200 rounded-xl py-2 hover:bg-violet-50 disabled:opacity-40 transition-colors whitespace-nowrap">
                       {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
                       {regenerating ? 'Generating…' : post.status === 'failed' ? 'Retry' : 'Regenerate'}
