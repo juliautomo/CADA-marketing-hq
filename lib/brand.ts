@@ -5,6 +5,7 @@ export interface BrandContext {
   systemPrompt: (agentRole: string) => string
   imagePrompt: string
   referenceImageUrl: string | undefined
+  useReferenceImage: boolean
   imageQuality: 'low' | 'medium' | 'high'
   driveEnabled: boolean
   driveFolderId: string | undefined
@@ -21,7 +22,7 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
     'brand_campaign_theme', 'brand_caption_examples',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
     'brand_shot_style', 'brand_colors', 'brand_image_instructions',
-    'brand_model_reference_url', 'brand_logo_url',
+    'brand_model_reference_url', 'brand_logo_url', 'use_reference_image',
     'image_quality', 'default_post_time', 'drive_media_upload_enabled', 'drive_media_folder_id',
   ]
   let query = db.from('cada_settings').select('key, value').in('key', KEYS)
@@ -64,10 +65,14 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
   let referenceImageUrl: string | undefined = raw.brand_model_reference_url || undefined
   if (libraryPhotos?.[0]?.url) referenceImageUrl = libraryPhotos[0].url
 
+  // Default true — only disabled when explicitly set to 'false'
+  const useReferenceImage = raw.use_reference_image !== 'false'
+
   return {
     systemPrompt: (agentRole: string) => getBrandSystemPrompt(agentRole, raw),
     imagePrompt,
-    referenceImageUrl,
+    referenceImageUrl: useReferenceImage ? referenceImageUrl : undefined,
+    useReferenceImage,
     imageQuality: (raw.image_quality as BrandContext['imageQuality']) || 'medium',
     driveEnabled: raw.drive_media_upload_enabled === 'true',
     driveFolderId: raw.drive_media_folder_id || undefined,

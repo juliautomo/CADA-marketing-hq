@@ -44,6 +44,7 @@ interface VisualKitSettings {
   brand_model_reference_url: string
   brand_logo_url: string
   brand_colors: string // JSON array of hex strings e.g. ["#F5E6D3","#6B0F2B"]
+  use_reference_image: string // 'true' | 'false'
 }
 
 interface ConnectionSettings {
@@ -96,6 +97,7 @@ const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
   brand_model_reference_url: '',
   brand_logo_url: '',
   brand_colors: '["#F5E6D3","#6B0F2B","#C4A882","#8B7355","#F0EBE3"]',
+  use_reference_image: 'true',
 }
 
 const CONNECTION_DEFAULTS: ConnectionSettings = {
@@ -1222,6 +1224,25 @@ function SettingsContent() {
                 <CardTitle className="text-base">Reference Images</CardTitle>
               </div>
               <CardDescription>Upload once — used automatically as visual references in every image generation. Your brand photo library above is used as the style reference automatically.</CardDescription>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => updateVisualKit('use_reference_image', visualKit.use_reference_image === 'false' ? 'true' : 'false')}
+                  className={cn(
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
+                    visualKit.use_reference_image !== 'false' ? 'bg-violet-600' : 'bg-zinc-200'
+                  )}
+                >
+                  <span className={cn(
+                    'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200',
+                    visualKit.use_reference_image !== 'false' ? 'translate-x-4' : 'translate-x-0'
+                  )} />
+                </button>
+                <span className="text-xs text-zinc-600">
+                  Use reference image during generation
+                  <span className="block text-zinc-400">Turn off for infographic / text-heavy posts to avoid content bleed from the reference.</span>
+                </span>
+              </div>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <ImageUploadField
