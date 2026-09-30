@@ -35,9 +35,7 @@ export async function POST(req: NextRequest) {
   if (imageModelOverride) generatingUpdate.image_model = imageModelOverride
   await db.from('cada_scheduled_posts').update(generatingUpdate).eq('id', id)
 
-  const imagePrompt = correctionNote
-    ? `${post.image_concept as string ?? ''}\n\nCORRECTION NEEDED: ${correctionNote}`
-    : post.image_concept as string | null
+  const imagePrompt = post.image_concept as string | null
 
   if (!imagePrompt) {
     const { data } = await db
@@ -140,7 +138,8 @@ export async function POST(req: NextRequest) {
         negatives   && `DO NOT include: ${negatives}`,
       ].filter(Boolean).join('\n')
       const base2 = `CONTENT: ${base}`
-      return styleDirective ? `${styleDirective}\n\n${base2}` : base2
+      const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
+      return (styleDirective ? `${styleDirective}\n\n${base2}` : base2) + correctionDirective
     }
 
     // Map quality for dall-e-3 (only standard/hd)
