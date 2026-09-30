@@ -122,30 +122,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Scale image down so all content fits, then add equal white padding on all sides.
-    // Using extend-only would add space below already-clipped content; scale+extend
-    // ensures the full original image is always visible inside the padding border.
-    const addPadding = async (url: string, paddingPx = 60): Promise<string> => {
-      try {
-        const { default: sharp } = await import('sharp')
-        const res = await fetch(url)
-        if (!res.ok) return url
-        const buffer = Buffer.from(await res.arrayBuffer())
-        const meta = await sharp(buffer).metadata()
-        const w = meta.width ?? 1024
-        const h = meta.height ?? 1536
-        const padded = await sharp(buffer)
-          .resize(w - paddingPx * 2, h - paddingPx * 2, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
-          .extend({ top: paddingPx, bottom: paddingPx, left: paddingPx, right: paddingPx, background: { r: 255, g: 255, b: 255, alpha: 1 } })
-          .png()
-          .toBuffer()
-        console.log(`addPadding: added ${paddingPx}px on all sides, output ${w}x${h}`)
-        return uploadBase64ToStorage(`data:image/png;base64,${padded.toString('base64')}`)
-      } catch (err) {
-        console.error('Padding failed, using original:', err)
-        return url
-      }
-    }
 
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
@@ -203,9 +179,8 @@ export async function POST(req: NextRequest) {
         finalPrompts.slice(1).map(generateWithStyle)
       )
       const rawUrls = [firstRaw, ...remainingRaw]
-      // Apply logo first (inside content area), then add white padding border
-      const loggedUrls = await Promise.all(rawUrls.map(applyLogo))
-      const urls = await Promise.all(loggedUrls.map(u => addPadding(u)))
+      // Apply logo watermark
+      const urls = await Promise.all(rawUrls.map(applyLogo))
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: urls[0], media_urls: urls, media_type: 'image' })
@@ -225,9 +200,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ post: data })
     } else {
       const rawUrl = await generate(finalPrompts[0])
-      // Apply logo first (inside content area), then add white padding border
-      const loggedUrl = await applyLogo(rawUrl)
-      const mediaUrl = await addPadding(loggedUrl)
+      // Apply logo watermark
+      const mediaUrl = await applyLogo(rawUrl)
       const { data } = await db
         .from('cada_scheduled_posts')
         .update({ status: 'image_review', media_url: mediaUrl, media_type: 'image' })
