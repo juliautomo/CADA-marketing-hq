@@ -111,9 +111,9 @@ export async function POST(req: NextRequest) {
       try {
         const { compositeLogoOntoImage } = await import('@/lib/watermark')
         const composited = await compositeLogoOntoImage(url, logoUrl, {
-          position: 'bottom-right',
-          logoMaxWidthPercent: 20,
-          padding: 32,
+          position: 'top-left',
+          logoMaxWidthPercent: 25,
+          padding: 40,
         })
         console.log('applyLogo: logo composited successfully')
         return uploadBase64ToStorage(composited)
