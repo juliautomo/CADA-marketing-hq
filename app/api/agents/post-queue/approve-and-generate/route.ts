@@ -110,8 +110,9 @@ export async function POST(req: NextRequest) {
       if (!logoUrl) { console.log('applyLogo: no logoUrl, skipping'); return url }
       try {
         const { compositeLogoOntoImage } = await import('@/lib/watermark')
+        const logoPosition = (ctx.raw.brand_logo_position as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') || 'bottom-right'
         const composited = await compositeLogoOntoImage(url, logoUrl, {
-          position: 'top-left',
+          position: logoPosition,
           logoMaxWidthPercent: 25,
           padding: 40,
         })
