@@ -84,12 +84,8 @@ export async function POST(req: NextRequest) {
 
     const imageInstructions = ctx.raw.brand_image_instructions ?? ''
 
-    const GLOBAL_IMAGE_RULES = `- Never invent, approximate, or recreate a brand logo as drawn art or text. If the layout calls for a logo position, leave that area as clean empty space — the real logo will be composited onto the image by code after generation.
-- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
-- Do not add watermarks, copyright symbols, or placeholder icons.
-- The canvas background must fill edge-to-edge — no dark strips, dark side bands, or letterboxing around the design.
-- Do NOT render the design as a floating card or poster on a background. The design IS the full canvas — fill it directly. No outer rounded card, no shadow border around the whole composition.
-- All content — including the footer row — must fit fully within the canvas with sufficient bottom clearance so nothing is clipped or cut off.`
+    const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
+- Do not add watermarks, copyright symbols, or placeholder icons.`
 
     const rewritePrompt = async (concept: string): Promise<string> => {
       const sys = `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`
