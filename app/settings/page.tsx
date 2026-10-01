@@ -45,6 +45,8 @@ interface VisualKitSettings {
   brand_logo_url: string
   brand_colors: string // JSON array of hex strings e.g. ["#F5E6D3","#6B0F2B"]
   use_reference_image: string // 'true' | 'false'
+  brand_logo_position: string // 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  brand_logo_size: string // logo max width as % of image width, e.g. '25'
 }
 
 interface ConnectionSettings {
@@ -98,6 +100,8 @@ const VISUAL_KIT_DEFAULTS: VisualKitSettings = {
   brand_logo_url: '',
   brand_colors: '["#F5E6D3","#6B0F2B","#C4A882","#8B7355","#F0EBE3"]',
   use_reference_image: 'true',
+  brand_logo_position: 'bottom-right',
+  brand_logo_size: '25',
 }
 
 const CONNECTION_DEFAULTS: ConnectionSettings = {
@@ -1267,6 +1271,34 @@ function SettingsContent() {
                 value={visualKit.brand_logo_url}
                 onChange={v => updateVisualKit('brand_logo_url', v)}
               />
+              <div className="col-span-2 grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100">
+                <div>
+                  <label className="text-xs font-medium text-zinc-700 block mb-1">Logo Position</label>
+                  <p className="text-xs text-zinc-400 mb-2">Where the logo is placed on generated images.</p>
+                  <select
+                    value={visualKit.brand_logo_position}
+                    onChange={e => updateVisualKit('brand_logo_position', e.target.value)}
+                    className="w-full text-xs border border-zinc-200 rounded-lg px-3 py-2 bg-white text-zinc-700 focus:outline-none focus:ring-1 focus:ring-violet-300"
+                  >
+                    <option value="top-left">Top Left</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-right">Bottom Right</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-zinc-700 block mb-1">Logo Size</label>
+                  <p className="text-xs text-zinc-400 mb-2">Logo width as % of image width (10–40).</p>
+                  <input
+                    type="number"
+                    min={10}
+                    max={40}
+                    value={visualKit.brand_logo_size}
+                    onChange={e => updateVisualKit('brand_logo_size', e.target.value)}
+                    className="w-full text-xs border border-zinc-200 rounded-lg px-3 py-2 bg-white text-zinc-700 focus:outline-none focus:ring-1 focus:ring-violet-300"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 

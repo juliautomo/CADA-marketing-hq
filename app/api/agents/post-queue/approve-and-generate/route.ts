@@ -111,9 +111,10 @@ export async function POST(req: NextRequest) {
       try {
         const { compositeLogoOntoImage } = await import('@/lib/watermark')
         const logoPosition = (ctx.raw.brand_logo_position as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') || 'bottom-right'
+        const logoSize = Math.min(40, Math.max(10, parseInt(ctx.raw.brand_logo_size ?? '25', 10) || 25))
         const composited = await compositeLogoOntoImage(url, logoUrl, {
           position: logoPosition,
-          logoMaxWidthPercent: 25,
+          logoMaxWidthPercent: logoSize,
           padding: 40,
         })
         console.log('applyLogo: logo composited successfully')
