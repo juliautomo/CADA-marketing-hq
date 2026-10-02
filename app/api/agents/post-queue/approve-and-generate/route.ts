@@ -116,7 +116,8 @@ export async function POST(req: NextRequest) {
         console.log('applyLogo: logo composited successfully')
         return uploadBase64ToStorage(composited)
       } catch (err) {
-        console.error('Logo composite failed, using original:', err)
+        const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err)
+        console.error('Logo composite failed, using original. Error:', msg, '| imageUrl:', url, '| logoUrl:', logoUrl)
         return url
       }
     }

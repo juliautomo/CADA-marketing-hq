@@ -1386,9 +1386,12 @@ function PostCard({
       ) : (
         <>
           <p className={cn('text-xs text-zinc-600 whitespace-pre-wrap', !captionExpanded && 'line-clamp-3')}>{post.caption}</p>
-          <button onClick={() => setCaptionExpanded(v => !v)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors">
-            {captionExpanded ? '▲ Show less' : '▼ Show full caption'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setCaptionExpanded(v => !v)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors">
+              {captionExpanded ? '▲ Show less' : '▼ Show full caption'}
+            </button>
+            <button onClick={() => navigator.clipboard.writeText(post.caption)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors">⎘ Copy</button>
+          </div>
 
           {post.image_concept && !post.media_url && (
             <div className="flex items-start gap-1">
@@ -1404,7 +1407,10 @@ function PostCard({
 
           {post.image_prompt_used && (
             <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-100">
-              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Prompt sent to AI</p>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Prompt sent to AI</p>
+                <button onClick={() => navigator.clipboard.writeText(post.image_prompt_used!)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors">⎘ Copy</button>
+              </div>
               <p className={cn('text-[11px] text-zinc-500 font-mono whitespace-pre-wrap', !conceptExpanded && 'line-clamp-4')}>{post.image_prompt_used}</p>
               <button onClick={() => setConceptExpanded(v => !v)} className="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors mt-1">
                 {conceptExpanded ? '▲ Show less' : '▼ Show full prompt'}
