@@ -168,7 +168,8 @@ Image Prompt: [STRICTLY follow the brand image guidelines below. Describe ONLY t
 BRAND IMAGE GUIDELINES — MANDATORY for every Image Prompt. Violating these is not allowed:
 ${imageGuide || 'Clean, professional photography style.'}
 
-Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. ${platforms.length === 1 ? `All posts on ${platforms[0]}.` : `Mix ${platforms.join(' and ')}.`} Rotate products. Use brand hashtags: ${brandHashtags}. IMPORTANT: Only image-based content types — no video or Reels.${postFormat === 'single' ? ' Every post must be a single image (Static Photo or Feed Post) — no carousels.' : postFormat === 'carousel' ? ' Every post must be a Carousel (3 slides with SLIDE 1: / SLIDE 2: / SLIDE 3: in the Image Prompt).' : ''}`
+Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or markdown. ${platforms.length === 1 ? `All posts on ${platforms[0]}.` : `Mix ${platforms.join(' and ')}.`} Rotate products. Use brand hashtags: ${brandHashtags}. IMPORTANT: Only image-based content types — no video or Reels.${postFormat === 'single' ? ' Every post must be a single image (Static Photo or Feed Post) — no carousels.' : postFormat === 'carousel' ? ' Every post must be a Carousel (3 slides with SLIDE 1: / SLIDE 2: / SLIDE 3: in the Image Prompt).' : ''}`,
+        8000
       )
 
       // Parse days — split on --- then match each block

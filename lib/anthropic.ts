@@ -12,10 +12,10 @@ function getClient() {
   return _anthropic
 }
 
-export async function generateText(systemPrompt: string, userMessage: string): Promise<string> {
+export async function generateText(systemPrompt: string, userMessage: string, maxTokens = 2048): Promise<string> {
   const message = await getClient().messages.create({
     model: 'claude-sonnet-4-5',
-    max_tokens: 2048,
+    max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
   })
