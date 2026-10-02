@@ -41,7 +41,7 @@ interface QueuedPost {
   campaign_id: string | null
   image_model: string | null
   prompt_model: string | null
-  cada_campaigns?: { name: string; created_at: string } | null
+  cada_campaigns?: { name: string; created_at: string; start_date: string | null; end_date: string | null; brief: CampaignBrief | null } | null
 }
 
 interface PlanStep {
@@ -812,9 +812,9 @@ function PostsPageInner() {
             campaignMap.set(key, {
               name: post.cada_campaigns?.name ?? (post.campaign_id ? 'Campaign' : 'Unplanned posts'),
               createdAt: post.cada_campaigns?.created_at ?? plan?.created_at ?? null,
-              brief: plan?.brief,
-              startDate: plan?.start_date,
-              endDate: plan?.end_date ?? undefined,
+              brief: post.cada_campaigns?.brief ?? plan?.brief,
+              startDate: post.cada_campaigns?.start_date ?? plan?.start_date,
+              endDate: post.cada_campaigns?.end_date ?? plan?.end_date ?? undefined,
               posts: [],
             })
           }

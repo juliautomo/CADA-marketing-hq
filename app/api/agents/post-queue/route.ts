@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const db = createServiceClient()
   let query = db
     .from('cada_scheduled_posts')
-    .select('*, cada_campaigns(name, created_at)')
+    .select('*, cada_campaigns(name, created_at, start_date, end_date, brief)')
     .in('status', ['draft', 'pending_approval', 'generating', 'image_review', 'approved', 'pending', 'published', 'failed'])
     .order('scheduled_at', { ascending: true })
 
