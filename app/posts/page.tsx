@@ -868,7 +868,8 @@ function PostsPageInner() {
                   {group.brief && (
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
                       {group.brief.channels?.length && <span className="text-[10px] text-zinc-400">{group.brief.channels.join(' · ')}</span>}
-                      {group.brief.imageModel && <span className="text-[10px] text-zinc-500">Model: {group.brief.imageModel}</span>}
+                      {group.brief.imageModel && <span className="text-[10px] text-zinc-500">Image: {group.brief.imageModel}</span>}
+                      {group.brief.promptModel && <span className="text-[10px] text-zinc-500">Prompt: {group.brief.promptModel}</span>}
                       {group.brief.imageSize && <span className="text-[10px] text-zinc-500">Size: {group.brief.imageSize}</span>}
                       {group.brief.imageQuality && <span className="text-[10px] text-zinc-500">Quality: {group.brief.imageQuality}</span>}
                       {group.brief.postFormat && group.brief.postFormat !== 'auto' && <span className="text-[10px] text-zinc-500">Format: {group.brief.postFormat}</span>}
