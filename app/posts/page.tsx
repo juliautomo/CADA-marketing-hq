@@ -86,6 +86,17 @@ interface TrendReport {
   created_at: string
 }
 
+interface CampaignBrief {
+  imageModel?: string
+  imageSize?: string
+  imageQuality?: string
+  postFormat?: string
+  promptModel?: string
+  weeks?: number
+  postsPerWeek?: number
+  channels?: string[]
+}
+
 interface PlanHistory {
   id: string
   name: string
@@ -94,6 +105,7 @@ interface PlanHistory {
   end_date: string | null
   created_at: string
   google_drive_url: string | null
+  brief?: CampaignBrief
   posts: HistoryPost[]
 }
 
@@ -792,7 +804,7 @@ function PostsPageInner() {
         const activePosts = posts.filter(p => !['published', 'rejected'].includes(p.status))
 
         // Group by campaign_id (null = no campaign)
-        const campaignMap = new Map<string, { name: string; createdAt: string | null; posts: QueuedPost[] }>()
+        const campaignMap = new Map<string, { name: string; createdAt: string | null; brief?: CampaignBrief; startDate?: string; endDate?: string; posts: QueuedPost[] }>()
         for (const post of activePosts) {
           const key = post.campaign_id ?? '__none__'
           if (!campaignMap.has(key)) {
@@ -800,6 +812,9 @@ function PostsPageInner() {
             campaignMap.set(key, {
               name: post.cada_campaigns?.name ?? (post.campaign_id ? 'Campaign' : 'Unplanned posts'),
               createdAt: post.cada_campaigns?.created_at ?? plan?.created_at ?? null,
+              brief: plan?.brief,
+              startDate: plan?.start_date,
+              endDate: plan?.end_date,
               posts: [],
             })
           }
@@ -838,13 +853,27 @@ function PostsPageInner() {
             <section key={key} ref={key === Array.from(campaignMap.keys())[0] ? queueRef : undefined} className="space-y-4">
               {/* Campaign header — collapsible */}
               <button onClick={toggleCollapse} className="w-full bg-zinc-900 rounded-2xl px-5 py-3.5 flex items-center justify-between hover:bg-zinc-800 transition-colors">
-                <div className="text-left">
+                <div className="text-left flex-1 min-w-0">
                   <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Campaign</p>
                   <p className="text-sm font-bold text-white">{group.name}</p>
-                  {group.createdAt && (
+                  {(group.startDate || group.createdAt) && (
                     <p className="text-[10px] text-zinc-500 mt-0.5">
-                      Generated {new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(group.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      {group.startDate && group.endDate
+                        ? `${new Date(group.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(group.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : group.createdAt
+                          ? `Generated ${new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                          : ''}
                     </p>
+                  )}
+                  {group.brief && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+                      {group.brief.channels?.length && <span className="text-[10px] text-zinc-400">{group.brief.channels.join(' · ')}</span>}
+                      {group.brief.imageModel && <span className="text-[10px] text-zinc-500">Model: {group.brief.imageModel}</span>}
+                      {group.brief.imageSize && <span className="text-[10px] text-zinc-500">Size: {group.brief.imageSize}</span>}
+                      {group.brief.imageQuality && <span className="text-[10px] text-zinc-500">Quality: {group.brief.imageQuality}</span>}
+                      {group.brief.postFormat && group.brief.postFormat !== 'auto' && <span className="text-[10px] text-zinc-500">Format: {group.brief.postFormat}</span>}
+                      {group.brief.weeks != null && <span className="text-[10px] text-zinc-500">{group.brief.weeks}w · {group.brief.postsPerWeek} posts/wk</span>}
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
