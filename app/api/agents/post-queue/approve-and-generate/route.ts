@@ -129,15 +129,8 @@ export async function POST(req: NextRequest) {
     const rewrittenSlides = await Promise.all(slides.map(rewritePrompt))
 
     const buildPrompt = (base: string) => {
-      const styleDirective = [
-        stylePrefix && `STYLE: ${stylePrefix}`,
-        shotStyle   && `COMPOSITION: ${shotStyle}`,
-        colorDesc   && `COLORS: ${colorDesc}`,
-        negatives   && `DO NOT include: ${negatives}`,
-      ].filter(Boolean).join('\n')
-      const base2 = `CONTENT: ${base}`
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
-      return (styleDirective ? `${styleDirective}\n\n${base2}` : base2) + correctionDirective
+      return `CONTENT: ${base}` + correctionDirective
     }
 
     // Map quality for dall-e-3 (only standard/hd)
