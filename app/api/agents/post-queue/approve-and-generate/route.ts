@@ -131,7 +131,8 @@ export async function POST(req: NextRequest) {
 
     const buildPrompt = (base: string) => {
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
-      return `CONTENT: ${base}` + correctionDirective
+      const canvasFill = `\n\nCANVAS REQUIREMENT: The design must fill the entire canvas edge-to-edge. Pure white #FFFFFF background directly — no floating card, no rounded outer border, no dark background, no shadow around the whole composition, no letterboxing.`
+      return `CONTENT: ${base}` + correctionDirective + canvasFill
     }
 
     // Map quality for dall-e-3 (only standard/hd)
