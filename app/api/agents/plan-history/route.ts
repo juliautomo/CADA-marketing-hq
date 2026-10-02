@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   let query = db
     .from('cada_campaigns')
-    .select('id, name, description, start_date, end_date, created_at, google_drive_url')
+    .select('id, name, description, start_date, end_date, created_at, google_drive_url, brief')
     .order('created_at', { ascending: false })
     .limit(20)
 
