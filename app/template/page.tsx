@@ -55,39 +55,39 @@ interface TemplateFields {
 
 const DEFAULT_LAYOUT: TemplateLayout = {
   logo:         { x: 6.7, y: 4.4,  w: 35   },
-  pill:         { x: 6.7, y: 9.0,  w: 55   },
-  headline:     { x: 6.7, y: 13.0, w: 86.6 },
-  subheadline:  { x: 6.7, y: 19.2, w: 86.6 },
-  body:         { x: 6.7, y: 23.0, w: 86.6 },
-  visual:       { x: 6.7, y: 29.5, w: 86.6, h: 38.0 },
-  illustration: { x: 55,  y: 28.0, w: 38,   h: 42.0 },
-  tips:         { x: 6.7, y: 69.6, w: 86.6 },
-  footer:       { x: 6.7, y: 76.3, w: 86.6 },
+  pill:         { x: 6.7, y: 12.5, w: 55   },
+  headline:     { x: 6.7, y: 16.5, w: 86.6 },
+  subheadline:  { x: 6.7, y: 22.7, w: 86.6 },
+  body:         { x: 6.7, y: 26.5, w: 86.6 },
+  visual:       { x: 6.7, y: 33.0, w: 86.6, h: 36.5 },
+  illustration: { x: 55,  y: 31.0, w: 38,   h: 40.0 },
+  tips:         { x: 6.7, y: 71.0, w: 86.6 },
+  footer:       { x: 6.7, y: 78.0, w: 86.6 },
 }
 
 // Layouts tuned for each canvas ratio — elements redistributed to fill the space
 const DEFAULT_LAYOUT_1x1: TemplateLayout = {
   logo:         { x: 6.7, y: 5.5,  w: 35   },
-  pill:         { x: 6.7, y: 12.0, w: 55   },
-  headline:     { x: 6.7, y: 17.5, w: 86.6 },
-  subheadline:  { x: 6.7, y: 28.0, w: 86.6 },
-  body:         { x: 6.7, y: 36.0, w: 86.6 },
-  visual:       { x: 6.7, y: 44.0, w: 86.6, h: 28.0 },
-  illustration: { x: 55,  y: 42.0, w: 38,   h: 34.0 },
-  tips:         { x: 6.7, y: 74.5, w: 86.6 },
-  footer:       { x: 6.7, y: 84.0, w: 86.6 },
+  pill:         { x: 6.7, y: 15.0, w: 55   },
+  headline:     { x: 6.7, y: 20.5, w: 86.6 },
+  subheadline:  { x: 6.7, y: 31.0, w: 86.6 },
+  body:         { x: 6.7, y: 39.0, w: 86.6 },
+  visual:       { x: 6.7, y: 47.0, w: 86.6, h: 26.0 },
+  illustration: { x: 55,  y: 45.0, w: 38,   h: 32.0 },
+  tips:         { x: 6.7, y: 75.5, w: 86.6 },
+  footer:       { x: 6.7, y: 85.0, w: 86.6 },
 }
 
 const DEFAULT_LAYOUT_9x16: TemplateLayout = {
   logo:         { x: 6.7, y: 3.5,  w: 35   },
-  pill:         { x: 6.7, y: 7.0,  w: 55   },
-  headline:     { x: 6.7, y: 10.0, w: 86.6 },
-  subheadline:  { x: 6.7, y: 15.5, w: 86.6 },
-  body:         { x: 6.7, y: 19.0, w: 86.6 },
-  visual:       { x: 6.7, y: 23.5, w: 86.6, h: 42.0 },
-  illustration: { x: 55,  y: 22.0, w: 38,   h: 46.0 },
-  tips:         { x: 6.7, y: 67.5, w: 86.6 },
-  footer:       { x: 6.7, y: 73.0, w: 86.6 },
+  pill:         { x: 6.7, y: 9.5,  w: 55   },
+  headline:     { x: 6.7, y: 12.5, w: 86.6 },
+  subheadline:  { x: 6.7, y: 18.0, w: 86.6 },
+  body:         { x: 6.7, y: 21.5, w: 86.6 },
+  visual:       { x: 6.7, y: 26.0, w: 86.6, h: 40.0 },
+  illustration: { x: 55,  y: 24.5, w: 38,   h: 44.0 },
+  tips:         { x: 6.7, y: 68.0, w: 86.6 },
+  footer:       { x: 6.7, y: 73.5, w: 86.6 },
 }
 
 const SIZE_LAYOUTS: Record<CanvasSize, TemplateLayout> = {
