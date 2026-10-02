@@ -423,6 +423,8 @@ export default function TemplatePage() {
 
   // Per-client saved layouts from DB (keyed by canvas size)
   const [savedLayouts, setSavedLayouts] = useState<Partial<Record<CanvasSize, TemplateLayout>>>({})
+  const savedLayoutsRef = useRef<Partial<Record<CanvasSize, TemplateLayout>>>({})
+  savedLayoutsRef.current = savedLayouts
 
   // Canvas interaction
   const posterPreviewRef = useRef<HTMLDivElement | null>(null)
@@ -471,7 +473,7 @@ export default function TemplatePage() {
       // Restore text content only — layout always uses DB-saved or hardcoded defaults
       const { layout: _layout, ...content } = saved as TemplateFields
       void _layout
-      setFields({ ...DEFAULT, ...content, layout: savedLayouts[canvasSize] ?? SIZE_LAYOUTS[canvasSize] })
+      setFields({ ...DEFAULT, ...content, layout: savedLayoutsRef.current[canvasSize] ?? SIZE_LAYOUTS[canvasSize] })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandLoaded])
@@ -490,7 +492,7 @@ export default function TemplatePage() {
       }
       const incoming = { ...data.fields }
       if (incoming.visualType === 'illustration-only') incoming.visualType = 'none'
-      setFields(prev => ({ ...DEFAULT, ...incoming, illustrationUrl: prev.illustrationUrl, layout: DEFAULT_LAYOUT }))
+      setFields(prev => ({ ...DEFAULT, ...incoming, illustrationUrl: prev.illustrationUrl, layout: savedLayouts[canvasSize] ?? SIZE_LAYOUTS[canvasSize] }))
     } catch {
       setLoadPostError('Network error — check your connection and try again.')
     } finally { setLoadingPost(false) }
