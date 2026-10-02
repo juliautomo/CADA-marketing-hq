@@ -11,6 +11,7 @@ const KEYS = [
   'brand_style_reference_url', 'brand_color_swatch_url', 'brand_model_reference_url', 'brand_logo_url',
   'brand_colors',
   'product_catalog_config',
+  'template_layout',
 ]
 
 export async function GET(req: NextRequest) {

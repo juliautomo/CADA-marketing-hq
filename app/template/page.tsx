@@ -353,6 +353,7 @@ interface BrandSettings {
   brand_name?: string
   brand_logo_url?: string
   brand_colors?: string
+  template_layout?: string
 }
 
 function parsePrimaryColor(brandColors: string | undefined): string {
@@ -404,7 +405,7 @@ export default function TemplatePage() {
 
   function switchCanvasSize(size: CanvasSize) {
     setCanvasSize(size)
-    setFields(prev => ({ ...prev, layout: SIZE_LAYOUTS[size] }))
+    setFields(prev => ({ ...prev, layout: savedLayouts[size] ?? SIZE_LAYOUTS[size] }))
   }
 
   const [posts, setPosts] = useState<QueuePost[]>([])
@@ -418,6 +419,10 @@ export default function TemplatePage() {
   const [illustrationError, setIllustrationError] = useState('')
   const [loadPostError, setLoadPostError] = useState('')
   const [exportError, setExportError] = useState('')
+  const [saveLayoutStatus, setSaveLayoutStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+
+  // Per-client saved layouts from DB (keyed by canvas size)
+  const [savedLayouts, setSavedLayouts] = useState<Partial<Record<CanvasSize, TemplateLayout>>>({})
 
   // Canvas interaction
   const posterPreviewRef = useRef<HTMLDivElement | null>(null)
@@ -445,6 +450,14 @@ export default function TemplatePage() {
     fetch('/api/settings/brand').then(r => r.json()).then((d: BrandSettings) => {
       setBrand(d)
       setLogoUrl((d.brand_logo_url ?? '').replace(/^"|"$/g, ''))
+      // Parse saved layouts from DB and apply to starting canvas size (4:5)
+      if (d.template_layout) {
+        try {
+          const parsed = JSON.parse(d.template_layout) as Partial<Record<CanvasSize, TemplateLayout>>
+          setSavedLayouts(parsed)
+          if (parsed['4:5']) setFields(prev => ({ ...prev, layout: parsed['4:5']! }))
+        } catch {}
+      }
     }).catch(() => {})
     fetch('/api/agents/post-queue').then(r => r.json()).then(d => setPosts((d.posts ?? []).filter((p: QueuePost) => p.image_concept || p.caption))).catch(() => {})
   }, [])
@@ -455,10 +468,10 @@ export default function TemplatePage() {
     if (!brandLoaded) return
     const saved = loadFromStorage<Partial<TemplateFields> | null>(`${storagePrefix}-autosave`, null)
     if (saved?.headline && saved.headline !== DEFAULT.headline) {
-      // Restore text content only — layout always uses current defaults so old positions don't persist
+      // Restore text content only — layout always uses DB-saved or hardcoded defaults
       const { layout: _layout, ...content } = saved as TemplateFields
       void _layout
-      setFields({ ...DEFAULT, ...content, layout: SIZE_LAYOUTS[canvasSize] })
+      setFields({ ...DEFAULT, ...content, layout: savedLayouts[canvasSize] ?? SIZE_LAYOUTS[canvasSize] })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandLoaded])
@@ -498,6 +511,23 @@ export default function TemplatePage() {
     } catch {
       setIllustrationError('Network error — check your connection and try again.')
     } finally { setGeneratingIllustration(false) }
+  }
+
+  async function saveLayoutAsDefault() {
+    setSaveLayoutStatus('saving')
+    try {
+      const updated = { ...savedLayouts, [canvasSize]: fields.layout }
+      await fetch('/api/settings/brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_layout: JSON.stringify(updated) }),
+      })
+      setSavedLayouts(updated)
+      setSaveLayoutStatus('saved')
+      setTimeout(() => setSaveLayoutStatus('idle'), 2500)
+    } catch {
+      setSaveLayoutStatus('idle')
+    }
   }
 
   async function downloadIllustration() {
@@ -890,10 +920,16 @@ export default function TemplatePage() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setFields(prev => ({ ...prev, layout: DEFAULT_LAYOUT }))}
-              className="text-[10px] text-violet-500 hover:text-violet-700 transition-colors mt-1">
-              Reset all to default layout
-            </button>
+            <div className="flex items-center gap-3 mt-1">
+              <button onClick={() => setFields(prev => ({ ...prev, layout: savedLayouts[canvasSize] ?? SIZE_LAYOUTS[canvasSize] }))}
+                className="text-[10px] text-violet-500 hover:text-violet-700 transition-colors">
+                Reset to default
+              </button>
+              <button onClick={saveLayoutAsDefault} disabled={saveLayoutStatus === 'saving'}
+                className="text-[10px] font-medium text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-lg px-2.5 py-1 transition-colors">
+                {saveLayoutStatus === 'saving' ? 'Saving…' : saveLayoutStatus === 'saved' ? '✓ Saved as brand default' : 'Save as brand default'}
+              </button>
+            </div>
           </Section>
 
           <div className="h-px bg-zinc-100" />
