@@ -146,10 +146,13 @@ const ELEMENT_LABELS: Record<keyof TemplateLayout, string> = {
 // ─── Poster Template (free-form canvas) ──────────────────────────────────────
 
 function PosterTemplate({
-  fields, logoUrl, posterRef: posterRefProp, setElementRef, canvasW = 1080, canvasH = 1350,
+  fields, logoUrl, brandName, primaryColor, lightColor, posterRef: posterRefProp, setElementRef, canvasW = 1080, canvasH = 1350,
 }: {
   fields: TemplateFields
   logoUrl: string
+  brandName: string
+  primaryColor: string
+  lightColor: string
   posterRef?: React.RefObject<HTMLDivElement | null>
   setElementRef?: (key: string) => (el: HTMLDivElement | null) => void
   canvasW?: number
@@ -175,7 +178,7 @@ function PosterTemplate({
         {logoUrl
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={logoUrl} alt="Logo" style={{ height: 28, objectFit: 'contain' }} />
-          : <span style={{ fontSize: 20, fontWeight: 800, color: '#5B3FC4', letterSpacing: '-0.5px' }}>BelajarClaude</span>
+          : <span style={{ fontSize: 20, fontWeight: 800, color: primaryColor, letterSpacing: '-0.5px' }}>{brandName}</span>
         }
       </div>
 
@@ -183,11 +186,11 @@ function PosterTemplate({
       <div ref={setElementRef?.('pill')} style={abs('pill')}>
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: '#E9E3FA', color: '#5B3FC4',
+          background: lightColor, color: primaryColor,
           fontSize: 13, fontWeight: 700, letterSpacing: '0.06em',
           borderRadius: 999, padding: '7px 16px',
         }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#5B3FC4', display: 'inline-block', flexShrink: 0 }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: primaryColor, display: 'inline-block', flexShrink: 0 }} />
           {fields.category}
         </span>
       </div>
@@ -201,7 +204,7 @@ function PosterTemplate({
 
       {/* Subheadline */}
       <div ref={setElementRef?.('subheadline')} style={abs('subheadline')}>
-        <p style={{ fontSize: 26, fontStyle: 'italic', fontWeight: 500, color: '#5B3FC4', margin: 0, lineHeight: 1.3 }}>
+        <p style={{ fontSize: 26, fontStyle: 'italic', fontWeight: 500, color: primaryColor, margin: 0, lineHeight: 1.3 }}>
           {fields.subheadline}
         </p>
       </div>
@@ -215,10 +218,10 @@ function PosterTemplate({
 
       {/* Visual */}
       <div ref={setElementRef?.('visual')} style={abs('visual')}>
-        {fields.visualType === 'timeline'   && <TimelineVisual items={fields.timeline} />}
+        {fields.visualType === 'timeline'   && <TimelineVisual items={fields.timeline} primaryColor={primaryColor} lightColor={lightColor} />}
         {fields.visualType === 'comparison' && <ComparisonVisual data={fields.comparison} />}
-        {fields.visualType === 'checklist'  && <ChecklistVisual items={fields.checklist} />}
-        {fields.visualType === 'steps'      && <StepsVisual items={fields.steps} />}
+        {fields.visualType === 'checklist'  && <ChecklistVisual items={fields.checklist} primaryColor={primaryColor} lightColor={lightColor} />}
+        {fields.visualType === 'steps'      && <StepsVisual items={fields.steps} lightColor={lightColor} />}
       </div>
 
       {/* Illustration overlay — shown whenever a URL is set, any visual type */}
@@ -234,10 +237,10 @@ function PosterTemplate({
       {/* Tips bar */}
       {fields.tipsText && (
         <div ref={setElementRef?.('tips')} style={abs('tips')}>
-          <div style={{ background: '#F5F2FC', borderRadius: 20, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ background: lightColor, borderRadius: 20, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ fontSize: 26, flexShrink: 0 }}>💡</span>
             <p style={{ fontSize: 16, color: '#27232D', margin: 0, lineHeight: 1.5 }}>
-              <strong>Tips Praktis: </strong>{fields.tipsText}
+              <strong>Tips: </strong>{fields.tipsText}
             </p>
           </div>
         </div>
@@ -248,29 +251,23 @@ function PosterTemplate({
         <div style={{
           background: '#FFFFFF', borderRadius: 20, border: '1.5px solid #ECE8F8',
           padding: '16px 24px', display: 'flex', alignItems: 'center',
-          boxShadow: '0 2px 12px rgba(91,63,196,0.06)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 22, color: '#5B3FC4', fontWeight: 700, flexShrink: 0 }}>↗</span>
+            <span style={{ fontSize: 22, color: primaryColor, fontWeight: 700, flexShrink: 0 }}>↗</span>
             <span style={{ fontSize: 13, color: '#4A4458', lineHeight: 1.4 }}>
-              Belajar Claude AI secara praktis<br />bahasa Indonesia untuk semua level
+              {brandName}
             </span>
           </div>
           <div style={{ width: 1.5, background: '#ECE8F8', alignSelf: 'stretch', margin: '0 20px', flexShrink: 0 }} />
           <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-            {[
-              { icon: '🇮🇩', label: 'Bahasa Indonesia' },
-              { icon: '⭐', label: 'Untuk semua level' },
-              { icon: '✅', label: 'Langsung praktik' },
-            ].map(b => (
-              <div key={b.label} style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: '#F5F2FC', borderRadius: 10,
-                padding: '6px 12px', fontSize: 12, color: '#5B3FC4', fontWeight: 600,
-              }}>
-                <span style={{ fontSize: 14 }}>{b.icon}</span>{b.label}
-              </div>
-            ))}
+            {logoUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={logoUrl} alt={brandName} style={{ height: 32, objectFit: 'contain' }} />
+              : <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: lightColor, borderRadius: 10, padding: '6px 12px', fontSize: 12, color: primaryColor, fontWeight: 600 }}>
+                  {brandName}
+                </div>
+            }
           </div>
         </div>
       </div>
@@ -280,16 +277,16 @@ function PosterTemplate({
 
 // ─── Visual sub-components ────────────────────────────────────────────────────
 
-function TimelineVisual({ items }: { items: TimelineItem[] }) {
+function TimelineVisual({ items, primaryColor, lightColor }: { items: TimelineItem[]; primaryColor: string; lightColor: string }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, height: '100%', alignContent: 'start' }}>
       {items.map((item, i) => (
         <div key={i} style={{
-          background: '#FFFFFF', border: '1.5px solid #F0EDF8', borderRadius: 20, padding: '20px 24px',
-          display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 12px rgba(91,63,196,0.06)',
+          background: '#FFFFFF', border: `1.5px solid ${lightColor}`, borderRadius: 20, padding: '20px 24px',
+          display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
         }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 26, fontWeight: 800, color: '#5B3FC4', margin: 0, letterSpacing: '-0.5px' }}>{item.time}</p>
+            <p style={{ fontSize: 26, fontWeight: 800, color: primaryColor, margin: 0, letterSpacing: '-0.5px' }}>{item.time}</p>
             <p style={{ fontSize: 15, color: '#4A4458', margin: 0, lineHeight: 1.4, marginTop: 4 }}>{item.text}</p>
           </div>
         </div>
@@ -316,15 +313,15 @@ function ComparisonVisual({ data }: { data: TemplateFields['comparison'] }) {
   )
 }
 
-function ChecklistVisual({ items }: { items: ChecklistItem[] }) {
+function ChecklistVisual({ items, primaryColor, lightColor }: { items: ChecklistItem[]; primaryColor: string; lightColor: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', justifyContent: 'flex-start' }}>
       {items.map((item, i) => (
         <div key={i} style={{
-          background: '#FFFFFF', border: '1.5px solid #F0EDF8', borderRadius: 16, padding: '16px 20px',
-          display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 8px rgba(91,63,196,0.05)',
+          background: '#FFFFFF', border: `1.5px solid ${lightColor}`, borderRadius: 16, padding: '16px 20px',
+          display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
         }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: item.checked ? '#5B3FC4' : '#F0EDF8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: item.checked ? primaryColor : lightColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {item.checked && <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>✓</span>}
           </div>
           <span style={{ fontSize: 17, color: item.checked ? '#27232D' : '#8B80A0', fontWeight: item.checked ? 500 : 400 }}>{item.text}</span>
@@ -334,12 +331,12 @@ function ChecklistVisual({ items }: { items: ChecklistItem[] }) {
   )
 }
 
-function StepsVisual({ items }: { items: StepItem[] }) {
+function StepsVisual({ items, lightColor }: { items: StepItem[]; lightColor: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {items.map((item, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 20, background: '#FAFAFA', borderRadius: 16, padding: '18px 22px', border: '1.5px solid #F0EDF8' }}>
-          <span style={{ fontSize: 28, fontWeight: 900, color: '#E9E3FA', letterSpacing: '-1px', flexShrink: 0, lineHeight: 1, fontVariantNumeric: 'tabular-nums' as const }}>{item.number}</span>
+        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 20, background: '#FAFAFA', borderRadius: 16, padding: '18px 22px', border: `1.5px solid ${lightColor}` }}>
+          <span style={{ fontSize: 28, fontWeight: 900, color: lightColor, letterSpacing: '-1px', flexShrink: 0, lineHeight: 1, fontVariantNumeric: 'tabular-nums' as const }}>{item.number}</span>
           <p style={{ fontSize: 17, color: '#27232D', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>{item.text}</p>
         </div>
       ))}
@@ -352,19 +349,54 @@ function StepsVisual({ items }: { items: StepItem[] }) {
 interface Draft { name: string; savedAt: string; fields: TemplateFields }
 interface QueuePost { id: string; title: string | null; caption: string; image_concept: string | null; status: string; cada_campaigns?: { name: string } | null }
 
+interface BrandSettings {
+  brand_name?: string
+  brand_logo_url?: string
+  brand_colors?: string
+}
+
+function parsePrimaryColor(brandColors: string | undefined): string {
+  if (!brandColors) return '#5B3FC4'
+  // brand_colors may be a hex like "#5B3FC4" or a JSON string or comma-separated list
+  const trimmed = brandColors.replace(/^"|"$/g, '').trim()
+  // Try JSON array first
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed[0]
+    if (typeof parsed === 'string') return parsed
+  } catch {}
+  // Try comma-separated
+  const first = trimmed.split(',')[0].trim()
+  if (/^#[0-9a-fA-F]{3,8}$/.test(first)) return first
+  return '#5B3FC4'
+}
+
+function lighten(hex: string): string {
+  // Return a very light tint (~10% opacity) of the brand color
+  try {
+    const h = hex.replace('#', '')
+    const r = parseInt(h.slice(0, 2), 16)
+    const g = parseInt(h.slice(2, 4), 16)
+    const b = parseInt(h.slice(4, 6), 16)
+    return `rgb(${Math.round(r + (255 - r) * 0.88)}, ${Math.round(g + (255 - g) * 0.88)}, ${Math.round(b + (255 - b) * 0.88)})`
+  } catch { return '#E9E3FA' }
+}
+
 function loadFromStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) as T : fallback } catch { return fallback }
 }
 
 export default function TemplatePage() {
-  const [fields, setFields] = useState<TemplateFields>(() => {
-    const saved = loadFromStorage<TemplateFields | null>('template-autosave', null)
-    if (saved?.headline && saved.headline !== DEFAULT.headline) {
-      return { ...saved, layout: { ...DEFAULT_LAYOUT, ...saved.layout } }
-    }
-    return DEFAULT
-  })
+  const [brand, setBrand] = useState<BrandSettings>({})
+  const primaryColor = parsePrimaryColor(brand.brand_colors)
+  const lightColor = lighten(primaryColor)
+  const brandName = brand.brand_name?.replace(/^"|"$/g, '').trim() || 'Your Brand'
+
+  // namespace localStorage per brand so each client's drafts are isolated
+  const storagePrefix = `template-${brandName.toLowerCase().replace(/\s+/g, '-')}`
+
+  const [fields, setFields] = useState<TemplateFields>(DEFAULT)
   const [canvasSize, setCanvasSize] = useState<CanvasSize>('4:5')
   const [logoUrl, setLogoUrl] = useState('')
   const [exporting, setExporting] = useState(false)
@@ -410,9 +442,23 @@ export default function TemplatePage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/settings/brand').then(r => r.json()).then(d => setLogoUrl((d.brand_logo_url ?? '').replace(/^"|"$/g, ''))).catch(() => {})
+    fetch('/api/settings/brand').then(r => r.json()).then((d: BrandSettings) => {
+      setBrand(d)
+      setLogoUrl((d.brand_logo_url ?? '').replace(/^"|"$/g, ''))
+    }).catch(() => {})
     fetch('/api/agents/post-queue').then(r => r.json()).then(d => setPosts((d.posts ?? []).filter((p: QueuePost) => p.image_concept || p.caption))).catch(() => {})
   }, [])
+
+  // Load saved draft once brand is known (storagePrefix depends on brandName)
+  const brandLoaded = !!brand.brand_name
+  useEffect(() => {
+    if (!brandLoaded) return
+    const saved = loadFromStorage<TemplateFields | null>(`${storagePrefix}-autosave`, null)
+    if (saved?.headline && saved.headline !== DEFAULT.headline) {
+      setFields({ ...saved, layout: { ...DEFAULT_LAYOUT, ...saved.layout } })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandLoaded])
 
   async function loadFromPost(postId: string) {
     const post = posts.find(p => p.id === postId)
@@ -475,7 +521,7 @@ export default function TemplatePage() {
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 1 })
       const a = document.createElement('a')
       a.href = dataUrl
-      a.download = `belajarclaude-${fields.category.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.png`
+      a.download = `${brandName.toLowerCase().replace(/\s+/g, '-')}-${fields.category.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.png`
       a.click()
     } catch (err) {
       setExportError('Export failed — try removing the illustration and exporting again.')
@@ -570,21 +616,29 @@ export default function TemplatePage() {
 
   // ── Drafts (localStorage) ────────────────────────────────────────────────
 
-  const [drafts, setDrafts] = useState<Draft[]>(() => loadFromStorage<Draft[]>('template-drafts', []))
+  const [drafts, setDrafts] = useState<Draft[]>([])
   const [draftName, setDraftName] = useState('')
   const [showDraftInput, setShowDraftInput] = useState(false)
 
-  // Auto-save on every fields change
+  // Load drafts once brand is known
   useEffect(() => {
-    try { localStorage.setItem('template-autosave', JSON.stringify(fields)) } catch {}
-  }, [fields])
+    if (!brandLoaded) return
+    setDrafts(loadFromStorage<Draft[]>(`${storagePrefix}-drafts`, []))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandLoaded])
+
+  // Auto-save on every fields change (only after brand is known)
+  useEffect(() => {
+    if (!brandLoaded) return
+    try { localStorage.setItem(`${storagePrefix}-autosave`, JSON.stringify(fields)) } catch {}
+  }, [fields, brandLoaded, storagePrefix])
 
   function saveDraft() {
     const name = draftName.trim() || `Draft ${new Date().toLocaleString('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
     const draft: Draft = { name, savedAt: new Date().toISOString(), fields }
     const updated = [draft, ...drafts.filter(d => d.name !== name)].slice(0, 20)
     setDrafts(updated)
-    try { localStorage.setItem('template-drafts', JSON.stringify(updated)) } catch {}
+    try { localStorage.setItem(`${storagePrefix}-drafts`, JSON.stringify(updated)) } catch {}
     setDraftName('')
     setShowDraftInput(false)
   }
@@ -596,7 +650,7 @@ export default function TemplatePage() {
   function deleteDraft(name: string) {
     const updated = drafts.filter(d => d.name !== name)
     setDrafts(updated)
-    try { localStorage.setItem('template-drafts', JSON.stringify(updated)) } catch {}
+    try { localStorage.setItem(`${storagePrefix}-drafts`, JSON.stringify(updated)) } catch {}
   }
 
   return (
@@ -916,7 +970,7 @@ export default function TemplatePage() {
           <div className="border border-zinc-200 shadow-sm rounded-2xl overflow-hidden"
             style={{ width: canvasW * SCALE, height: canvasH * SCALE, position: 'relative' }}>
             <div style={{ transform: `scale(${SCALE})`, transformOrigin: 'top left', width: canvasW, height: canvasH }}>
-              <PosterTemplate fields={fields} logoUrl={logoUrl} posterRef={posterPreviewRef} setElementRef={setElementRef} canvasW={canvasW} canvasH={canvasH} />
+              <PosterTemplate fields={fields} logoUrl={logoUrl} brandName={brandName} primaryColor={primaryColor} lightColor={lightColor} posterRef={posterPreviewRef} setElementRef={setElementRef} canvasW={canvasW} canvasH={canvasH} />
             </div>
             {/* Screen-space drag overlay */}
             <div style={{ position: 'absolute', inset: 0, zIndex: 50, cursor: cursorStyle }}
@@ -930,7 +984,7 @@ export default function TemplatePage() {
         {/* Hidden export div */}
         <div style={{ position: 'fixed', left: -9999, top: -9999, pointerEvents: 'none', zIndex: -1 }}>
           <div ref={exportRef} style={{ width: canvasW, height: canvasH }}>
-            <PosterTemplate fields={fields} logoUrl={logoUrl} canvasW={canvasW} canvasH={canvasH} />
+            <PosterTemplate fields={fields} logoUrl={logoUrl} brandName={brandName} primaryColor={primaryColor} lightColor={lightColor} canvasW={canvasW} canvasH={canvasH} />
           </div>
         </div>
 
