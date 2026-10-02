@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (clientId) query = query.eq('client_id', clientId)
   if (campaignId) query = query.eq('campaign_id', campaignId)
 
-  const { data, error } = await query.limit(100)
+  const { data, error } = await query.limit(300)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ posts: data ?? [] })
 }
