@@ -872,7 +872,7 @@ function PostsPageInner() {
                       {group.brief.imageSize && <span className="text-[10px] text-zinc-500">Size: {group.brief.imageSize}</span>}
                       {group.brief.imageQuality && <span className="text-[10px] text-zinc-500">Quality: {group.brief.imageQuality}</span>}
                       {group.brief.postFormat && group.brief.postFormat !== 'auto' && <span className="text-[10px] text-zinc-500">Format: {group.brief.postFormat}</span>}
-                      {group.brief.weeks != null && <span className="text-[10px] text-zinc-500">{group.brief.weeks}w · {group.brief.postsPerWeek} posts/wk</span>}
+                      {!!group.brief.weeks && <span className="text-[10px] text-zinc-500">{group.brief.weeks}w · {group.brief.postsPerWeek} posts/wk</span>}
                     </div>
                   )}
                 </div>
