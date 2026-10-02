@@ -814,7 +814,7 @@ function PostsPageInner() {
               createdAt: post.cada_campaigns?.created_at ?? plan?.created_at ?? null,
               brief: plan?.brief,
               startDate: plan?.start_date,
-              endDate: plan?.end_date,
+              endDate: plan?.end_date ?? undefined,
               posts: [],
             })
           }
