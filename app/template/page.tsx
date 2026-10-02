@@ -453,9 +453,12 @@ export default function TemplatePage() {
   const brandLoaded = !!brand.brand_name
   useEffect(() => {
     if (!brandLoaded) return
-    const saved = loadFromStorage<TemplateFields | null>(`${storagePrefix}-autosave`, null)
+    const saved = loadFromStorage<Partial<TemplateFields> | null>(`${storagePrefix}-autosave`, null)
     if (saved?.headline && saved.headline !== DEFAULT.headline) {
-      setFields({ ...saved, layout: { ...DEFAULT_LAYOUT, ...saved.layout } })
+      // Restore text content only — layout always uses current defaults so old positions don't persist
+      const { layout: _layout, ...content } = saved as TemplateFields
+      void _layout
+      setFields({ ...DEFAULT, ...content, layout: SIZE_LAYOUTS[canvasSize] })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandLoaded])
@@ -630,7 +633,12 @@ export default function TemplatePage() {
   // Auto-save on every fields change (only after brand is known)
   useEffect(() => {
     if (!brandLoaded) return
-    try { localStorage.setItem(`${storagePrefix}-autosave`, JSON.stringify(fields)) } catch {}
+    try {
+      // Only save text content — layout is excluded so stale positions don't override updated defaults
+      const { layout: _layout, ...content } = fields
+      void _layout
+      localStorage.setItem(`${storagePrefix}-autosave`, JSON.stringify(content))
+    } catch {}
   }, [fields, brandLoaded, storagePrefix])
 
   function saveDraft() {
