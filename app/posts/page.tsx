@@ -6,7 +6,7 @@ import { format, parseISO } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle, XCircle, Edit2, CalendarClock, ImageIcon,
-  Send, RotateCcw, Clock, Play, Trash2, RefreshCw, Zap,
+  Send, RotateCcw, Clock, Play, Trash2, RefreshCw, Zap, Sparkles,
   ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, History, ExternalLink, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -72,6 +72,26 @@ interface HistoryPost {
   image_concept: string | null
   image_prompt_used: string | null
   media_url: string | null
+}
+
+interface TopPost {
+  id: string
+  caption?: string
+  media_type: string
+  media_url?: string
+  thumbnail_url?: string
+  timestamp: string
+  permalink: string
+  metrics: {
+    likes?: number
+    comments?: number
+    reach?: number
+    saved?: number
+    shares?: number
+    plays?: number
+    impressions?: number
+  }
+  engagementRate: number
 }
 
 interface TrendReport {
@@ -215,6 +235,13 @@ function PostsPageInner() {
   const [trendError, setTrendError]     = useState<string | null>(null)
   const [expandedReport, setExpandedReport] = useState<string | null>(null)
 
+  // Top performers
+  const [topPosts, setTopPosts]           = useState<TopPost[]>([])
+  const [topPostsLoading, setTopPostsLoading] = useState(false)
+  const [topPostsError, setTopPostsError] = useState<string | null>(null)
+  const [topPostsLoaded, setTopPostsLoaded] = useState(false)
+  const [sidebarTab, setSidebarTab]       = useState<'performers' | 'trends'>('performers')
+
   const loadPosts = useCallback(async () => {
     setLoading(true)
     try {
@@ -231,6 +258,51 @@ function PostsPageInner() {
     const data = await res.json()
     setTrendReports(data.reports ?? [])
   }, [])
+
+  const loadTopPosts = useCallback(async () => {
+    if (topPostsLoaded) return
+    setTopPostsLoading(true)
+    setTopPostsError(null)
+    try {
+      const res = await fetch('/api/posts/metrics')
+      const data = await res.json()
+      if (data.error) { setTopPostsError(data.error); return }
+      const ranked = (data.posts ?? [])
+        .map((p: TopPost) => {
+          const m = p.metrics ?? {}
+          const eng = (m.likes ?? 0) + (m.comments ?? 0) + (m.saved ?? 0) + (m.shares ?? 0)
+          const reach = m.reach ?? m.impressions ?? 1
+          return { ...p, engagementRate: Math.round(eng / reach * 1000) / 10 }
+        })
+        .sort((a: TopPost, b: TopPost) => b.engagementRate - a.engagementRate)
+        .slice(0, 5)
+      setTopPosts(ranked)
+      setTopPostsLoaded(true)
+    } catch {
+      setTopPostsError('Could not load Instagram metrics.')
+    } finally {
+      setTopPostsLoading(false)
+    }
+  }, [topPostsLoaded])
+
+  function generateMoreLike(posts: TopPost[]) {
+    const lines = posts.map((p, i) => {
+      const m = p.metrics
+      const stats = [
+        m.reach    && `reach ${m.reach}`,
+        m.saved    && `saves ${m.saved}`,
+        m.likes    && `likes ${m.likes}`,
+        m.comments && `comments ${m.comments}`,
+        m.plays    && `plays ${m.plays}`,
+      ].filter(Boolean).join(', ')
+      const caption = p.caption ? p.caption.slice(0, 120) + (p.caption.length > 120 ? '…' : '') : '(no caption)'
+      return `Post ${i + 1} (${p.engagementRate}% engagement${stats ? `, ${stats}` : ''}): "${caption}"`
+    })
+    const brief = `Generate content inspired by my top-performing Instagram posts:\n\n${lines.join('\n\n')}\n\nMatch the format, tone, and topics that made these resonate with my audience.`
+    setPrompt(brief)
+    setPlanOpen(true)
+    setTimeout(() => textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
+  }
 
   useEffect(() => {
     loadPosts()
@@ -1087,23 +1159,114 @@ function PostsPageInner() {
       })()}
     </div>
 
-      {/* ── Right sidebar: Trend Analyst ── */}
+      {/* ── Right sidebar: Top Performers + Trend Analyst ── */}
       <div className="hidden lg:block">
         <div className="sticky top-6 bg-white rounded-2xl border border-zinc-200 overflow-hidden max-h-[calc(100vh-3rem)] flex flex-col">
-          {/* Header */}
-          <div className="px-5 py-4 border-b border-zinc-100 flex-shrink-0">
-            <h2 className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
-              <span className="text-base">📈</span>
-              Trend Analyst
-              {trendReports.length > 0 && (
-                <span className="text-xs font-normal text-zinc-400">· {trendReports.length}</span>
-              )}
-            </h2>
+          {/* Tab switcher */}
+          <div className="flex border-b border-zinc-100 flex-shrink-0">
+            <button
+              onClick={() => { setSidebarTab('performers'); loadTopPosts() }}
+              className={cn('flex-1 px-3 py-3 text-xs font-semibold transition-colors', sidebarTab === 'performers' ? 'text-violet-700 border-b-2 border-violet-500' : 'text-zinc-400 hover:text-zinc-600')}
+            >
+              🏆 Top Performers
+            </button>
+            <button
+              onClick={() => setSidebarTab('trends')}
+              className={cn('flex-1 px-3 py-3 text-xs font-semibold transition-colors', sidebarTab === 'trends' ? 'text-violet-700 border-b-2 border-violet-500' : 'text-zinc-400 hover:text-zinc-600')}
+            >
+              📈 Trends
+              {trendReports.length > 0 && <span className="ml-1 text-zinc-400 font-normal">· {trendReports.length}</span>}
+            </button>
           </div>
 
           {/* Scrollable content */}
           <div className="overflow-y-auto flex-1">
             <div className="px-4 py-4 space-y-4">
+
+            {/* ── Top Performers tab ── */}
+            {sidebarTab === 'performers' && (<>
+              {topPostsLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
+                </div>
+              )}
+              {topPostsError && (
+                <div className="text-xs text-zinc-500 text-center py-4 space-y-2">
+                  <p>{topPostsError}</p>
+                  {topPostsError.includes('not connected') && (
+                    <a href="/settings" className="text-violet-600 underline">Connect Instagram in Settings</a>
+                  )}
+                </div>
+              )}
+              {!topPostsLoading && !topPostsError && !topPostsLoaded && (
+                <div className="text-center py-6 space-y-3">
+                  <p className="text-xs text-zinc-400">See which posts resonated most, then generate more like them.</p>
+                  <Button size="sm" className="w-full gap-1.5" onClick={loadTopPosts}>
+                    <Zap className="w-3 h-3" /> Load top posts
+                  </Button>
+                </div>
+              )}
+              {topPostsLoaded && topPosts.length === 0 && (
+                <p className="text-xs text-zinc-400 text-center py-4">No published posts found on Instagram.</p>
+              )}
+              {topPosts.length > 0 && (<>
+                <div className="space-y-2">
+                  {topPosts.map((post, i) => {
+                    const thumb = post.thumbnail_url ?? post.media_url
+                    const m = post.metrics
+                    return (
+                      <div key={post.id} className="rounded-xl border border-zinc-200 overflow-hidden">
+                        <div className="flex gap-2.5 p-2.5">
+                          {/* Rank + thumbnail */}
+                          <div className="relative flex-shrink-0">
+                            {thumb
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={thumb} alt="" className="w-14 h-14 rounded-lg object-cover" />
+                              : <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-300"><ImageIcon className="w-5 h-5" /></div>
+                            }
+                            <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-bold flex items-center justify-center">
+                              {i + 1}
+                            </span>
+                          </div>
+                          {/* Stats */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-zinc-600 leading-snug line-clamp-2">
+                              {post.caption ? post.caption.slice(0, 80) : <span className="italic text-zinc-400">{post.media_type}</span>}
+                            </p>
+                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
+                              <span className="text-[10px] font-semibold text-violet-600">{post.engagementRate}% eng.</span>
+                              {(m.reach ?? 0) > 0  && <span className="text-[10px] text-zinc-400">{(m.reach ?? 0).toLocaleString()} reach</span>}
+                              {(m.saved ?? 0) > 0  && <span className="text-[10px] text-zinc-400">💾 {m.saved}</span>}
+                              {(m.likes ?? 0) > 0  && <span className="text-[10px] text-zinc-400">♥ {m.likes}</span>}
+                              {(m.plays ?? 0) > 0  && <span className="text-[10px] text-zinc-400">▶ {(m.plays ?? 0).toLocaleString()}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="border-t border-zinc-100 px-2.5 py-1.5 flex items-center justify-between gap-2">
+                          <a href={post.permalink} target="_blank" rel="noopener noreferrer"
+                            className="text-[10px] text-zinc-400 hover:text-zinc-600 flex items-center gap-0.5">
+                            View <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                          <button
+                            onClick={() => generateMoreLike([post])}
+                            className="text-[10px] font-medium text-violet-600 hover:text-violet-800 transition-colors">
+                            Generate more like this →
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => generateMoreLike(topPosts.slice(0, 3))}
+                  className="w-full text-xs font-medium bg-violet-600 text-white rounded-xl px-3 py-2.5 hover:bg-violet-500 transition-colors flex items-center justify-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Generate from top 3
+                </button>
+              </>)}
+            </>)}
+
+            {/* ── Trends tab ── */}
+            {sidebarTab === 'trends' && (<>
               {/* Run new research */}
               <div className="space-y-2">
                 <input
@@ -1205,6 +1368,8 @@ function PostsPageInner() {
                   )
                 })}
               </div>
+            </>)}
+
             </div>
           </div>
         </div>
