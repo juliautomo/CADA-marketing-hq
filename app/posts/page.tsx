@@ -1192,9 +1192,18 @@ function PostsPageInner() {
               )}
               {topPostsError && (
                 <div className="text-xs text-zinc-500 text-center py-4 space-y-2">
-                  <p>{topPostsError}</p>
-                  {topPostsError.includes('not connected') && (
-                    <a href="/settings" className="text-violet-600 underline">Connect Instagram in Settings</a>
+                  {topPostsError.includes('Cannot call API') || topPostsError.includes('permission') || topPostsError.includes('OAuthException') ? (
+                    <>
+                      <p className="text-zinc-600 font-medium">Instagram insights not available</p>
+                      <p className="text-zinc-400 leading-relaxed">This requires the Instagram account to be a Business or Creator account with the app's insights permission approved by Meta.</p>
+                    </>
+                  ) : topPostsError.includes('not connected') ? (
+                    <>
+                      <p>{topPostsError}</p>
+                      <a href="/settings" className="text-violet-600 underline">Connect Instagram in Settings</a>
+                    </>
+                  ) : (
+                    <p>{topPostsError}</p>
                   )}
                 </div>
               )}
