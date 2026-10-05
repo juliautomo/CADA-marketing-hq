@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
 
     const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
 - Do not add watermarks, copyright symbols, or placeholder icons.
-- Do NOT draw, write, or recreate the brand name or logo as text or art anywhere in the image. Leave the top-left corner as clean empty white space — the real logo is composited by code after generation.
-- The category label (badge, chip, tag, pill) goes below the reserved logo area. Never place it beside the logo area on the same horizontal line.
+- A brand logo image will be provided as an input image. Place it exactly as-is in the top-left corner — do not redraw, recreate, recolor, or approximate the logo as text or art.
+- The category label (badge, chip, tag, pill) goes on its own line directly below the logo, left-aligned. Never place it beside the logo on the same horizontal line.
 - Leave generous empty space (at least 10% of canvas height) at the bottom of the image — never crowd the bottom edge.`
 
     const rewritePrompt = async (concept: string): Promise<string> => {
@@ -195,7 +195,9 @@ CONTENT: ${base}` + correctionDirective
       const generateWithStyle = (prompt: string) =>
         imageModel === 'dall-e-3'
           ? generateImageDalle3(prompt, imageSize as '1024x1024' | '1792x1024' | '1024x1792', dalle3Quality)
-          : generateImageWithReference(prompt, firstRaw, imageSize as '1024x1024' | '1024x1536', quality)
+          : logoUrl
+            ? generateImageWithReferences(prompt, [firstRaw, logoUrl], imageSize as '1024x1024' | '1024x1536', quality)
+            : generateImageWithReference(prompt, firstRaw, imageSize as '1024x1024' | '1024x1536', quality)
       const remainingRaw = await Promise.all(
         finalPrompts.slice(1).map(generateWithStyle)
       )
