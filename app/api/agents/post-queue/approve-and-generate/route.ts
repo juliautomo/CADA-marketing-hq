@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         const composited = await compositeLogoOntoImage(url, logoUrl, {
           position: logoPosition,
           logoMaxWidthPercent: logoSize,
-          padding: 40,
+          paddingPercent: 3,
         })
         console.log('applyLogo: logo composited successfully')
         return uploadBase64ToStorage(composited)

@@ -6,13 +6,13 @@ export async function compositeLogoOntoImage(
   options: {
     position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     logoMaxWidthPercent?: number
-    padding?: number
+    paddingPercent?: number
   } = {}
 ): Promise<string> {
   const {
     position = 'bottom-right',
     logoMaxWidthPercent = 20,
-    padding = 32,
+    paddingPercent = 3,
   } = options
 
   const [base, logo] = await Promise.all([
@@ -32,14 +32,17 @@ export async function compositeLogoOntoImage(
   const logoW = logo.bitmap.width
   const logoH = logo.bitmap.height
 
+  const padX = Math.round(baseWidth * (paddingPercent / 100))
+  const padY = Math.round(baseHeight * (paddingPercent / 100))
+
   let x: number
   let y: number
   switch (position) {
-    case 'top-left':    x = padding; y = padding; break
-    case 'top-right':   x = baseWidth - logoW - padding; y = padding; break
-    case 'bottom-left': x = padding; y = baseHeight - logoH - padding; break
+    case 'top-left':    x = padX; y = padY; break
+    case 'top-right':   x = baseWidth - logoW - padX; y = padY; break
+    case 'bottom-left': x = padX; y = baseHeight - logoH - padY; break
     case 'bottom-right':
-    default:            x = baseWidth - logoW - padding; y = baseHeight - logoH - padding
+    default:            x = baseWidth - logoW - padX; y = baseHeight - logoH - padY
   }
 
   base.composite(logo, Math.max(0, x), Math.max(0, y))
