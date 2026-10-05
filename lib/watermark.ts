@@ -45,6 +45,14 @@ export async function compositeLogoOntoImage(
     default:            x = baseWidth - logoW - padX; y = baseHeight - logoH - padY
   }
 
+  // Clear a white rectangle behind the logo zone so AI-generated content doesn't bleed through
+  const clearW = Math.min(logoW + padX * 4, baseWidth)
+  const clearH = Math.min(logoH + padY * 4, baseHeight)
+  const clearX = Math.max(0, x - padX)
+  const clearY = Math.max(0, y - padY)
+  const whiteRect = await new Jimp(clearW, clearH, 0xFFFFFFFF)
+  base.composite(whiteRect, clearX, clearY)
+
   base.composite(logo, Math.max(0, x), Math.max(0, y))
 
   const buffer = await base.getBufferAsync(Jimp.MIME_PNG)
