@@ -85,7 +85,9 @@ export async function POST(req: NextRequest) {
     const imageInstructions = ctx.raw.brand_image_instructions ?? ''
 
     const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
-- Do not add watermarks, copyright symbols, or placeholder icons.`
+- Do not add watermarks, copyright symbols, or placeholder icons.
+- If the design includes a brand name/logo AND a category label (badge, chip, tag, pill), they must be on separate lines — brand name on top, category label directly below it. Never place them side by side on the same horizontal line.
+- Leave generous empty space (at least 10% of canvas height) at the bottom of the image — never crowd the bottom edge.`
 
     const rewritePrompt = async (concept: string): Promise<string> => {
       const sys = `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`
@@ -131,12 +133,14 @@ export async function POST(req: NextRequest) {
 
     const buildPrompt = (base: string) => {
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
-      const canvasFill = `\n\nCANVAS REQUIREMENTS (strictly follow all):
-- Background: pure white #FFFFFF filling the entire canvas — no floating card, no dark background, no shadow around the whole composition, no letterboxing, no rounded outer border.
-- Margins: keep at least 6% padding on all four sides. Never let text or elements touch the canvas edges.
-- Bottom margin: leave clear white space (at least 8% of canvas height) below the last element.
-- Logo and category pill must be vertically stacked — logo on top, pill directly below with clear spacing between them. Never place them side by side on the same horizontal line.`
-      return `CONTENT: ${base}` + correctionDirective + canvasFill
+      const canvasFill = `LAYOUT RULES (highest priority — follow exactly):
+- Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow around the whole image, no letterboxing, no rounded border around the outer edge.
+- Minimum 6% safe-zone padding on all four sides. No element may touch or bleed off the canvas edge.
+- Brand name / logo goes in the top-left corner. The category label (badge/chip/tag) goes on its own line BELOW the logo — never beside it on the same horizontal line.
+- Leave at least 10% empty white space below the very last element at the bottom of the canvas.
+
+CONTENT: ${base}` + correctionDirective
+      return canvasFill
     }
 
     // Map quality for dall-e-3 (only standard/hd)
