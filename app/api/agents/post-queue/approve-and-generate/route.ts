@@ -85,15 +85,14 @@ export async function POST(req: NextRequest) {
     const imageInstructions = ctx.raw.brand_image_instructions ?? ''
 
     // brand_logo_url may be stored as a JSON-encoded string ("\"https://...\"") — strip quotes
+    // Always resolves to a URL — falls back to placeholder so logo placement is always consistent
     const rawLogoUrl = ctx.raw.brand_logo_url || ''
-    const logoUrl = rawLogoUrl.replace(/^"|"$/g, '') || undefined
-    console.log('logoUrl resolved:', logoUrl ?? 'none')
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const logoUrl = rawLogoUrl.replace(/^"|"$/g, '') || `${appUrl}/placeholder-logo.svg`
+    console.log('logoUrl resolved:', logoUrl)
 
-    const logoRule = logoUrl
-      ? `- A brand logo image is provided as an input image. Place it exactly as-is in the top-left corner — do not redraw, recreate, recolor, or approximate the logo as text or art.
+    const logoRule = `- A brand logo image is provided as one of the input images. Place it exactly as-is in the top-left corner — do not redraw, recreate, recolor, or approximate the logo as text or art.
 - The category label (badge, chip, tag, pill) goes on its own line directly below the logo, left-aligned. Never place it beside the logo on the same horizontal line.`
-      : `- Do not draw, write, or place any brand name or logo in the image. Leave the top-left corner as empty white space.
-- The category label (badge, chip, tag, pill) goes in the top-left area, left-aligned.`
 
     const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
 - Do not add watermarks, copyright symbols, or placeholder icons.
@@ -112,7 +111,6 @@ ${logoRule}
     // Composite logo onto a generated image URL; returns the same URL if no logo or if sharp fails
     // Skipped when using gpt-image-1 (logo passed directly to AI as input image)
     const applyLogo = async (url: string): Promise<string> => {
-      if (!logoUrl) { console.log('applyLogo: no logoUrl, skipping'); return url }
       if (imageModel !== 'dall-e-3' && imageModel !== 'gemini-imagen' && imageModel !== 'gemini-nano-banana-2' && imageModel !== 'gemini-nano-banana-2-lite' && imageModel !== 'gemini-nano-banana-pro') {
         console.log('applyLogo: logo passed to AI directly, skipping composite')
         return url
@@ -148,11 +146,8 @@ ${logoRule}
       const ratioLabel = postImageSize === '1:1' ? 'square (1:1 ratio, equal width and height)'
         : postImageSize === '9:16' ? 'tall portrait (9:16 ratio, much taller than wide)'
         : 'portrait (4:5 ratio, taller than wide)'
-      const logoDirective = logoUrl
-        ? `- A brand logo image is provided as one of the input images. Place it in the top-left corner of the canvas with ~3% padding from the edges. Scale it proportionally to fit — maintain its original aspect ratio exactly, do not stretch, squash, crop, or distort it. Preserve its exact colors, letterforms, and design — do not stylize, recolor, blur, or modify it in any way.
+      const logoDirective = `- A brand logo image is provided as one of the input images. Place it in the top-left corner of the canvas with ~3% padding from the edges. Scale it proportionally to fit — maintain its original aspect ratio exactly, do not stretch, squash, crop, or distort it. Preserve its exact colors, letterforms, and design — do not stylize, recolor, blur, or modify it in any way.
 - The category label (badge/chip/tag) goes on its own line directly below the logo, left-aligned, with clear spacing between them.`
-        : `- Top-left corner: reserve as clean empty white space for the brand logo — do NOT draw or recreate the logo or brand name.
-- The category label (badge/chip/tag) goes below the reserved logo area, left-aligned.`
       const canvasFill = `CANVAS & LAYOUT RULES (highest priority — follow exactly):
 - Canvas shape: ${ratioLabel}. Distribute elements to fill the full height.
 - Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow, no letterboxing, no rounded outer border.
