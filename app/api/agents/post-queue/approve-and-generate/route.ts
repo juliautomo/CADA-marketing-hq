@@ -91,17 +91,9 @@ export async function POST(req: NextRequest) {
     const logoUrl = rawLogoUrl.replace(/^"|"$/g, '') || `${appUrl}/placeholder-logo.svg`
     console.log('logoUrl resolved:', logoUrl)
 
-    const logoRule = `- A brand logo image is provided as one of the input images. Place it exactly as-is in the top-left corner — do not redraw, recreate, recolor, or approximate the logo as text or art.
-- The category label (badge, chip, tag, pill) goes on its own line directly below the logo, left-aligned. Never place it beside the logo on the same horizontal line. It must not touch or overlap the logo — leave a clear gap between them.`
-
-    const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
-- Do not add watermarks, copyright symbols, or placeholder icons.
-${logoRule}
-- Leave at least 10% of canvas height as empty white space below the very last element (including footer/CTA). Every element — checklist, tips bar, footer — must be fully visible and not cut off at the bottom edge.`
-
     const rewritePrompt = async (concept: string): Promise<string> => {
       const sys = `You rewrite image generation prompts to match a specific brand's visual style. Output ONLY the rewritten prompt — no explanation, no preamble.`
-      const usr = `GLOBAL IMAGE RULES (always apply):\n${GLOBAL_IMAGE_RULES}${brandStyleGuide ? `\n\nBRAND VISUAL STYLE:\n${brandStyleGuide}` : ''}${imageInstructions ? `\n\nIMAGE GENERATION RULES:\n${imageInstructions}` : ''}\n\nORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept following all rules above. Keep the same message and information. Output only the rewritten prompt.`
+      const usr = `${brandStyleGuide ? `BRAND VISUAL STYLE:\n${brandStyleGuide}\n\n` : ''}${imageInstructions ? `IMAGE GENERATION RULES:\n${imageInstructions}\n\n` : ''}ORIGINAL CONCEPT:\n${concept}\n\nRewrite this concept following all rules above. Keep the same message and information. Output only the rewritten prompt.`
       if (promptModel === 'gpt-4o' || promptModel === 'gpt-4o-mini') {
         return generateTextOpenAI(sys, usr, promptModel as 'gpt-4o' | 'gpt-4o-mini')
       }
@@ -146,14 +138,17 @@ ${logoRule}
       const ratioLabel = postImageSize === '1:1' ? 'square (1:1 ratio, equal width and height)'
         : postImageSize === '9:16' ? 'tall portrait (9:16 ratio, much taller than wide)'
         : 'portrait (4:5 ratio, taller than wide)'
-      const logoDirective = `- A brand logo image is provided as one of the input images. Place it in the top-left corner of the canvas with ~3% padding from the edges. Scale it proportionally to fit — maintain its original aspect ratio exactly, do not stretch, squash, crop, or distort it. Preserve its exact colors, letterforms, and design — do not stylize, recolor, blur, or modify it in any way.
-- The category label (badge/chip/tag) goes on its own line directly below the logo, left-aligned. The category label must not touch or overlap the logo — leave at least 2% of canvas height as a clear gap between the bottom edge of the logo and the top edge of the category label.`
+      const logoDirective = `- A brand logo image is provided as one of the input images. Place it in the top-left area. Scale proportionally — do not stretch, squash, crop, or distort it. Preserve its exact colors, letterforms, and design exactly as supplied — do not redraw, recreate, recolor, or approximate it.
+- The category label (badge/chip/tag) goes on its own line directly below the logo, left-aligned. It must not touch or overlap the logo — leave a clear visual gap between them.`
+      const marginSystem = `RESPONSIVE SAFE MARGIN SYSTEM — HIGH PRIORITY:
+Establish a comfortable, consistent safe zone around all four edges of the original canvas. The safe zone must adapt proportionally to the canvas dimensions and aspect ratio rather than using fixed pixel measurements.
+Keep the logo, category pill, headlines, illustrations, cards, CTA, and all other content fully inside this safe zone. Nothing may touch, clip, bleed into, or sit awkwardly close to the canvas edge.
+Use the same primary left/right alignment line for the logo, category pill, headline, body copy, and other text-led elements unless the composition intentionally requires a different alignment.
+The margin should feel comfortable and premium, not excessively wide. Do not create large unused borders simply to satisfy the safe zone. Adjust spacing based on the available canvas and content density.`
       const canvasFill = `CANVAS & LAYOUT RULES (highest priority — follow exactly):
-- Canvas shape: ${ratioLabel}. Distribute elements to fill the full height.
-- Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow, no letterboxing, no rounded outer border.
-- Minimum 6% safe-zone padding on all four sides. No element may touch or bleed off the canvas edge.
+- Canvas shape: ${ratioLabel}. Fill the full canvas — pure white #FFFFFF background edge to edge. No floating card, dark background, letterboxing, or rounded outer border.
 ${logoDirective}
-- Leave at least 10% of canvas height as empty white space below the very last element (including footer/CTA). Every element must be fully visible — nothing cut off at the bottom.
+${marginSystem}
 
 CONTENT: ${base}` + correctionDirective
       return canvasFill
