@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
         : postImageSize === '9:16' ? 'tall portrait (9:16 ratio, much taller than wide)'
         : 'portrait (4:5 ratio, taller than wide)'
       const logoDirective = logoUrl
-        ? `- A brand logo image is provided as one of the input images. Place it exactly as-is in the top-left corner of the canvas with ~3% padding from the edges. Preserve its exact colors, letterforms, and proportions — do not stylize, recolor, blur, stretch, or modify it in any way.
+        ? `- A brand logo image is provided as one of the input images. Place it in the top-left corner of the canvas with ~3% padding from the edges. Scale it proportionally to fit — maintain its original aspect ratio exactly, do not stretch, squash, crop, or distort it. Preserve its exact colors, letterforms, and design — do not stylize, recolor, blur, or modify it in any way.
 - The category label (badge/chip/tag) goes on its own line directly below the logo, left-aligned, with clear spacing between them.`
         : `- Top-left corner: reserve as clean empty white space for the brand logo — do NOT draw or recreate the logo or brand name.
 - The category label (badge/chip/tag) goes below the reserved logo area, left-aligned.`
