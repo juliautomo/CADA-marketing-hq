@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     console.log('logoUrl resolved:', logoUrl)
 
     const logoRule = `- A brand logo image is provided as one of the input images. Place it exactly as-is in the top-left corner — do not redraw, recreate, recolor, or approximate the logo as text or art.
-- The category label (badge, chip, tag, pill) goes on its own line directly below the logo, left-aligned. Never place it beside the logo on the same horizontal line.`
+- The category label (badge, chip, tag, pill) goes on its own line directly below the logo, left-aligned. Never place it beside the logo on the same horizontal line. It must not touch or overlap the logo — leave a clear gap between them.`
 
     const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
 - Do not add watermarks, copyright symbols, or placeholder icons.
@@ -147,7 +147,7 @@ ${logoRule}
         : postImageSize === '9:16' ? 'tall portrait (9:16 ratio, much taller than wide)'
         : 'portrait (4:5 ratio, taller than wide)'
       const logoDirective = `- A brand logo image is provided as one of the input images. Place it in the top-left corner of the canvas with ~3% padding from the edges. Scale it proportionally to fit — maintain its original aspect ratio exactly, do not stretch, squash, crop, or distort it. Preserve its exact colors, letterforms, and design — do not stylize, recolor, blur, or modify it in any way.
-- The category label (badge/chip/tag) goes on its own line directly below the logo, left-aligned, with clear spacing between them.`
+- The category label (badge/chip/tag) goes on its own line directly below the logo, left-aligned. The category label must not touch or overlap the logo — leave at least 2% of canvas height as a clear gap between the bottom edge of the logo and the top edge of the category label.`
       const canvasFill = `CANVAS & LAYOUT RULES (highest priority — follow exactly):
 - Canvas shape: ${ratioLabel}. Distribute elements to fill the full height.
 - Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow, no letterboxing, no rounded outer border.
