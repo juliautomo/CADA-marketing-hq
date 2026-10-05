@@ -923,7 +923,7 @@ export default function TemplatePage() {
               ))}
             </div>
             <div className="flex items-center gap-3 mt-1">
-              <button onClick={() => setFields(prev => ({ ...prev, layout: savedLayouts[canvasSize] ?? SIZE_LAYOUTS[canvasSize] }))}
+              <button onClick={() => setFields(prev => ({ ...prev, layout: SIZE_LAYOUTS[canvasSize] }))}
                 className="text-[10px] text-violet-500 hover:text-violet-700 transition-colors">
                 Reset to default
               </button>
