@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { generateImage, generateImageWithReference, generateImageDalle3, uploadBase64ToStorage, generateTextOpenAI } from '@/lib/openai'
+import { generateImage, generateImageWithReference, generateImageWithReferences, generateImageDalle3, uploadBase64ToStorage, generateTextOpenAI } from '@/lib/openai'
 import { generateImageGemini } from '@/lib/gemini'
 import { getBrandContext } from '@/lib/brand'
 import { generateText } from '@/lib/anthropic'
@@ -105,8 +105,13 @@ export async function POST(req: NextRequest) {
     console.log('logoUrl resolved:', logoUrl ?? 'none')
 
     // Composite logo onto a generated image URL; returns the same URL if no logo or if sharp fails
+    // Skipped when using gpt-image-1 (logo passed directly to AI as input image)
     const applyLogo = async (url: string): Promise<string> => {
       if (!logoUrl) { console.log('applyLogo: no logoUrl, skipping'); return url }
+      if (imageModel !== 'dall-e-3' && imageModel !== 'gemini-imagen' && imageModel !== 'gemini-nano-banana-2' && imageModel !== 'gemini-nano-banana-2-lite' && imageModel !== 'gemini-nano-banana-pro') {
+        console.log('applyLogo: logo passed to AI directly, skipping composite')
+        return url
+      }
       try {
         const { compositeLogoOntoImage } = await import('@/lib/watermark')
         const logoPosition = (ctx.raw.brand_logo_position as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') || 'bottom-right'
@@ -134,17 +139,21 @@ export async function POST(req: NextRequest) {
 
     const buildPrompt = (base: string) => {
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
-      const imageSize = post.image_size as string | undefined
-      const ratioLabel = imageSize === '1:1' ? 'square (1:1 ratio, equal width and height)'
-        : imageSize === '9:16' ? 'tall portrait (9:16 ratio, much taller than wide)'
+      const postImageSize = post.image_size as string | undefined
+      const ratioLabel = postImageSize === '1:1' ? 'square (1:1 ratio, equal width and height)'
+        : postImageSize === '9:16' ? 'tall portrait (9:16 ratio, much taller than wide)'
         : 'portrait (4:5 ratio, taller than wide)'
+      const logoDirective = logoUrl
+        ? `- A brand logo image is provided as one of the input images. Place it exactly as-is in the top-left corner of the canvas with ~3% padding from the edges. Preserve its exact colors, letterforms, and proportions — do not stylize, recolor, blur, stretch, or modify it in any way.
+- The category label (badge/chip/tag) goes on its own line directly below the logo, left-aligned, with clear spacing between them.`
+        : `- Top-left corner: reserve as clean empty white space for the brand logo — do NOT draw or recreate the logo or brand name.
+- The category label (badge/chip/tag) goes below the reserved logo area, left-aligned.`
       const canvasFill = `CANVAS & LAYOUT RULES (highest priority — follow exactly):
-- Canvas shape: ${ratioLabel}. Distribute elements to fill the full height — do not leave large empty gaps in the middle, and do not crowd the bottom.
-- Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow around the whole image, no letterboxing, no rounded border around the outer edge.
+- Canvas shape: ${ratioLabel}. Distribute elements to fill the full height.
+- Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow, no letterboxing, no rounded outer border.
 - Minimum 6% safe-zone padding on all four sides. No element may touch or bleed off the canvas edge.
-- Top-left corner: reserve as clean empty white space for the brand logo — do NOT draw, write, or recreate the logo or brand name as text or art in the image. The real logo is composited by code after generation.
-- The category label (badge/chip/tag) goes below the reserved logo area — never beside it on the same horizontal line.
-- Leave at least 10% of canvas height as empty white space below the very last element. Never let content touch or crowd the bottom edge.
+${logoDirective}
+- Leave at least 10% of canvas height as empty white space below the very last element.
 
 CONTENT: ${base}` + correctionDirective
       return canvasFill
@@ -166,9 +175,11 @@ CONTENT: ${base}` + correctionDirective
         }
         return generateImageGemini(prompt, (post.image_size as string) ?? '4:5', geminiModelMap[imageModel] ?? 'gemini-3.1-flash-image')
       }
-      return referenceUrl
-        ? generateImageWithReference(prompt, referenceUrl, imageSize as '1024x1024' | '1024x1536', quality)
-        : generateImage(prompt, imageSize as '1024x1024' | '1024x1536', quality)
+      // Build reference image list: style reference first, then logo (if available)
+      const refs = [referenceUrl, logoUrl].filter(Boolean) as string[]
+      if (refs.length > 1) return generateImageWithReferences(prompt, refs, imageSize as '1024x1024' | '1024x1536', quality)
+      if (refs.length === 1) return generateImageWithReference(prompt, refs[0], imageSize as '1024x1024' | '1024x1536', quality)
+      return generateImage(prompt, imageSize as '1024x1024' | '1024x1536', quality)
     }
 
     // Save the final prompts sent to the image model for review
