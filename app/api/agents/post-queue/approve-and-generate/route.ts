@@ -84,10 +84,20 @@ export async function POST(req: NextRequest) {
 
     const imageInstructions = ctx.raw.brand_image_instructions ?? ''
 
+    // brand_logo_url may be stored as a JSON-encoded string ("\"https://...\"") — strip quotes
+    const rawLogoUrl = ctx.raw.brand_logo_url || ''
+    const logoUrl = rawLogoUrl.replace(/^"|"$/g, '') || undefined
+    console.log('logoUrl resolved:', logoUrl ?? 'none')
+
+    const logoRule = logoUrl
+      ? `- A brand logo image is provided as an input image. Place it exactly as-is in the top-left corner — do not redraw, recreate, recolor, or approximate the logo as text or art.
+- The category label (badge, chip, tag, pill) goes on its own line directly below the logo, left-aligned. Never place it beside the logo on the same horizontal line.`
+      : `- Do not draw, write, or place any brand name or logo in the image. Leave the top-left corner as empty white space.
+- The category label (badge, chip, tag, pill) goes in the top-left area, left-aligned.`
+
     const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
 - Do not add watermarks, copyright symbols, or placeholder icons.
-- A brand logo image will be provided as an input image. Place it exactly as-is in the top-left corner — do not redraw, recreate, recolor, or approximate the logo as text or art.
-- The category label (badge, chip, tag, pill) goes on its own line directly below the logo, left-aligned. Never place it beside the logo on the same horizontal line.
+${logoRule}
 - Leave generous empty space (at least 10% of canvas height) at the bottom of the image — never crowd the bottom edge.`
 
     const rewritePrompt = async (concept: string): Promise<string> => {
@@ -98,11 +108,6 @@ export async function POST(req: NextRequest) {
       }
       return generateText(sys, usr)
     }
-
-    // brand_logo_url may be stored as a JSON-encoded string ("\"https://...\"") — strip quotes
-    const rawLogoUrl = ctx.raw.brand_logo_url || ''
-    const logoUrl = rawLogoUrl.replace(/^"|"$/g, '') || undefined
-    console.log('logoUrl resolved:', logoUrl ?? 'none')
 
     // Composite logo onto a generated image URL; returns the same URL if no logo or if sharp fails
     // Skipped when using gpt-image-1 (logo passed directly to AI as input image)
