@@ -86,7 +86,8 @@ export async function POST(req: NextRequest) {
 
     const GLOBAL_IMAGE_RULES = `- Never place a literal bullet point (•) Unicode character or typographic dot before text labels. Drawn shape elements (a filled circle rendered as a graphic) are fine as decorative elements inside pills or badges.
 - Do not add watermarks, copyright symbols, or placeholder icons.
-- If the design includes a brand name/logo AND a category label (badge, chip, tag, pill), they must be on separate lines — brand name on top, category label directly below it. Never place them side by side on the same horizontal line.
+- Do NOT draw, write, or recreate the brand name or logo as text or art anywhere in the image. Leave the top-left corner as clean empty white space — the real logo is composited by code after generation.
+- The category label (badge, chip, tag, pill) goes below the reserved logo area. Never place it beside the logo area on the same horizontal line.
 - Leave generous empty space (at least 10% of canvas height) at the bottom of the image — never crowd the bottom edge.`
 
     const rewritePrompt = async (concept: string): Promise<string> => {
@@ -141,7 +142,8 @@ export async function POST(req: NextRequest) {
 - Canvas shape: ${ratioLabel}. Distribute elements to fill the full height — do not leave large empty gaps in the middle, and do not crowd the bottom.
 - Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow around the whole image, no letterboxing, no rounded border around the outer edge.
 - Minimum 6% safe-zone padding on all four sides. No element may touch or bleed off the canvas edge.
-- Brand name / logo goes in the top-left corner. The category label (badge/chip/tag) goes on its own line BELOW the logo — never beside it on the same horizontal line.
+- Top-left corner: reserve as clean empty white space for the brand logo — do NOT draw, write, or recreate the logo or brand name as text or art in the image. The real logo is composited by code after generation.
+- The category label (badge/chip/tag) goes below the reserved logo area — never beside it on the same horizontal line.
 - Leave at least 10% of canvas height as empty white space below the very last element. Never let content touch or crowd the bottom edge.
 
 CONTENT: ${base}` + correctionDirective
