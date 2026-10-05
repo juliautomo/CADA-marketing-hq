@@ -22,7 +22,7 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
     'brand_campaign_theme', 'brand_caption_examples',
     'brand_style_prefix', 'brand_negative_prompts', 'brand_color_description',
     'brand_shot_style', 'brand_colors', 'brand_image_instructions',
-    'brand_model_reference_url', 'brand_logo_url', 'brand_logo_position', 'brand_logo_size', 'use_reference_image',
+    'brand_style_reference_url', 'brand_model_reference_url', 'brand_logo_url', 'brand_logo_position', 'brand_logo_size', 'use_reference_image',
     'image_quality', 'default_post_time', 'drive_media_upload_enabled', 'drive_media_folder_id',
   ]
   let query = db.from('cada_settings').select('key, value').in('key', KEYS)
@@ -61,8 +61,9 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
     ? `${imagePromptBase}${imagePromptBase ? '. ' : ''}Avoid: ${raw.brand_negative_prompts}`
     : imagePromptBase
 
-  // Use first library photo as style reference, fall back to manual uploads
-  let referenceImageUrl: string | undefined = raw.brand_model_reference_url || undefined
+  // Priority: library photo > model reference > style reference
+  let referenceImageUrl: string | undefined = raw.brand_style_reference_url || undefined
+  if (raw.brand_model_reference_url) referenceImageUrl = raw.brand_model_reference_url
   if (libraryPhotos?.[0]?.url) referenceImageUrl = libraryPhotos[0].url
 
   // Default true — only disabled when explicitly set to 'false'
