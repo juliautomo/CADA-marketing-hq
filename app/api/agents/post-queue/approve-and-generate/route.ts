@@ -133,11 +133,16 @@ export async function POST(req: NextRequest) {
 
     const buildPrompt = (base: string) => {
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
-      const canvasFill = `LAYOUT RULES (highest priority — follow exactly):
+      const imageSize = post.image_size as string | undefined
+      const ratioLabel = imageSize === '1:1' ? 'square (1:1 ratio, equal width and height)'
+        : imageSize === '9:16' ? 'tall portrait (9:16 ratio, much taller than wide)'
+        : 'portrait (4:5 ratio, taller than wide)'
+      const canvasFill = `CANVAS & LAYOUT RULES (highest priority — follow exactly):
+- Canvas shape: ${ratioLabel}. Distribute elements to fill the full height — do not leave large empty gaps in the middle, and do not crowd the bottom.
 - Pure white #FFFFFF background filling the entire canvas. No floating card, no dark background, no drop shadow around the whole image, no letterboxing, no rounded border around the outer edge.
 - Minimum 6% safe-zone padding on all four sides. No element may touch or bleed off the canvas edge.
 - Brand name / logo goes in the top-left corner. The category label (badge/chip/tag) goes on its own line BELOW the logo — never beside it on the same horizontal line.
-- Leave at least 10% empty white space below the very last element at the bottom of the canvas.
+- Leave at least 10% of canvas height as empty white space below the very last element. Never let content touch or crowd the bottom edge.
 
 CONTENT: ${base}` + correctionDirective
       return canvasFill
