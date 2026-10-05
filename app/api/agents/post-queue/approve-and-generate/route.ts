@@ -131,7 +131,11 @@ export async function POST(req: NextRequest) {
 
     const buildPrompt = (base: string) => {
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
-      const canvasFill = `\n\nCANVAS REQUIREMENT: The design must fill the entire canvas edge-to-edge. Pure white #FFFFFF background directly — no floating card, no rounded outer border, no dark background, no shadow around the whole composition, no letterboxing.`
+      const canvasFill = `\n\nCANVAS REQUIREMENTS (strictly follow all):
+- Background: pure white #FFFFFF filling the entire canvas — no floating card, no dark background, no shadow around the whole composition, no letterboxing, no rounded outer border.
+- Margins: keep at least 6% padding on all four sides. Never let text or elements touch the canvas edges.
+- Bottom margin: leave clear white space (at least 8% of canvas height) below the last element.
+- Logo and category pill must be vertically stacked — logo on top, pill directly below with clear spacing between them. Never place them side by side on the same horizontal line.`
       return `CONTENT: ${base}` + correctionDirective + canvasFill
     }
 
