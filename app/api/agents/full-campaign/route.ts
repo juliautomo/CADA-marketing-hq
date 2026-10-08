@@ -219,7 +219,7 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
       send({ step: 4, status: 'running', label: 'Saving to post queue…' })
 
       // Save campaign
-      const { data: campaign } = await db.from('cada_campaigns').insert({
+      const { data: campaign, error: campaignError } = await db.from('cada_campaigns').insert({
         name: parsed.name,
         description: parsed.theme,
         start_date: parsed.startDate,
@@ -240,7 +240,11 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
         },
       }).select().single()
 
-      // Save content days as content_items
+      if (campaignError || !campaign) {
+        throw new Error(`Campaign insert failed: ${campaignError?.message ?? 'no data returned'}`)
+      }
+
+      // Save content days as content_items — roll back campaign on failure
       const contentInserts = contentDays.map((day) => ({
         type: 'caption' as const,
         title: `Day ${day.day} — ${day.platform} — ${parsed.name}`,
@@ -253,36 +257,39 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
           hook: day.hook,
           cta: day.cta,
           imagePrompt: day.imagePrompt,
-          campaign_id: campaign?.id,
+          campaign_id: campaign.id,
         },
         tags: ['campaign', parsed.name.toLowerCase().replace(/\s+/g, '-'), day.platform.toLowerCase(), 'cada'],
         client_id: clientId,
       }))
 
-      await db.from('cada_content_items').insert(contentInserts)
+      const { error: contentError } = await db.from('cada_content_items').insert(contentInserts)
+      if (contentError) {
+        await db.from('cada_campaigns').delete().eq('id', campaign.id)
+        throw new Error(`Content items insert failed: ${contentError.message}`)
+      }
 
       // Add to post queue so they appear in Posts for approval
-      if (campaign) {
-        const defaultPostTime = ctx.raw.default_post_time ?? '09:00'
-        const scheduledInserts = contentDays.map((day) => ({
-          caption: day.caption,
-          scheduled_at: new Date(day.date + 'T' + defaultPostTime + ':00').toISOString(),
-          status: 'pending_approval',
-          platform: day.platform,
-          title: `Day ${day.day} — ${day.platform}`,
-          image_concept: day.imagePrompt || day.hook || '',
-          campaign_id: campaign.id,
-          client_id: clientId,
-          image_size: imageSize,
-          post_format: postFormat,
-          image_model: imageModel,
-          prompt_model: promptModel,
-        }))
-        const { error: insertError } = await db.from('cada_scheduled_posts').insert(scheduledInserts)
-        if (insertError) {
-          send({ step: 4, status: 'error', label: `Failed to save posts: ${insertError.message}` })
-          throw new Error(`Post insert failed: ${insertError.message}`)
-        }
+      const defaultPostTime = ctx.raw.default_post_time ?? '09:00'
+      const scheduledInserts = contentDays.map((day) => ({
+        caption: day.caption,
+        scheduled_at: new Date(day.date + 'T' + defaultPostTime + ':00').toISOString(),
+        status: 'pending_approval',
+        platform: day.platform,
+        title: `Day ${day.day} — ${day.platform}`,
+        image_concept: day.imagePrompt || day.hook || '',
+        campaign_id: campaign.id,
+        client_id: clientId,
+        image_size: imageSize,
+        post_format: postFormat,
+        image_model: imageModel,
+        prompt_model: promptModel,
+      }))
+      const { error: insertError } = await db.from('cada_scheduled_posts').insert(scheduledInserts)
+      if (insertError) {
+        await db.from('cada_campaigns').delete().eq('id', campaign.id)
+        send({ step: 4, status: 'error', label: `Failed to save posts: ${insertError.message}` })
+        throw new Error(`Post insert failed: ${insertError.message}`)
       }
 
       send({ step: 4, status: 'done', label: 'Saved to database & post queue' })
@@ -345,13 +352,10 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
       }
 
       // â”€â”€ STEP 9: Finalise DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      if (campaign) {
-        await db.from('cada_campaigns').update({
-          calendar_event_ids: calendarEventIds,
-          google_drive_url: driveUrl || null,
-        }).eq('id', campaign.id)
-
-      }
+      await db.from('cada_campaigns').update({
+        calendar_event_ids: calendarEventIds,
+        google_drive_url: driveUrl || null,
+      }).eq('id', campaign.id)
 
       // â”€â”€ DONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       send({
@@ -360,7 +364,7 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
         complete: true,
         duration: Math.round((Date.now() - start) / 1000),
         summary: {
-          campaignId: campaign?.id,
+          campaignId: campaign.id,
           campaignName: parsed.name,
           theme: parsed.theme,
           startDate: parsed.startDate,
