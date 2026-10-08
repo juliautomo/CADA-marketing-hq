@@ -33,13 +33,34 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
   if (clientId) photoQuery = photoQuery.eq('client_id', clientId)
   else photoQuery = photoQuery.is('client_id', null)
 
-  const [{ data }, photoResult] = await Promise.all([query, photoQuery])
+  let analysisQuery = db.from('cada_brand_kit_analyses')
+    .select('style_prefix, color_description, brand_colors, shot_style, negative_prompts')
+    .order('created_at', { ascending: false })
+    .limit(1)
+  if (clientId) analysisQuery = analysisQuery.eq('client_id', clientId)
+  else analysisQuery = analysisQuery.is('client_id', null)
+
+  const [{ data }, photoResult, analysisResult] = await Promise.all([query, photoQuery, analysisQuery])
   const libraryPhotos = photoResult?.data
+  const latestAnalysis = analysisResult?.data?.[0]
 
   const raw: Record<string, string> = {}
   for (const row of data ?? []) {
     if (row.value && row.value !== 'null') {
       raw[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
+    }
+  }
+
+  // Fill in brand kit analysis values as fallbacks — manual settings always take priority
+  if (latestAnalysis) {
+    if (!raw.brand_style_prefix && latestAnalysis.style_prefix) raw.brand_style_prefix = latestAnalysis.style_prefix
+    if (!raw.brand_color_description && latestAnalysis.color_description) raw.brand_color_description = latestAnalysis.color_description
+    if (!raw.brand_shot_style && latestAnalysis.shot_style) raw.brand_shot_style = latestAnalysis.shot_style
+    if (!raw.brand_negative_prompts && latestAnalysis.negative_prompts) raw.brand_negative_prompts = latestAnalysis.negative_prompts
+    if (!raw.brand_colors && latestAnalysis.brand_colors) {
+      raw.brand_colors = Array.isArray(latestAnalysis.brand_colors)
+        ? JSON.stringify(latestAnalysis.brand_colors)
+        : String(latestAnalysis.brand_colors)
     }
   }
 
