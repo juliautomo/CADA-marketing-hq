@@ -11,7 +11,8 @@ const COOKIE_OPTS = {
 }
 
 export function hashPin(pin: string): string {
-  const secret = process.env.PIN_SECRET ?? 'cada-internal-secret'
+  const secret = process.env.PIN_SECRET
+  if (!secret) throw new Error('PIN_SECRET env var is not set')
   return createHash('sha256').update(pin + secret).digest('hex')
 }
 

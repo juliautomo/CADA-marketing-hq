@@ -1,4 +1,5 @@
 ﻿export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/anthropic'
 import { generateImage, generateImageWithReference, generateImageWithReferences, generateImageGPT5 } from '@/lib/openai'

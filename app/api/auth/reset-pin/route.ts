@@ -8,7 +8,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
-  const expected = process.env.ADMIN_SECRET ?? 'cada-admin-reset'
+  const expected = process.env.ADMIN_SECRET
+  if (!expected) return NextResponse.json({ error: 'Admin reset not configured' }, { status: 503 })
   if (adminSecret !== expected) {
     return NextResponse.json({ error: 'Invalid admin code' }, { status: 401 })
   }
