@@ -6,6 +6,14 @@ import { createServiceClient } from '@/lib/supabase'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cada-marketing-hq.vercel.app'
 
 export async function GET(req: Request) {
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret) {
+    const authHeader = req.headers.get('authorization')
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
   const { searchParams } = new URL(req.url)
   const force = searchParams.get('force') === 'true'
   const postId = searchParams.get('post_id')
