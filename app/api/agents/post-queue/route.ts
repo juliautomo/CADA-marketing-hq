@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
 
 // PATCH — approve / reject / edit a queued post
 export async function PATCH(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id') ?? null
   const { id, action, caption, image_concept, scheduled_at } = await req.json()
 
   if (!id || !action) {
@@ -51,24 +52,27 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'action must be approve | reject | unapprove | edit' }, { status: 400 })
   }
 
-  const { data, error } = await db
-    .from('cada_scheduled_posts')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single()
+  let query = db.from('cada_scheduled_posts').update(updates).eq('id', id)
+  if (clientId) query = query.eq('client_id', clientId)
+  else query = query.is('client_id', null)
+  const { data, error } = await query.select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json({ post: data })
 }
 
 // DELETE — remove a draft post
 export async function DELETE(req: NextRequest) {
+  const clientId = req.headers.get('x-client-id') ?? null
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   const db = createServiceClient()
-  const { error } = await db.from('cada_scheduled_posts').delete().eq('id', id)
+  let query = db.from('cada_scheduled_posts').delete().eq('id', id)
+  if (clientId) query = query.eq('client_id', clientId)
+  else query = query.is('client_id', null)
+  const { error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

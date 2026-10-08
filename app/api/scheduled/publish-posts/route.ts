@@ -33,13 +33,25 @@ export async function GET(req: Request) {
 
   if (approvedPosts && approvedPosts.length > 0) {
     for (const post of approvedPosts) {
-      // Delegate to approve-and-generate so brand context, model, size and watermark are applied
       const clientHeader: Record<string, string> = post.client_id ? { 'x-client-id': post.client_id } : {}
-      await fetch(`${APP_URL}/api/agents/post-queue/approve-and-generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...clientHeader },
-        body: JSON.stringify({ id: post.id }),
-      }).catch(() => {/* fire-and-forget; status updated inside that route */})
+      try {
+        const res = await fetch(`${APP_URL}/api/agents/post-queue/approve-and-generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...clientHeader },
+          body: JSON.stringify({ id: post.id }),
+        })
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}))
+          await supabase.from('cada_scheduled_posts')
+            .update({ status: 'failed', error_message: json.error ?? `Image generation returned ${res.status}` })
+            .eq('id', post.id)
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        await supabase.from('cada_scheduled_posts')
+          .update({ status: 'failed', error_message: `Image generation request failed: ${msg}` })
+          .eq('id', post.id)
+      }
     }
   }
 
