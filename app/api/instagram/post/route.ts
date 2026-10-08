@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { refreshInstagramToken, isTokenStale } from '@/lib/token-refresh'
 
 export async function POST(req: NextRequest) {
   const { mediaUrl, mediaUrls, caption, mediaType = 'IMAGE' } = await req.json()
@@ -8,18 +9,27 @@ export async function POST(req: NextRequest) {
   const clientId = req.headers.get('x-client-id') ?? null
 
   const supabase = createServiceClient()
-  let settingsQuery = supabase.from('cada_settings').select('key, value').in('key', ['instagram_user_token', 'instagram_page_token', 'instagram_business_account_id', 'instagram_page_id'])
+  let settingsQuery = supabase.from('cada_settings').select('key, value, updated_at').in('key', ['instagram_user_token', 'instagram_page_token', 'instagram_business_account_id', 'instagram_page_id'])
   if (clientId) settingsQuery = settingsQuery.eq('client_id', clientId)
   else settingsQuery = settingsQuery.is('client_id', null)
   const { data } = await settingsQuery
 
   const settings: Record<string, string> = {}
+  const updatedAt: Record<string, string> = {}
   for (const row of data ?? []) {
     settings[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
+    if (row.updated_at) updatedAt[row.key] = row.updated_at
+  }
+
+  // Proactively refresh the user token if it's >50 days old (expires at 60 days)
+  let userToken = settings['instagram_user_token']
+  if (userToken && userToken !== 'null' && isTokenStale(updatedAt['instagram_user_token'], 50)) {
+    const refreshed = await refreshInstagramToken(userToken, clientId)
+    if (refreshed) userToken = refreshed
   }
 
   // Prefer page token, fall back to user token
-  const token = settings['instagram_page_token'] ?? settings['instagram_user_token']
+  const token = settings['instagram_page_token'] ?? userToken
   let igUserId = settings['instagram_business_account_id']
 
   if (!token || token === 'null') {

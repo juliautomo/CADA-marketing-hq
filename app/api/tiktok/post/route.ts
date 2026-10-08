@@ -1,6 +1,9 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { refreshTikTokToken } from '@/lib/token-refresh'
+
+const TIKTOK_AUTH_ERRORS = new Set(['access_token_invalid', 'access_token_expired', 'token_expired'])
 
 export async function POST(req: NextRequest) {
   const { videoUrl, caption, coverTimestamp = 0 } = await req.json()
@@ -17,7 +20,7 @@ export async function POST(req: NextRequest) {
     settings[row.key] = typeof row.value === 'string' ? row.value : JSON.stringify(row.value)
   }
 
-  const accessToken = settings['tiktok_access_token']
+  let accessToken = settings['tiktok_access_token']
   const openId = settings['tiktok_open_id']
   const postMode = settings['tiktok_post_mode'] ?? 'draft'
   const endpoint = postMode === 'direct'
@@ -36,34 +39,47 @@ export async function POST(req: NextRequest) {
   const videoBuffer = await videoRes.arrayBuffer()
   const videoSize = videoBuffer.byteLength
 
-  // Step 1: Initialize upload
-  const initRes = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify({
-      ...(postMode === 'direct' ? {
-        post_info: {
-          title: caption.slice(0, 150),
-          privacy_level: 'SELF_ONLY',
-          disable_duet: false,
-          disable_comment: false,
-          disable_stitch: false,
-          video_cover_timestamp_ms: coverTimestamp,
-        },
-      } : {}),
-      source_info: {
-        source: 'FILE_UPLOAD',
-        video_size: videoSize,
-        chunk_size: videoSize,
-        total_chunk_count: 1,
+  const buildInitBody = () => JSON.stringify({
+    ...(postMode === 'direct' ? {
+      post_info: {
+        title: caption.slice(0, 150),
+        privacy_level: 'SELF_ONLY',
+        disable_duet: false,
+        disable_comment: false,
+        disable_stitch: false,
+        video_cover_timestamp_ms: coverTimestamp,
       },
-    }),
+    } : {}),
+    source_info: {
+      source: 'FILE_UPLOAD',
+      video_size: videoSize,
+      chunk_size: videoSize,
+      total_chunk_count: 1,
+    },
   })
 
-  const initData = await initRes.json()
+  // Step 1: Initialize upload — retry once after token refresh on auth errors
+  let initRes = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json; charset=UTF-8' },
+    body: buildInitBody(),
+  })
+  let initData = await initRes.json()
+
+  if (initData.error?.code !== 'ok' && TIKTOK_AUTH_ERRORS.has(initData.error?.code)) {
+    const newToken = await refreshTikTokToken(clientId)
+    if (newToken) {
+      accessToken = newToken
+      initRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json; charset=UTF-8' },
+        body: buildInitBody(),
+      })
+      initData = await initRes.json()
+    } else {
+      return NextResponse.json({ error: 'TikTok session expired. Please reconnect in Settings → Connections.' }, { status: 401 })
+    }
+  }
 
   if (initData.error?.code !== 'ok') {
     return NextResponse.json({ error: initData.error?.message ?? 'TikTok init failed' }, { status: 500 })
