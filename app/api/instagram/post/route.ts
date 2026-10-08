@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Instagram not connected. Go to Settings → Connections.' }, { status: 401 })
   }
 
+  try {
+
   // If no IG user ID, try to fetch it from the page
   if (!igUserId || igUserId === 'null') {
     const pageId = settings['instagram_page_id']
@@ -145,6 +147,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: publishData.error?.message ?? 'Failed to publish to Instagram' }, { status: 500 })
   }
 
+  // Log to DB — don't fail the response if logging fails (post already published)
   await Promise.all([
     supabase.from('cada_agent_runs').insert({
       agent: 'instagram_post',
@@ -162,7 +165,11 @@ export async function POST(req: NextRequest) {
       source: 'manual',
       client_id: clientId,
     }),
-  ])
+  ]).catch(err => console.error('instagram_post: DB logging failed:', err))
 
   return NextResponse.json({ success: true, post_id: publishData.id })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: `Instagram post failed: ${msg}` }, { status: 500 })
+  }
 }

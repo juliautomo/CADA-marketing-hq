@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     .from('cada_agent_runs')
     .insert({ agent: 'campaign_planner', status: 'running', input: body, client_id: clientId })
     .select()
-    .single()
+    .single().catch(() => ({ data: null }))
 
   try {
     const startDate = new Date(body.startDate)
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     }))
     await db.from('cada_campaign_milestones').insert(milestoneRows)
 
-    await db.from('cada_agent_runs').update({ status: 'completed', output: { campaign }, duration_ms: Date.now() - start }).eq('id', run!.id)
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'completed', output: { campaign }, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({
       success: true,
       campaign,
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

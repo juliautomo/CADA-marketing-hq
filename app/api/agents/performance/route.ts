@@ -24,7 +24,7 @@ Provide clear, actionable insights with specific recommendations for improving p
     .from('cada_agent_runs')
     .insert({ agent: 'performance_reviewer', status: 'running', input: body, client_id: clientId })
     .select()
-    .single()
+    .single().catch(() => ({ data: null }))
 
   try {
     const metricsData = body.csvData ?? body.metricsText ?? 'No metrics provided'
@@ -67,11 +67,11 @@ Keep recommendations practical for the brand's scale and market.`
       .insert({ title: body.title, metrics, insights, google_drive_url: driveUrl || null, client_id: clientId })
       .select().single()
 
-    await db.from('cada_agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run!.id)
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: true, report })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

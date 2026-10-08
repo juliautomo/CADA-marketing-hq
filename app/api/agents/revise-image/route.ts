@@ -13,18 +13,24 @@ export async function POST(req: NextRequest) {
 
   const prompt = `Edit this image. Keep everything exactly the same except: ${feedback.trim()}. Do not change the composition, style, colors, or any other elements unless explicitly mentioned.`
 
-  const revisedUrl = await generateImageWithReference(prompt, imageUrl, '1024x1024', 'medium')
+  try {
+    const revisedUrl = await generateImageWithReference(prompt, imageUrl, '1024x1024', 'medium')
 
-  const db = createServiceClient()
-  const { data } = await db.from('cada_content_items')
-    .insert({
-      type: 'image',
-      title: `Image revision`,
-      image_url: revisedUrl,
-      tags: ['image', 'revision', 'gpt'],
-      client_id: clientId,
-    })
-    .select().single()
+    const db = createServiceClient()
+    const { data, error } = await db.from('cada_content_items')
+      .insert({
+        type: 'image',
+        title: `Image revision`,
+        image_url: revisedUrl,
+        tags: ['image', 'revision', 'gpt'],
+        client_id: clientId,
+      })
+      .select().single()
 
-  return NextResponse.json({ imageUrl: revisedUrl, item: data })
+    if (error) console.error('revise-image: DB insert failed:', error.message)
+    return NextResponse.json({ imageUrl: revisedUrl, item: data })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: `Image revision failed: ${msg}` }, { status: 500 })
+  }
 }

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const clientId = req.headers.get('x-client-id') ?? null
   const [{ data: run }, ctx] = await Promise.all([
-    db.from('cada_agent_runs').insert({ agent: 'creator', status: 'running', input: body }).select().single(),
+    db.from('cada_agent_runs').insert({ agent: 'creator', status: 'running', input: body }).select().single().catch(() => ({ data: null })),
     getBrandContext(clientId),
   ])
   const brandName     = ctx.raw.brand_name || 'Your Brand'
@@ -302,11 +302,11 @@ Keep it to 1–2 punchy lines maximum. No hashtags. No long sentences. This is a
       ...((_img as string)?.startsWith('data:') ? {} : { imageUrl: _img }),
       ...((_vid as string)?.startsWith('data:') ? {} : { videoUrl: _vid }),
     }
-    await db.from('cada_agent_runs').update({ status: 'completed', output: logOutput, duration_ms: Date.now() - start }).eq('id', run!.id)
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'completed', output: logOutput, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: true, ...result })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run!.id)
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

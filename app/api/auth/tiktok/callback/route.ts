@@ -42,14 +42,19 @@ export async function GET(req: NextRequest) {
     tiktokUsername = userData.data?.user?.username ?? userData.data?.user?.display_name ?? ''
   } catch {}
 
-  // Save to DB
+  // Save to DB — include client_id so tokens are scoped per client
+  const { searchParams: sp } = new URL(req.url)
+  const state = sp.get('state') ?? ''
+  const clientIdFromState = state.includes('.') ? state.split('.').slice(1).join('.') : null
+  const clientId = clientIdFromState || req.cookies.get('cada_client_id')?.value || null
+
   const supabase = createServiceClient()
   await supabase.from('cada_settings').upsert([
-    { key: 'tiktok_access_token', value: tokenData.access_token, updated_at: new Date().toISOString() },
-    { key: 'tiktok_open_id', value: tokenData.open_id, updated_at: new Date().toISOString() },
-    { key: 'tiktok_refresh_token', value: tokenData.refresh_token ?? 'null', updated_at: new Date().toISOString() },
-    { key: 'tiktok_username', value: tiktokUsername || 'null', updated_at: new Date().toISOString() },
-  ])
+    { key: 'tiktok_access_token', value: tokenData.access_token, updated_at: new Date().toISOString(), client_id: clientId },
+    { key: 'tiktok_open_id', value: tokenData.open_id, updated_at: new Date().toISOString(), client_id: clientId },
+    { key: 'tiktok_refresh_token', value: tokenData.refresh_token ?? 'null', updated_at: new Date().toISOString(), client_id: clientId },
+    { key: 'tiktok_username', value: tiktokUsername || 'null', updated_at: new Date().toISOString(), client_id: clientId },
+  ], { onConflict: 'key,client_id' })
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=connections&success=tiktok`)
 }

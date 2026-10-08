@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'TikTok not connected. Go to Settings → Connections.' }, { status: 401 })
   }
 
+  try {
   // Fetch video from Supabase storage
   const videoRes = await fetch(videoUrl)
   if (!videoRes.ok) {
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Upload failed: ${uploadErr}` }, { status: 500 })
   }
 
-  // Log to agent runs
+  // Log to DB — don't fail the response if logging fails (upload already accepted by TikTok)
   await Promise.all([
     supabase.from('cada_agent_runs').insert({
       agent: 'tiktok_post',
@@ -122,7 +123,11 @@ export async function POST(req: NextRequest) {
       source: 'manual',
       client_id: clientId,
     }),
-  ])
+  ]).catch(err => console.error('tiktok_post: DB logging failed:', err))
 
   return NextResponse.json({ success: true, publish_id: publishId })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: `TikTok post failed: ${msg}` }, { status: 500 })
+  }
 }

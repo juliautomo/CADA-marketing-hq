@@ -70,7 +70,7 @@ FULL ANALYSIS:
     .from('cada_agent_runs')
     .insert({ agent: 'trend_analyst', status: 'running', input: body, client_id: clientId })
     .select()
-    .single()
+    .single().catch(() => ({ data: null }))
 
   try {
     const userMessage = `Analyse ${brandIndustry} trends for ${brandName}:
@@ -184,16 +184,11 @@ Be specific — real creator handles, real hashtags, real content formats that p
       .select()
       .single()
 
-    await db.from('cada_agent_runs')
-      .update({ status: 'completed', output: { report }, duration_ms: Date.now() - start })
-      .eq('id', run!.id)
-
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: true, report })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    await db.from('cada_agent_runs')
-      .update({ status: 'failed', error: msg, duration_ms: Date.now() - start })
-      .eq('id', run!.id)
+    if (run?.id) await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

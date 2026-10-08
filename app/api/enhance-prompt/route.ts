@@ -49,7 +49,8 @@ Output ONLY the improved direction — no explanation, no preamble, no quotes. K
 
   const subjectHint = brandSubject ? `featuring ${brandSubject} for ${brandName}` : `for ${brandName} (${brandIndustry})`
 
-  const brandColors = ctx.raw.brand_colors ? (JSON.parse(ctx.raw.brand_colors) as string[]).join(', ') : 'brand palette'
+  let brandColors = 'brand palette'
+  try { brandColors = ctx.raw.brand_colors ? (JSON.parse(ctx.raw.brand_colors) as string[]).join(', ') : 'brand palette' } catch { /* malformed JSON — use default */ }
   const brandHandle = ctx.raw.brand_handle ? `@${ctx.raw.brand_handle}` : brandName
   const brandVoice  = ctx.raw.brand_voice || ''
 
