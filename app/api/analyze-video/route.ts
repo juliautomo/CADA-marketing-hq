@@ -35,7 +35,7 @@ You will receive multiple frames from a short video — treat them as a sequence
     }
 
     if (!frames || frames.length === 0) {
-      return NextResponse.json({ error: 'No frames provided' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'No frames provided' }, { status: 400 })
     }
 
     // Build image blocks from frames

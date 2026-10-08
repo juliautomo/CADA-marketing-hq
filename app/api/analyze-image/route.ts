@@ -33,7 +33,7 @@ You analyse images to extract product insights and content opportunities for ${b
       // ── File upload ───────────────────────────────────────────────
       const form = await req.formData()
       const file = form.get('image') as File | null
-      if (!file) return NextResponse.json({ error: 'No image file provided' }, { status: 400 })
+      if (!file) return NextResponse.json({ success: false, error: 'No image file provided' }, { status: 400 })
 
       const bytes = await file.arrayBuffer()
       const base64 = Buffer.from(bytes).toString('base64')
@@ -44,7 +44,7 @@ You analyse images to extract product insights and content opportunities for ${b
     } else {
       // ── URL / Drive link ──────────────────────────────────────────
       const { url } = await req.json()
-      if (!url) return NextResponse.json({ error: 'No URL provided' }, { status: 400 })
+      if (!url) return NextResponse.json({ success: false, error: 'No URL provided' }, { status: 400 })
 
       const directUrl = driveToDirectUrl(url)
       analysis = await analyzeImage({ type: 'url', url: directUrl }, SYSTEM)
