@@ -64,6 +64,7 @@ export async function generateVideoKling(
     await new Promise((r) => setTimeout(r, 5000))
     const ph = await headers()
     const pollRes = await fetch(`${KLING_BASE}${pollPath}`, { headers: ph })
+    if (!pollRes.ok) throw new Error(`Kling poll failed (${pollRes.status}): ${await pollRes.text()}`)
     const { data: task } = await pollRes.json()
     if (task.task_status === 'succeed') return task.task_result.videos[0].url as string
     if (task.task_status === 'failed')  throw new Error(`Kling task failed: ${task.task_status_msg}`)

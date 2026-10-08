@@ -37,17 +37,12 @@ export async function POST(req: NextRequest) {
 
   const imagePrompt = post.image_concept as string | null
 
+  try {
   if (!imagePrompt) {
-    const { data } = await db
-      .from('cada_scheduled_posts')
-      .update({ status: 'image_review' })
-      .eq('id', id)
-      .select()
-      .single()
+    await db.from('cada_scheduled_posts').update({ status: 'image_review' }).eq('id', id)
+    const { data } = await db.from('cada_scheduled_posts').select('*').eq('id', id).single()
     return NextResponse.json({ post: data })
   }
-
-  try {
     const ctx = await getBrandContext((post.client_id as string | null) ?? clientId)
     const stylePrefix   = ctx.raw.brand_style_prefix ?? ''
     const colorDesc     = ctx.raw.brand_color_description ?? ''

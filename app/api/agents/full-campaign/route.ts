@@ -352,10 +352,11 @@ Rules: ${numPosts} posts total. Plain text captions only — no ** bold ** or ma
       }
 
       // â”€â”€ STEP 9: Finalise DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      await db.from('cada_campaigns').update({
+      const { error: finalUpdateError } = await db.from('cada_campaigns').update({
         calendar_event_ids: calendarEventIds,
         google_drive_url: driveUrl || null,
       }).eq('id', campaign.id)
+      if (finalUpdateError) console.error('full-campaign: final campaign update failed:', finalUpdateError.message)
 
       // â”€â”€ DONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       send({
