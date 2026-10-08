@@ -19,11 +19,11 @@ export async function POST(req: NextRequest) {
   const durationWeeks  = body.durationWeeks ?? 4
   const totalDays      = durationWeeks * 7
 
-  const { data: run } = await db
-    .from('cada_agent_runs')
-    .insert({ agent: 'campaign_planner', status: 'running', input: body, client_id: clientId })
-    .select()
-    .single().catch(() => ({ data: null }))
+  const { data: run } = await Promise.resolve(
+    db.from('cada_agent_runs')
+      .insert({ agent: 'campaign_planner', status: 'running', input: body, client_id: clientId })
+      .select().single()
+  ).catch(() => ({ data: null }))
 
   try {
     const startDate = new Date(body.startDate)

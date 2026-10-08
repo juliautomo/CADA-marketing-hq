@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const clientId = req.headers.get('x-client-id') ?? null
   const [{ data: run }, ctx] = await Promise.all([
-    db.from('cada_agent_runs').insert({ agent: 'creator', status: 'running', input: body }).select().single().catch(() => ({ data: null })),
+    Promise.resolve(db.from('cada_agent_runs').insert({ agent: 'creator', status: 'running', input: body }).select().single()).catch(() => ({ data: null })),
     getBrandContext(clientId),
   ])
   const brandName     = ctx.raw.brand_name || 'Your Brand'

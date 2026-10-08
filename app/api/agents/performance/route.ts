@@ -20,11 +20,11 @@ You are a data-driven marketing analyst specialising in e-commerce and social co
 Analyse ${brandName}'s performance metrics across ${brandChannels}.
 Provide clear, actionable insights with specific recommendations for improving performance on each platform.`
 
-  const { data: run } = await db
-    .from('cada_agent_runs')
-    .insert({ agent: 'performance_reviewer', status: 'running', input: body, client_id: clientId })
-    .select()
-    .single().catch(() => ({ data: null }))
+  const { data: run } = await Promise.resolve(
+    db.from('cada_agent_runs')
+      .insert({ agent: 'performance_reviewer', status: 'running', input: body, client_id: clientId })
+      .select().single()
+  ).catch(() => ({ data: null }))
 
   try {
     const metricsData = body.csvData ?? body.metricsText ?? 'No metrics provided'

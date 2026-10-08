@@ -66,11 +66,11 @@ TRENDING CONTENT IDEAS:
 FULL ANALYSIS:
 [Write 3 detailed paragraphs: (1) macro trend overview for ${brandIndustry}, (2) key pieces ${brandName} should focus on, (3) specific TikTok and Instagram Reels content strategy for ${brandName}]`
 
-  const { data: run } = await db
-    .from('cada_agent_runs')
-    .insert({ agent: 'trend_analyst', status: 'running', input: body, client_id: clientId })
-    .select()
-    .single().catch(() => ({ data: null }))
+  const { data: run } = await Promise.resolve(
+    db.from('cada_agent_runs')
+      .insert({ agent: 'trend_analyst', status: 'running', input: body, client_id: clientId })
+      .select().single()
+  ).catch(() => ({ data: null }))
 
   try {
     const userMessage = `Analyse ${brandIndustry} trends for ${brandName}:
