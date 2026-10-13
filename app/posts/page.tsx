@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle, XCircle, Edit2, CalendarClock, ImageIcon,
   Send, RotateCcw, Clock, Play, Trash2, RefreshCw, Zap, Sparkles,
-  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, History, ExternalLink, X,
+  ChevronDown, CheckCircle2, Circle, AlertCircle, Loader2, History, ExternalLink, X, ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -1443,7 +1443,30 @@ function PostCard({
   const [revisions, setRevisions] = useState<ImageRevision[] | null>(null)
   const [loadingRevisions, setLoadingRevisions] = useState(false)
   const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [brandChecking, setBrandChecking] = useState(false)
+  const [brandCheckResult, setBrandCheckResult] = useState<{
+    score: number; pass: boolean; summary: string;
+    breakdown: Record<string, { score: number; note: string }>;
+    topIssue: string | null;
+  } | null>(null)
   const isEditing = editingId === post.id
+
+  async function runBrandCheck() {
+    if (!post.media_url) return
+    setBrandChecking(true)
+    setBrandCheckResult(null)
+    try {
+      const res = await fetch('/api/agents/brand-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: post.media_url }),
+      })
+      const json = await res.json()
+      if (json.success) setBrandCheckResult(json.result)
+    } finally {
+      setBrandChecking(false)
+    }
+  }
 
   async function loadRevisions() {
     if (revisions !== null) { setShowRevisions(v => !v); return }
@@ -1608,6 +1631,51 @@ function PostCard({
             <p className="text-xs text-red-500 flex items-center gap-1">
               <XCircle className="w-3 h-3" /> {post.error_message}
             </p>
+          )}
+
+          {isImageReview && post.media_url && (
+            <div className="space-y-2">
+              <button onClick={runBrandCheck} disabled={brandChecking}
+                className="flex items-center justify-center gap-1.5 w-full text-xs text-indigo-600 border border-indigo-200 rounded-xl py-2 hover:bg-indigo-50 disabled:opacity-40 transition-colors">
+                {brandChecking ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
+                {brandChecking ? 'Checking brand fit…' : 'Check Brand Fit'}
+              </button>
+              {brandCheckResult && (
+                <div className={cn(
+                  'rounded-xl border p-3 space-y-2',
+                  brandCheckResult.pass ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
+                )}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-700">Brand Fit Score</span>
+                    <span className={cn(
+                      'text-sm font-bold px-2 py-0.5 rounded-full',
+                      brandCheckResult.score >= 75 ? 'bg-emerald-100 text-emerald-700' :
+                      brandCheckResult.score >= 50 ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    )}>{brandCheckResult.score}/100</span>
+                  </div>
+                  <p className="text-xs text-zinc-600">{brandCheckResult.summary}</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {Object.entries(brandCheckResult.breakdown).map(([key, val]) => (
+                      <div key={key} className="bg-white/70 rounded-lg px-2 py-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-zinc-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <span className={cn('text-[10px] font-bold',
+                            val.score >= 75 ? 'text-emerald-600' : val.score >= 50 ? 'text-amber-600' : 'text-red-600'
+                          )}>{val.score}</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 mt-0.5">{val.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {brandCheckResult.topIssue && (
+                    <p className="text-xs text-amber-700 bg-amber-100 rounded-lg px-2 py-1.5">
+                      <span className="font-medium">Fix: </span>{brandCheckResult.topIssue}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {(onApprove || onSchedule || onRegenerate || onReject || onUnapprove || onRemove || onEdit || onPublishNow) && (

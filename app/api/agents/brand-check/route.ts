@@ -1,0 +1,72 @@
+export const dynamic = 'force-dynamic'
+import { NextRequest, NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
+import { getBrandContext } from '@/lib/brand'
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY!, baseURL: 'https://api.anthropic.com' })
+
+export async function POST(req: NextRequest) {
+  const { imageUrl } = await req.json()
+  if (!imageUrl) return NextResponse.json({ success: false, error: 'imageUrl required' }, { status: 400 })
+
+  const clientId = req.headers.get('x-client-id') ?? null
+  const ctx = await getBrandContext(clientId)
+  const raw = ctx.raw
+
+  const brandProfile = [
+    raw.brand_name        && `Brand: ${raw.brand_name}`,
+    raw.brand_industry    && `Industry: ${raw.brand_industry}`,
+    raw.brand_style_prefix && `Visual style: ${raw.brand_style_prefix}`,
+    raw.brand_color_description && `Brand colors: ${raw.brand_color_description}`,
+    raw.brand_shot_style  && `Composition/shot style: ${raw.brand_shot_style}`,
+    raw.brand_negative_prompts && `Must avoid: ${raw.brand_negative_prompts}`,
+    raw.brand_values      && `Brand values: ${raw.brand_values}`,
+    raw.brand_tone        && `Tone/personality: ${raw.brand_tone}`,
+  ].filter(Boolean).join('\n')
+
+  const system = `You are a brand compliance reviewer for a fashion/lifestyle brand. You score generated marketing images against the brand's visual identity.
+
+BRAND PROFILE:
+${brandProfile || 'No brand profile configured — score based on general fashion marketing best practices.'}
+
+Score the image out of 100 across four dimensions. Be honest and specific. Return ONLY valid JSON.`
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 800,
+    system,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'url', url: imageUrl } },
+        {
+          type: 'text',
+          text: `Score this image for brand fit. Return ONLY this JSON:
+{
+  "score": <overall 0-100>,
+  "pass": <true if score >= 70>,
+  "summary": "one sentence verdict",
+  "breakdown": {
+    "colors": { "score": <0-100>, "note": "brief note" },
+    "style": { "score": <0-100>, "note": "brief note" },
+    "composition": { "score": <0-100>, "note": "brief note" },
+    "brandFit": { "score": <0-100>, "note": "brief note" }
+  },
+  "topIssue": "the single most important thing to fix, or null if it passes"
+}`,
+        },
+      ],
+    }],
+  })
+
+  const text = (message.content[0] as { type: string; text: string }).text
+  const match = text.match(/\{[\s\S]*\}/)
+  if (!match) return NextResponse.json({ success: false, error: 'Could not parse brand check result' }, { status: 500 })
+
+  try {
+    const result = JSON.parse(match[0])
+    return NextResponse.json({ success: true, result })
+  } catch {
+    return NextResponse.json({ success: false, error: 'Invalid JSON from model' }, { status: 500 })
+  }
+}
