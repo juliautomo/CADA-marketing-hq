@@ -10,7 +10,12 @@ import { addDays, format } from 'date-fns'
 
 export async function POST(req: NextRequest) {
   const start = Date.now()
-  const body: CampaignInput & { brief?: Record<string, unknown>; durationWeeks?: number } = await req.json()
+  let body: CampaignInput & { brief?: Record<string, unknown>; durationWeeks?: number }
+  try { body = await req.json() }
+  catch { return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 }) }
+  if (!body.startDate || isNaN(new Date(body.startDate).getTime())) {
+    return NextResponse.json({ success: false, error: 'startDate is required and must be a valid date' }, { status: 400 })
+  }
   const db = createServiceClient()
   const clientId = req.headers.get('x-client-id') ?? null
   const ctx = await getBrandContext(clientId)

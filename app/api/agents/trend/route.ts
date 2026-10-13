@@ -166,7 +166,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
     const topic = body.focus || brandIndustry || 'General'
     const title = `${topic} — ${dateStr}`
 
-    const { data: report } = await db
+    const { data: report, error: reportErr } = await db
       .from('cada_trend_reports')
       .insert({
         title,
@@ -184,6 +184,7 @@ Be specific — real creator handles, real hashtags, real content formats that p
       .select()
       .single()
 
+    if (reportErr) throw new Error(`Failed to save trend report: ${reportErr.message}`)
     if (run?.id) await db.from('cada_agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run.id)
     return NextResponse.json({ success: true, report })
   } catch (error) {

@@ -40,7 +40,13 @@ export async function getBrandContext(clientId?: string | null): Promise<BrandCo
   if (clientId) analysisQuery = analysisQuery.eq('client_id', clientId)
   else analysisQuery = analysisQuery.is('client_id', null)
 
-  const [{ data }, photoResult, analysisResult] = await Promise.all([query, photoQuery, analysisQuery])
+  let settingsData: { key: string; value: string }[] | null = null
+  let photoResult: { data: { url: string }[] | null } | null = null
+  let analysisResult: { data: { style_prefix?: string; color_description?: string; brand_colors?: unknown; shot_style?: string; negative_prompts?: string }[] | null } | null = null
+  try {
+    ;[{ data: settingsData }, photoResult, analysisResult] = await Promise.all([query, photoQuery, analysisQuery])
+  } catch { /* DB unreachable — return empty context */ }
+  const data = settingsData
   const libraryPhotos = photoResult?.data
   const latestAnalysis = analysisResult?.data?.[0]
 

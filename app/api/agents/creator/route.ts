@@ -45,7 +45,9 @@ const LENGTH_INSTRUCTION: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   const start = Date.now()
-  const body: CreatorInput = await req.json()
+  let body: CreatorInput
+  try { body = await req.json() }
+  catch { return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 }) }
   const db = createServiceClient()
 
   const langNote = LANG_INSTRUCTION[body.language ?? 'english']
