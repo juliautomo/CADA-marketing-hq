@@ -1449,12 +1449,22 @@ function PostCard({
     breakdown: Record<string, { score: number; note: string }>;
     topIssue: string | null;
   } | null>(null)
+  const [brandCheckError, setBrandCheckError] = useState<string | null>(null)
+  const prevMediaUrl = useRef(post.media_url)
+  useEffect(() => {
+    if (prevMediaUrl.current !== post.media_url) {
+      setBrandCheckResult(null)
+      setBrandCheckError(null)
+      prevMediaUrl.current = post.media_url
+    }
+  }, [post.media_url])
   const isEditing = editingId === post.id
 
   async function runBrandCheck() {
     if (!post.media_url) return
     setBrandChecking(true)
     setBrandCheckResult(null)
+    setBrandCheckError(null)
     try {
       const res = await fetch('/api/agents/brand-check', {
         method: 'POST',
@@ -1463,6 +1473,9 @@ function PostCard({
       })
       const json = await res.json()
       if (json.success) setBrandCheckResult(json.result)
+      else setBrandCheckError(json.error ?? 'Brand check failed')
+    } catch {
+      setBrandCheckError('Network error — try again')
     } finally {
       setBrandChecking(false)
     }
@@ -1640,6 +1653,11 @@ function PostCard({
                 {brandChecking ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
                 {brandChecking ? 'Checking brand fit…' : 'Check Brand Fit'}
               </button>
+              {brandCheckError && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <XCircle className="w-3 h-3" /> {brandCheckError}
+                </p>
+              )}
               {brandCheckResult && (
                 <div className={cn(
                   'rounded-xl border p-3 space-y-2',

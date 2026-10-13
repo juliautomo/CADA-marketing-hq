@@ -2,14 +2,19 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getBrandContext } from '@/lib/brand'
+import { getClientIdFromRequest } from '@/lib/get-client-id'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY!, baseURL: 'https://api.anthropic.com' })
+let _client: Anthropic | null = null
+function getClient() {
+  if (!_client) _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY!, baseURL: 'https://api.anthropic.com' })
+  return _client
+}
 
 export async function POST(req: NextRequest) {
   const { imageUrl } = await req.json()
   if (!imageUrl) return NextResponse.json({ success: false, error: 'imageUrl required' }, { status: 400 })
 
-  const clientId = req.headers.get('x-client-id') ?? null
+  const clientId = getClientIdFromRequest(req)
   const ctx = await getBrandContext(clientId)
   const raw = ctx.raw
 
@@ -31,7 +36,9 @@ ${brandProfile || 'No brand profile configured — score based on general fashio
 
 Score the image out of 100 across four dimensions. Be honest and specific. Return ONLY valid JSON.`
 
-  const message = await client.messages.create({
+  let message: Anthropic.Message
+  try {
+    message = await getClient().messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 800,
     system,
@@ -57,7 +64,11 @@ Score the image out of 100 across four dimensions. Be honest and specific. Retur
         },
       ],
     }],
-  })
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ success: false, error: `Vision API error: ${msg}` }, { status: 500 })
+  }
 
   const text = (message.content[0] as { type: string; text: string }).text
   const match = text.match(/\{[\s\S]*\}/)
@@ -65,6 +76,7 @@ Score the image out of 100 across four dimensions. Be honest and specific. Retur
 
   try {
     const result = JSON.parse(match[0])
+    result.pass = (result.score ?? 0) >= 70
     return NextResponse.json({ success: true, result })
   } catch {
     return NextResponse.json({ success: false, error: 'Invalid JSON from model' }, { status: 500 })
