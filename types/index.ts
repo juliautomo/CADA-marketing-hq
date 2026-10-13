@@ -105,6 +105,13 @@ export interface CampaignMilestone {
   created_at: string
 }
 
+export interface PerformanceSuggestion {
+  theme: string
+  rationale: string
+  contentFocus: string[]
+  prompt: string
+}
+
 export interface PerformanceReport {
   id: string
   title: string
@@ -112,6 +119,7 @@ export interface PerformanceReport {
   period_end?: string
   metrics: Record<string, unknown>
   insights?: string
+  suggestion?: PerformanceSuggestion
   google_drive_url?: string
   raw_csv_url?: string
   created_at: string

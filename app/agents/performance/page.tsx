@@ -4,14 +4,14 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart3, ArrowRight, Upload, ExternalLink, Lightbulb,
-  RefreshCw, Heart, MessageCircle, Eye, Bookmark, Play, TrendingUp,
+  RefreshCw, Heart, MessageCircle, Eye, Bookmark, Play, TrendingUp, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { PerformanceReport } from '@/types'
+import type { PerformanceReport, PerformanceSuggestion } from '@/types'
 
 const sampleCSV = `metric,value,prev_value,change
 Instagram Reach,124500,98200,+26.8%
@@ -206,6 +206,44 @@ function LivePostsTab() {
         })}
       </div>
     </div>
+  )
+}
+
+function SuggestionCard({ suggestion }: { suggestion: PerformanceSuggestion }) {
+  const params = new URLSearchParams({ topic: suggestion.prompt })
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      <Card className="border-emerald-200 bg-emerald-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2 text-emerald-800">
+            <Sparkles className="w-4 h-4" />
+            Suggested Next Campaign
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <p className="font-semibold text-emerald-900 text-base">{suggestion.theme}</p>
+            <p className="text-sm text-emerald-700 mt-1">{suggestion.rationale}</p>
+          </div>
+          {suggestion.contentFocus.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {suggestion.contentFocus.map((f) => (
+                <span key={f} className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium border border-emerald-200">
+                  {f}
+                </span>
+              ))}
+            </div>
+          )}
+          <a
+            href={`/posts?${params.toString()}`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+          >
+            Use This in Campaign Planner
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -449,6 +487,8 @@ export default function PerformancePage() {
                     </pre>
                   </CardContent>
                 </Card>
+
+                {report.suggestion && <SuggestionCard suggestion={report.suggestion} />}
 
                 {Object.keys(report.metrics).length > 0 && (
                   <Card>

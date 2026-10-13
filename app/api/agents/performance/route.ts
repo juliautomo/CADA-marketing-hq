@@ -57,6 +57,28 @@ Keep recommendations practical for the brand's scale and market.`
       }
     }
 
+    // Generate a content suggestion based on what performed best
+    let suggestion: { theme: string; rationale: string; contentFocus: string[]; prompt: string } | null = null
+    try {
+      const suggestionText = await generateText(
+        ctx.systemPrompt('Content Strategist') + '\nOutput ONLY valid JSON — no markdown, no explanation.',
+        `Based on this performance analysis for ${brandName}, suggest ONE next campaign theme that builds on what worked best.
+
+PERFORMANCE INSIGHTS:
+${insights.slice(0, 1200)}
+
+Return ONLY this JSON:
+{
+  "theme": "short punchy campaign theme (max 8 words)",
+  "rationale": "one sentence explaining why based on the data",
+  "contentFocus": ["up to 3 content formats that performed best, e.g. Carousel, Reels, Static"],
+  "prompt": "a ready-to-use prompt for the Campaign Planner (2-3 sentences describing the campaign)"
+}`
+      )
+      const match = suggestionText.match(/\{[\s\S]*\}/)
+      if (match) suggestion = JSON.parse(match[0])
+    } catch { /* suggestion is optional — don't fail the whole report */ }
+
     let driveUrl = ''
     try {
       const reportContent = `${brandName.toUpperCase()} PERFORMANCE REPORT\n=======================\n${body.title}\nPeriod: ${body.period ?? 'N/A'}\nGenerated: ${new Date().toLocaleString()}\n\n${insights}\n\n---\nRAW DATA:\n${metricsData}`
@@ -68,7 +90,7 @@ Keep recommendations practical for the brand's scale and market.`
       .select().single()
 
     if (run?.id) await db.from('cada_agent_runs').update({ status: 'completed', output: { report }, duration_ms: Date.now() - start }).eq('id', run.id)
-    return NextResponse.json({ success: true, report })
+    return NextResponse.json({ success: true, report: { ...report, suggestion } })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
     if (run?.id) await db.from('cada_agent_runs').update({ status: 'failed', error: msg, duration_ms: Date.now() - start }).eq('id', run.id)
