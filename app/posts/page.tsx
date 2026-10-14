@@ -1691,6 +1691,15 @@ function PostCard({
                       <span className="font-medium">Fix: </span>{brandCheckResult.topIssue}
                     </p>
                   )}
+                  {!brandCheckResult.pass && onRegenerate && brandCheckResult.topIssue && (
+                    <button
+                      onClick={() => { onRegenerate(regenModel, brandCheckResult.topIssue!) }}
+                      disabled={regenerating}
+                      className="flex items-center justify-center gap-1.5 w-full text-xs font-medium bg-violet-600 text-white rounded-xl py-2 hover:bg-violet-500 disabled:opacity-40 transition-colors mt-1">
+                      {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                      {regenerating ? 'Regenerating…' : 'Regenerate with Fix'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1709,12 +1718,22 @@ function PostCard({
                 </button>
               )}
               {/* Step 2: approve image → schedule */}
-              {onSchedule && (
-                <button onClick={onSchedule} disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-emerald-600 text-white rounded-xl py-2 hover:bg-emerald-500 disabled:opacity-40 transition-colors">
-                  <Send className="w-3 h-3" /> Approve &amp; schedule
-                </button>
-              )}
+              {onSchedule && (() => {
+                const brandFailed = brandCheckResult && !brandCheckResult.pass
+                return (
+                  <button onClick={onSchedule} disabled={saving}
+                    title={brandFailed ? `Brand check score: ${brandCheckResult!.score}/100 — approve anyway?` : undefined}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-2 disabled:opacity-40 transition-colors',
+                      brandFailed
+                        ? 'bg-white text-amber-700 border-2 border-amber-400 hover:bg-amber-50'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                    )}>
+                    {brandFailed ? <AlertCircle className="w-3 h-3" /> : <Send className="w-3 h-3" />}
+                    {brandFailed ? 'Approve anyway' : 'Approve & schedule'}
+                  </button>
+                )
+              })()}
               {onRegenerate && (
                 <div className="flex flex-col gap-1.5 w-full">
                   <input
