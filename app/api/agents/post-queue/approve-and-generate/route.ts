@@ -95,6 +95,35 @@ export async function POST(req: NextRequest) {
       return generateText(sys, usr)
     }
 
+    // Pre-generation brand compliance check — text only, no image cost.
+    // Catches violations in the rewritten prompt before spending on generation.
+    const validateAndFixPrompt = async (prompt: string): Promise<string> => {
+      if (!negatives && !stylePrefix && !shotStyle) return prompt // nothing to check against
+      const violations = await generateText(
+        `You are a brand compliance checker for image generation prompts. Be strict and specific.`,
+        `BRAND RULES:
+${stylePrefix ? `Required visual style: ${stylePrefix}` : ''}
+${shotStyle ? `Required composition: ${shotStyle}` : ''}
+${negatives ? `MUST AVOID: ${negatives}` : ''}
+
+IMAGE PROMPT TO CHECK:
+${prompt}
+
+Does this prompt violate any brand rule? Reply with ONLY one of:
+- "OK" if the prompt fully complies
+- A one-line correction starting with "FIX:" describing exactly what to change`
+      )
+      if (violations.trim().startsWith('FIX:')) {
+        const fix = violations.replace(/^FIX:\s*/i, '').trim()
+        console.log('approve-and-generate: pre-generation brand fix applied:', fix)
+        return generateText(
+          `You rewrite image generation prompts to fix a specific brand compliance issue. Output ONLY the corrected prompt — no explanation.`,
+          `ORIGINAL PROMPT:\n${prompt}\n\nBRAND COMPLIANCE FIX REQUIRED:\n${fix}\n\nRewrite the prompt applying this fix while keeping all other content intact.`
+        )
+      }
+      return prompt
+    }
+
     // Composite logo onto a generated image URL; returns the same URL if no logo or if sharp fails
     // Skipped when using gpt-image-1 (logo passed directly to AI as input image)
     const applyLogo = async (url: string): Promise<string> => {
@@ -124,8 +153,10 @@ export async function POST(req: NextRequest) {
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
 
-    // Rewrite all slide concepts in parallel
-    const rewrittenSlides = await Promise.all(slides.map(rewritePrompt))
+    // Rewrite all slide concepts in parallel, then validate each against brand rules
+    const rewrittenSlides = await Promise.all(
+      slides.map(s => rewritePrompt(s).then(validateAndFixPrompt))
+    )
 
     const buildPrompt = (base: string) => {
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''
