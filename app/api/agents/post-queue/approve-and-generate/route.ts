@@ -17,7 +17,7 @@ function parseSlides(prompt: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  const { id, imageModel: imageModelOverride, correctionNote } = await req.json()
+  const { id, imageModel: imageModelOverride, correctionNote, fixedPrompt: fixedPromptOverride } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   const clientId = req.headers.get('x-client-id') ?? null
@@ -153,10 +153,10 @@ Does this prompt violate any brand rule? Reply with ONLY one of:
     const slides = parseSlides(imagePrompt)
     const isMulti = slides.length > 1
 
-    // Rewrite all slide concepts in parallel, then validate each against brand rules
-    const rewrittenSlides = await Promise.all(
-      slides.map(s => rewritePrompt(s).then(validateAndFixPrompt))
-    )
+    // If a pre-validated prompt was passed from the UI, use it directly (skip rewrite+validate)
+    const rewrittenSlides = fixedPromptOverride
+      ? [fixedPromptOverride]
+      : await Promise.all(slides.map(s => rewritePrompt(s).then(validateAndFixPrompt)))
 
     const buildPrompt = (base: string) => {
       const correctionDirective = correctionNote ? `\n\nCORRECTION (apply this fix): ${correctionNote}` : ''

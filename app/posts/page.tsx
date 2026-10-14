@@ -337,7 +337,7 @@ function PostsPageInner() {
 
   // ── Queue actions ──────────────────────────────────────────────────────────
 
-  async function handleAction(id: string, action: 'approve' | 'reject' | 'schedule' | 'unapprove') {
+  async function handleAction(id: string, action: 'approve' | 'reject' | 'schedule' | 'unapprove', fixedPrompt?: string) {
     if (action === 'approve') {
       // Fire-and-forget: route returns immediately after setting status=generating,
       // actual image generation runs via after() on the server.
@@ -346,7 +346,7 @@ function PostsPageInner() {
       fetch('/api/agents/post-queue/approve-and-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, ...(fixedPrompt ? { fixedPrompt } : {}) }),
       }).then(async res => {
         if (!res.ok) {
           const json = await res.json().catch(() => ({}))
@@ -969,7 +969,7 @@ function PostsPageInner() {
                         <PostCard key={post.id} post={post} saving={saving === post.id} editingId={editingId}
                           editCaption={editCaption} editConcept={editConcept} editDate={editDate}
                           setEditCaption={setEditCaption} setEditConcept={setEditConcept} setEditDate={setEditDate}
-                          onApprove={() => handleAction(post.id, 'approve')}
+                          onApprove={(fixedPrompt?: string) => handleAction(post.id, 'approve', fixedPrompt)}
                           generatingImage={generatingId === post.id}
                           onRemove={() => handleDelete(post.id)}
                           onEdit={() => startEdit(post)} onSaveEdit={() => saveEdit(post.id)} onCancelEdit={() => setEditingId(null)} />
@@ -1414,7 +1414,7 @@ function PostCard({
   setEditCaption: (v: string) => void
   setEditConcept: (v: string) => void
   setEditDate: (v: string) => void
-  onApprove?: () => void
+  onApprove?: (fixedPrompt?: string) => void
   generatingImage?: boolean
   onSchedule?: () => void
   onRegenerate?: (model: string, fixNote?: string) => void
@@ -1443,6 +1443,8 @@ function PostCard({
   const [revisions, setRevisions] = useState<ImageRevision[] | null>(null)
   const [loadingRevisions, setLoadingRevisions] = useState(false)
   const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [promptValidating, setPromptValidating] = useState(false)
+  const [promptCheck, setPromptCheck] = useState<{ pass: boolean; issue: string | null; fixedPrompt: string } | null>(null)
   const [brandChecking, setBrandChecking] = useState(false)
   const [brandCheckResult, setBrandCheckResult] = useState<{
     score: number; pass: boolean; summary: string;
@@ -1478,6 +1480,29 @@ function PostCard({
       setBrandCheckError('Network error — try again')
     } finally {
       setBrandChecking(false)
+    }
+  }
+
+  async function handleApproveClick() {
+    if (!post.image_concept) { onApprove?.(); return }
+    setPromptValidating(true)
+    setPromptCheck(null)
+    try {
+      const res = await fetch('/api/agents/post-queue/validate-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id }),
+      })
+      const json = await res.json()
+      if (!json.success || json.pass) {
+        onApprove?.(json.fixedPrompt || undefined)
+      } else {
+        setPromptCheck(json)
+      }
+    } catch {
+      onApprove?.()
+    } finally {
+      setPromptValidating(false)
     }
   }
 
@@ -1707,15 +1732,37 @@ function PostCard({
 
           {(onApprove || onSchedule || onRegenerate || onReject || onUnapprove || onRemove || onEdit || onPublishNow) && (
             <div className="flex gap-2 pt-1">
-              {/* Step 1: approve content → generate image */}
-              {onApprove && (
-                <button onClick={onApprove} disabled={saving || generatingImage}
+              {/* Step 1: approve content → validate prompt → generate image */}
+              {onApprove && !promptCheck && (
+                <button onClick={handleApproveClick} disabled={saving || generatingImage || promptValidating}
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-amber-500 text-white rounded-xl py-2 hover:bg-amber-400 disabled:opacity-40 transition-colors">
                   {generatingImage
                     ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating image…</>
+                    : promptValidating
+                    ? <><Loader2 className="w-3 h-3 animate-spin" /> Checking prompt…</>
                     : <><CheckCircle2 className="w-3 h-3" /> Approve content</>
                   }
                 </button>
+              )}
+              {onApprove && promptCheck && !promptCheck.pass && (
+                <div className="flex flex-col gap-1.5 w-full">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 space-y-1">
+                    <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> Prompt needs fixing
+                    </p>
+                    <p className="text-xs text-amber-800">{promptCheck.issue}</p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => { onApprove?.(promptCheck.fixedPrompt); setPromptCheck(null) }} disabled={saving}
+                      className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-amber-500 text-white rounded-xl py-2 hover:bg-amber-400 disabled:opacity-40 transition-colors">
+                      <CheckCircle2 className="w-3 h-3" /> Generate with fix
+                    </button>
+                    <button onClick={() => { onApprove?.(); setPromptCheck(null) }} disabled={saving}
+                      className="flex items-center justify-center gap-1.5 px-3 text-xs text-zinc-500 border border-zinc-200 rounded-xl py-2 hover:bg-zinc-50 disabled:opacity-40 transition-colors whitespace-nowrap">
+                      Generate anyway
+                    </button>
+                  </div>
+                </div>
               )}
               {/* Step 2: approve image → schedule */}
               {onSchedule && (() => {
