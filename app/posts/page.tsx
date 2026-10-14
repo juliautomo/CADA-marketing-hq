@@ -669,7 +669,7 @@ function PostsPageInner() {
                             className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500">
                             <option value="3">3× / week</option>
                             <option value="5">5× / week</option>
-                            <option value="7">Daily</option>
+                            <option value="7">7× / week</option>
                           </select>
                         </div>
                       )}
